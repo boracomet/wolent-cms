@@ -16,8 +16,62 @@ export const cmsColorSwatches = [
 
 export type CmsColorName = (typeof cmsColorSwatches)[number]["name"];
 
+/**
+ * Medya kütüphanesi renk paleti — tam doygun diskler (düşük opaklık /20 yerine).
+ * Koyu panelde seçeneklerin soluk görünmesini engeller.
+ */
+export const accentPickerSolidDots: Record<CmsColorName, string> = {
+  blue: "bg-blue-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  green: "bg-green-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  purple: "bg-purple-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  orange: "bg-orange-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  pink: "bg-pink-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  cyan: "bg-cyan-400 ring-1 ring-inset ring-white/30 shadow-sm shadow-black/40",
+  yellow: "bg-amber-400 ring-1 ring-inset ring-white/30 shadow-sm shadow-black/40",
+  red: "bg-red-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  indigo: "bg-indigo-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  teal: "bg-teal-400 ring-1 ring-inset ring-white/30 shadow-sm shadow-black/40",
+  emerald: "bg-emerald-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+  violet: "bg-violet-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40",
+};
+
 export function getCmsColorClasses(name: string) {
   return cmsColorSwatches.find((c) => c.name === name) ?? cmsColorSwatches[0];
+}
+
+/** Deterministic hash for stable folder → accent mapping */
+function hashStringToUint(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * Klasör kartı / ağaç ikonları için CMS renk paletinden tutarlı bir vurgu.
+ * Aynı `folderId` her zaman aynı renge düşer (yeniden boyamada “titremez”).
+ */
+export function getFolderAccentFromId(folderId: string): (typeof cmsColorSwatches)[number] {
+  const idx = hashStringToUint(folderId) % cmsColorSwatches.length;
+  return cmsColorSwatches[idx];
+}
+
+/** Kayıtlı `accentColor` varsa onu, yoksa id üzerinden deterministik renk */
+export function resolveFolderAccent(folder: {
+  id: string;
+  accentColor?: CmsColorName;
+}): (typeof cmsColorSwatches)[number] {
+  if (folder.accentColor) return getCmsColorClasses(folder.accentColor);
+  return getFolderAccentFromId(folder.id);
+}
+
+export function resolveMediaAccent(media: {
+  id: string;
+  accentColor?: CmsColorName;
+}): (typeof cmsColorSwatches)[number] {
+  if (media.accentColor) return getCmsColorClasses(media.accentColor);
+  return getFolderAccentFromId(media.id);
 }
 
 /** Stronger saturation for field-type picker tiles (still same hue family) */

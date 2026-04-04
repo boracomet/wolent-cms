@@ -1,22 +1,60 @@
 import { Link, useLocation, Outlet } from "react-router";
-import { LayoutDashboard, Database, Image, Users, Key, Settings, Layers, Menu, X, Puzzle, Palette } from "lucide-react";
-import { useState } from "react";
+import {
+  LayoutDashboard,
+  Database,
+  Image,
+  Users,
+  Key,
+  Settings,
+  Layers,
+  Menu,
+  X,
+  Puzzle,
+  Palette,
+  BarChart3,
+  LogOut,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
+import {
+  CMS_PLUGINS_ENABLED_EVENT,
+  readNativeAnalyticsPluginEnabled,
+} from "../lib/cmsPluginsEvents";
 
 export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [analyticsNav, setAnalyticsNav] = useState(() => readNativeAnalyticsPluginEnabled());
   const { t } = useI18n();
 
-  const navigation = [
-    { labelKey: "layout.nav.dashboard", href: "/", icon: LayoutDashboard },
-    { labelKey: "layout.nav.contentTypes", href: "/content-types", icon: Database },
-    { labelKey: "layout.nav.mediaLibrary", href: "/media", icon: Image },
-    { labelKey: "layout.nav.users", href: "/users", icon: Users },
-    { labelKey: "layout.nav.apiPermissions", href: "/api-permissions", icon: Key },
-    { labelKey: "layout.nav.plugins", href: "/plugins", icon: Puzzle },
-    { labelKey: "layout.nav.featureGaps", href: "/feature-gaps", icon: Palette },
-  ];
+  useEffect(() => {
+    const sync = () => setAnalyticsNav(readNativeAnalyticsPluginEnabled());
+    window.addEventListener(CMS_PLUGINS_ENABLED_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(CMS_PLUGINS_ENABLED_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const navigation = useMemo(() => {
+    const base = [
+      { labelKey: "layout.nav.dashboard", href: "/", icon: LayoutDashboard },
+      { labelKey: "layout.nav.contentTypes", href: "/content-types", icon: Database },
+      { labelKey: "layout.nav.mediaLibrary", href: "/media", icon: Image },
+      { labelKey: "layout.nav.users", href: "/users", icon: Users },
+      { labelKey: "layout.nav.apiPermissions", href: "/api-permissions", icon: Key },
+      { labelKey: "layout.nav.plugins", href: "/plugins", icon: Puzzle },
+    ];
+    if (analyticsNav) {
+      base.push({ labelKey: "layout.nav.analytics", href: "/analytics", icon: BarChart3 });
+    }
+    base.push(
+      { labelKey: "layout.nav.settings", href: "/settings", icon: Settings },
+      { labelKey: "layout.nav.featureGaps", href: "/feature-gaps", icon: Palette }
+    );
+    return base;
+  }, [analyticsNav]);
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
@@ -78,12 +116,12 @@ export function Layout() {
 
         <div className="p-4 border-t border-zinc-800/50">
           <Link
-            to="/settings"
+            to="/login"
             onClick={() => setSidebarOpen(false)}
             className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 backdrop-blur-sm transition-colors"
           >
-            <Settings className="w-5 h-5" />
-            {t("layout.nav.settings")}
+            <LogOut className="w-5 h-5" />
+            {t("layout.nav.logout")}
           </Link>
         </div>
       </aside>

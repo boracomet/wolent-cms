@@ -1,6 +1,8 @@
-import { Link2, Upload, Folder, Layers, LayoutGrid, Package } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Link2, Upload, Images, Layers, LayoutGrid, Package } from "lucide-react";
 import type { DemoField } from "../data/demoContentTypes";
 import { MinimalTiptap } from "./MinimalTiptap";
+import { MediaLibraryPickerModal } from "./MediaLibraryPickerModal";
 
 type Props = {
   fields: DemoField[];
@@ -226,49 +228,12 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
 
           case "media":
             return (
-              <div key={field.id}>
-                {label}
-                {v ? (
-                  <div className="space-y-2">
-                    <img
-                      src={v}
-                      alt=""
-                      className="max-h-48 rounded-lg border border-zinc-800/50 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onChange(field.apiName, "")}
-                      className="text-sm text-zinc-400 hover:text-zinc-200"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onChange(
-                          field.apiName,
-                          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
-                        )
-                      }
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-8 border-2 border-dashed border-zinc-800/50 rounded-lg hover:border-zinc-600/50 bg-zinc-950/30"
-                    >
-                      <Upload className="w-8 h-8 text-zinc-500" />
-                      <span className="text-sm text-zinc-400">Mock upload</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => alert("Medya kütüphanesi (demo)")}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800/70 border border-zinc-700/50 rounded-md text-sm"
-                    >
-                      <Folder className="w-4 h-4" />
-                      Kütüphane
-                    </button>
-                  </div>
-                )}
-              </div>
+              <DynamicMediaField
+                key={field.id}
+                field={field}
+                value={v}
+                onChange={onChange}
+              />
             );
 
           case "relation":
@@ -364,6 +329,146 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
             );
         }
       })}
+    </div>
+  );
+}
+
+function DynamicMediaField({
+  field,
+  value,
+  onChange,
+}: {
+  field: DemoField;
+  value: string;
+  onChange: (apiName: string, value: string) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const req = field.required ? (
+    <span className="text-red-400" aria-hidden>
+      *
+    </span>
+  ) : null;
+
+  const label = (
+    <label className="block text-sm font-medium mb-2" htmlFor={`media-file-${field.id}`}>
+      {field.label} {req}
+      {field.description && (
+        <span className="block text-xs font-normal text-zinc-500 mt-0.5">{field.description}</span>
+      )}
+    </label>
+  );
+
+  const applyLocalImage = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result === "string") onChange(field.apiName, result);
+      };
+      reader.readAsDataURL(file);
+    },
+    [field.apiName, onChange]
+  );
+
+  if (value) {
+    return (
+      <div>
+        {label}
+        <div className="space-y-2">
+          <img
+            src={value}
+            alt=""
+            className="max-h-48 rounded-lg border border-zinc-800/50 object-cover"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="text-sm px-3 py-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-200 hover:bg-zinc-700"
+            >
+              Change from Gallery
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange(field.apiName, "")}
+              className="text-sm text-zinc-400 hover:text-zinc-200"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <MediaLibraryPickerModal
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={(url) => onChange(field.apiName, url)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {label}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div
+          className={`flex-1 min-h-[8.5rem] flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors bg-zinc-950/30 ${
+            dragOver
+              ? "border-blue-500/60 bg-blue-500/5"
+              : "border-zinc-800/50 hover:border-zinc-600/50"
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const file = e.dataTransfer.files[0];
+            if (file) applyLocalImage(file);
+          }}
+        >
+          <input
+            id={`media-file-${field.id}`}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) applyLocalImage(file);
+              e.target.value = "";
+            }}
+          />
+          <Upload className="w-8 h-8 text-zinc-500 shrink-0" aria-hidden />
+          <p className="text-sm text-zinc-400 text-center px-2">
+            Sürükleyip bırakın veya{" "}
+            <label
+              htmlFor={`media-file-${field.id}`}
+              className="text-zinc-200 underline underline-offset-2 cursor-pointer hover:text-white"
+            >
+              dosya seçin
+            </label>
+          </p>
+          <p className="text-xs text-zinc-600">PNG, JPG, WebP, GIF</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-0 sm:min-w-[8.5rem] bg-zinc-800/70 border border-zinc-200/90 rounded-md text-sm text-zinc-100 hover:bg-zinc-800 transition-colors shrink-0"
+        >
+          <Images className="w-4 h-4" />
+          Gallery
+        </button>
+      </div>
+      <MediaLibraryPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(url) => onChange(field.apiName, url)}
+      />
     </div>
   );
 }

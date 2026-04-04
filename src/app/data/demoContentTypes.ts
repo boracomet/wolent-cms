@@ -27,6 +27,10 @@ export interface DemoContentType {
   isSingleType?: boolean;
   /** true: ContentEditor şemaya göre dinamik alan çizer */
   useDynamicEditor?: boolean;
+  /**
+   * Liste görünümünde bu medya alanını Strapi tarzı yuvarlak kapak olarak göster (apiName).
+   */
+  listCircleMediaField?: string;
 }
 
 /** Tüm Strapi-tarzı alan tipleri — tek koleksiyonda gösterim */
@@ -261,12 +265,57 @@ export const demoContentTypes: DemoContentType[] = [
     useDynamicEditor: true,
     fields: DATA_PRIMITIVES_FIELDS,
   },
+  {
+    id: "10",
+    name: "Gallery Item",
+    singularName: "Gallery Item",
+    pluralName: "Gallery Items",
+    apiId: "gallery",
+    description: "Galeri öğeleri — kapak görseli listede yuvarlak (Strapi tarzı)",
+    createdAt: "2026-04-04",
+    color: "indigo",
+    isSingleType: false,
+    useDynamicEditor: true,
+    listCircleMediaField: "cover",
+    fields: [
+      { id: "g1", apiName: "title", label: "Title", type: "text", required: true },
+      {
+        id: "g2",
+        apiName: "description",
+        label: "Description",
+        type: "text_long",
+        required: false,
+      },
+      { id: "g3", apiName: "cover", label: "Cover", type: "media", required: false },
+    ],
+  },
 ];
+
+const CONTENT_TYPES_STORAGE_KEY = "wolent-cms-content-types";
+
+export function readStoredContentTypes(): DemoContentType[] | null {
+  try {
+    const raw = localStorage.getItem(CONTENT_TYPES_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed as DemoContentType[];
+  } catch {
+    return null;
+  }
+}
+
+/** Content list / editor şeması — Content Types sayfasındaki liste ile aynı kaynak (localStorage + demo). */
+export function getAllContentTypesForApp(): DemoContentType[] {
+  return readStoredContentTypes() ?? demoContentTypes;
+}
 
 export function getDemoContentTypeByApiId(apiId: string | undefined): DemoContentType | undefined {
   if (!apiId) return undefined;
-  return demoContentTypes.find((t) => t.apiId === apiId);
+  return getAllContentTypesForApp().find((t) => t.apiId === apiId);
 }
+
+export { CONTENT_TYPES_STORAGE_KEY };
 
 export function shouldUseDynamicEditor(apiId: string | undefined): boolean {
   const t = getDemoContentTypeByApiId(apiId);
@@ -344,6 +393,12 @@ export function getEditorSeedForType(apiId: string): Record<string, string> {
       return getComponentPlaygroundSeed();
     case "data-primitives-lab":
       return getDataPrimitivesSeed();
+    case "gallery":
+      return {
+        title: "New gallery item",
+        description: "",
+        cover: "",
+      };
     default:
       return {};
   }

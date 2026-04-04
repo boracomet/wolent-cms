@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -13,16 +13,46 @@ import {
   Upload,
   Image as ImageIcon,
   X,
-  Folder,
+  Images,
+  Languages,
 } from "lucide-react";
 import { MinimalTiptap } from "./MinimalTiptap";
 import { DynamicSchemaFields } from "./DynamicSchemaFields";
+import { MediaLibraryPickerModal } from "./MediaLibraryPickerModal";
+import { AiTranslateModal, AiTranslateSidebarButton } from "./AiTranslateModal";
+import type { DemoField } from "../data/demoContentTypes";
 import {
   buildEmptyValuesForFields,
   getDemoContentTypeByApiId,
   getEditorSeedForType,
   shouldUseDynamicEditor,
 } from "../data/demoContentTypes";
+
+function getAiTranslateFieldKeys(
+  dynamicEditor: boolean,
+  fields: DemoField[],
+): { titleKey: string; summaryKey: string } {
+  if (!dynamicEditor || fields.length === 0) {
+    return { titleKey: "title", summaryKey: "content" };
+  }
+  const candidates = fields.filter(
+    (f) =>
+      f.type === "text" ||
+      f.type === "text_long" ||
+      f.type === "blocks" ||
+      f.type === "richtext",
+  );
+  if (candidates.length === 0) {
+    return { titleKey: "title", summaryKey: "content" };
+  }
+  const titleField = candidates.find((f) => f.type === "text") ?? candidates[0];
+  const summaryField =
+    candidates.find((f) => f.apiName !== titleField.apiName) ?? titleField;
+  return {
+    titleKey: titleField.apiName,
+    summaryKey: summaryField.apiName,
+  };
+}
 
 interface Locale {
   code: string;
@@ -62,11 +92,20 @@ export function ContentEditor() {
   const schemaType = getDemoContentTypeByApiId(type);
   const dynamicEditor = shouldUseDynamicEditor(type);
   const schemaFields = schemaType?.fields ?? [];
+  const aiTranslateKeys = useMemo(
+    () => getAiTranslateFieldKeys(dynamicEditor, schemaFields),
+    [dynamicEditor, schemaFields],
+  );
+  const aiTranslateShowSummary = aiTranslateKeys.titleKey !== aiTranslateKeys.summaryKey;
 
   const [currentLocale, setCurrentLocale] = useState<string>("en");
   const [showLocaleMenu, setShowLocaleMenu] = useState(false);
+  const [showLocalizationStatusMenu, setShowLocalizationStatusMenu] = useState(false);
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverGalleryOpen, setCoverGalleryOpen] = useState(false);
+  const [aiTranslateOpen, setAiTranslateOpen] = useState(false);
+  const [coverDragOver, setCoverDragOver] = useState(false);
 
   const [contentByLocale, setContentByLocale] = useState<Record<string, Record<string, string>>>(() =>
     buildLegacyInitial(isNew)
@@ -110,6 +149,8 @@ export function ContentEditor() {
     return { ...locale, hasContent };
   });
 
+  const localeCompleteCount = localesWithContent.filter((l) => l.hasContent).length;
+
   const updateContent = (field: string, value: string) => {
     setContentByLocale((prev) => ({
       ...prev,
@@ -122,52 +163,76 @@ export function ContentEditor() {
 
   const typeName = type?.charAt(0).toUpperCase() + type?.slice(1) || "";
   const headingLabel = schemaType?.singularName ?? typeName;
+  const backToListLabel = schemaType?.pluralName
+    ? `Back to ${schemaType.pluralName}`
+    : type
+      ? `Back to ${typeName}s`
+      : "Back to list";
 
   return (
     <div className="flex h-screen bg-zinc-950">
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar — z-index so locale dropdown stacks above the scrollable editor below */}
-        <div className="relative z-30 shrink-0 bg-zinc-900/50 backdrop-blur-xl border-b border-zinc-800/50 px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link
-                to={`/content/${type}`}
-                className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-lg font-semibold">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Üst blok — ContentList ile aynı hiyerarşi: geri linki, başlık satırı, araç şeridi */}
+        <div className="shrink-0 w-full px-4 sm:px-6 lg:px-8 pt-12 lg:pt-6">
+          <div className="max-w-7xl mx-auto w-full">
+          <div className="flex flex-col gap-4 mb-6">
+            <Link
+              to={`/content/${type}`}
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors w-fit"
+            >
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              {backToListLabel}
+            </Link>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-zinc-100 mb-2 truncate">
                   {isNew ? `Create ${headingLabel}` : `Edit ${headingLabel}`}
                 </h1>
-                <p className="text-sm text-zinc-400">
-                  {isNew ? "Draft - Not saved" : "Last saved 2 minutes ago"}
+                <p className="text-zinc-400">
+                  {isNew ? "Draft · not saved yet" : "Last saved 2 minutes ago"}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  alert("Content saved!");
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium shrink-0 w-full sm:w-auto"
+              >
+                <Save className="w-4 h-4" />
+                Save
+              </button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3">
-              {/* Locale Selector - Moved to top bar */}
+          <div className="relative z-30 mb-6 rounded-lg border border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
               <div className="relative z-50">
                 <button
-                  onClick={() => setShowLocaleMenu(!showLocaleMenu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-md hover:bg-zinc-700/70 transition-colors"
+                  type="button"
+                  onClick={() => {
+                    setShowLocaleMenu(!showLocaleMenu);
+                    setShowLocalizationStatusMenu(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-md border transition-colors bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200 text-sm"
                 >
-                  <Globe className="w-4 h-4" />
-                  <span className="text-lg">{selectedLocale.flag}</span>
-                  <span className="hidden sm:inline font-medium">{selectedLocale.name}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <Globe className="w-4 h-4 shrink-0" />
+                  <span className="text-base leading-none">{selectedLocale.flag}</span>
+                  <span className="font-medium">{selectedLocale.name}</span>
+                  <ChevronDown className="w-4 h-4 opacity-80 shrink-0" />
                 </button>
 
                 {showLocaleMenu && (
                   <>
-                    {/* Backdrop to close menu */}
-                    <div 
-                      className="fixed inset-0 z-[60]" 
+                    <div
+                      className="fixed inset-0 z-[60]"
                       onClick={() => setShowLocaleMenu(false)}
+                      aria-hidden
                     />
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg shadow-xl overflow-hidden z-[70]">
+                    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg shadow-xl overflow-hidden z-[70]">
                       <div className="p-2">
                         <div className="text-xs font-medium text-zinc-500 px-3 py-2">
                           SELECT LOCALE
@@ -175,6 +240,7 @@ export function ContentEditor() {
                         {localesWithContent.map((locale) => (
                           <button
                             key={locale.code}
+                            type="button"
                             onClick={() => {
                               setCurrentLocale(locale.code);
                               setShowLocaleMenu(false);
@@ -205,29 +271,94 @@ export function ContentEditor() {
                 )}
               </div>
 
-              <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-md hover:bg-zinc-700/70 transition-colors">
-                <Eye className="w-4 h-4" />
-                <span className="hidden sm:inline">Preview</span>
-              </button>
-
               <button
-                onClick={() => {
-                  // Save logic here
-                  alert("Content saved!");
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 rounded-md border transition-colors bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200 text-sm"
               >
-                <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">Save</span>
+                <Eye className="w-4 h-4" />
+                Preview
               </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                <label className="flex items-center gap-2 text-sm text-zinc-300">
+                  <span className="text-zinc-500 whitespace-nowrap">Status</span>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as "draft" | "published")}
+                    className="min-w-[8.5rem] px-3 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-100 text-sm"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </label>
+
+                <div className="relative z-50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLocalizationStatusMenu(!showLocalizationStatusMenu);
+                      setShowLocaleMenu(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-md border transition-colors bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200 text-sm"
+                  >
+                    <Languages className="w-4 h-4 shrink-0" />
+                    <span className="font-medium hidden sm:inline">Localization</span>
+                    <span className="text-zinc-400 text-xs tabular-nums">
+                      {localeCompleteCount}/{availableLocales.length}
+                    </span>
+                    <ChevronDown className="w-4 h-4 opacity-80 shrink-0" />
+                  </button>
+
+                  {showLocalizationStatusMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[60]"
+                        onClick={() => setShowLocalizationStatusMenu(false)}
+                        aria-hidden
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg shadow-xl overflow-hidden z-[70]">
+                        <div className="px-3 py-2 border-b border-zinc-800/50">
+                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                            Localization status
+                          </p>
+                        </div>
+                        <div className="p-2 max-h-64 overflow-y-auto space-y-1">
+                          {localesWithContent.map((locale) => (
+                            <div
+                              key={locale.code}
+                              className="flex items-center justify-between px-3 py-2 rounded-md bg-zinc-950/40 border border-zinc-800/40"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-lg shrink-0">{locale.flag}</span>
+                                <span className="text-sm text-zinc-200 truncate">{locale.name}</span>
+                              </div>
+                              {locale.hasContent ? (
+                                <span className="flex items-center gap-1 text-xs text-green-400 shrink-0">
+                                  <span className="w-2 h-2 bg-green-400 rounded-full" />
+                                  Complete
+                                </span>
+                              ) : (
+                                <span className="text-xs text-zinc-500 shrink-0">Empty</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
           </div>
         </div>
 
-        {/* Editor Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-6 sm:p-8 space-y-6">
+        {/* Editor — ContentList ile aynı max genişlik; px dışta, kart üst blok ile aynı genişlikte */}
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
+            <div className="max-w-7xl mx-auto w-full">
+              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-6 sm:p-8 space-y-6">
               {dynamicEditor && schemaFields.length > 0 ? (
                 <>
                   <div className="rounded-lg border border-violet-500/25 bg-violet-500/5 px-4 py-3 text-sm text-zinc-300">
@@ -276,15 +407,14 @@ export function ContentEditor() {
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                       <button
-                        onClick={() => {
-                          // Open media library
-                          alert('Open Media Library to change image');
-                        }}
+                        type="button"
+                        onClick={() => setCoverGalleryOpen(true)}
                         className="px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
                       >
-                        Change Image
+                        Gallery
                       </button>
                       <button
+                        type="button"
                         onClick={() => setCoverImage(null)}
                         className="p-2 bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                       >
@@ -293,36 +423,80 @@ export function ContentEditor() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => {
-                        // Mock: Open media library
-                        setCoverImage('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800');
+                  <div className="flex flex-col gap-3">
+                    <div
+                      className={`min-h-64 w-full flex flex-col items-center justify-center gap-3 px-4 py-8 border-2 border-dashed rounded-lg transition-colors bg-zinc-950/30 ${
+                        coverDragOver
+                          ? "border-blue-500/60 bg-blue-500/5"
+                          : "border-zinc-800/50 hover:border-zinc-600/50"
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "copy";
+                        setCoverDragOver(true);
                       }}
-                      className="w-full h-64 border-2 border-dashed border-zinc-800/50 rounded-lg hover:border-zinc-700/50 transition-colors flex flex-col items-center justify-center gap-3 bg-zinc-950/30 hover:bg-zinc-950/50"
+                      onDragLeave={() => setCoverDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setCoverDragOver(false);
+                        const file = e.dataTransfer.files[0];
+                        if (file?.type.startsWith("image/")) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const r = reader.result;
+                            if (typeof r === "string") setCoverImage(r);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
                     >
+                      <input
+                        id="cover-legacy-file"
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file?.type.startsWith("image/")) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const r = reader.result;
+                              if (typeof r === "string") setCoverImage(r);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                          e.target.value = "";
+                        }}
+                      />
                       <Upload className="w-12 h-12 text-zinc-500" />
                       <div className="text-center">
                         <p className="text-sm font-medium text-zinc-300 mb-1">
-                          Click to upload cover image
+                          Sürükleyip bırakın veya{" "}
+                          <label
+                            htmlFor="cover-legacy-file"
+                            className="underline underline-offset-2 cursor-pointer hover:text-zinc-100"
+                          >
+                            dosya seçin
+                          </label>
                         </p>
-                        <p className="text-xs text-zinc-500">
-                          PNG, JPG, GIF up to 10MB
-                        </p>
+                        <p className="text-xs text-zinc-500">PNG, JPG, WebP, GIF</p>
                       </div>
-                    </button>
+                    </div>
                     <button
-                      onClick={() => {
-                        // Open media library modal
-                        alert('Opening Media Library...');
-                      }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-md hover:bg-zinc-700/70 transition-colors"
+                      type="button"
+                      onClick={() => setCoverGalleryOpen(true)}
+                      className="flex w-full items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800/70 border border-zinc-700/80 rounded-md hover:bg-zinc-800 transition-colors text-zinc-100 font-medium sm:w-auto sm:self-start"
                     >
-                      <Folder className="w-4 h-4" />
-                      <span className="font-medium">Select from Media Library</span>
+                      <Images className="w-4 h-4" />
+                      Gallery
                     </button>
                   </div>
                 )}
+                <MediaLibraryPickerModal
+                  open={coverGalleryOpen}
+                  onClose={() => setCoverGalleryOpen(false)}
+                  onSelect={(url) => setCoverImage(url)}
+                />
                 <p className="text-xs text-zinc-500 mt-2">
                   Recommended size: 1200x630px (JPG, PNG)
                 </p>
@@ -419,73 +593,57 @@ export function ContentEditor() {
               )}
                 </>
               )}
+
+              <div className="border-t border-zinc-800/50 pt-6 space-y-6">
+                <div>
+                  <AiTranslateSidebarButton onClick={() => setAiTranslateOpen(true)} />
+                </div>
+
+                <div className="pt-2 border-t border-zinc-800/50">
+                  <h3 className="text-sm font-medium mb-3">Information</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Created</span>
+                      <span className="text-zinc-100">Apr 3, 2026</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Updated</span>
+                      <span className="text-zinc-100">Apr 3, 2026</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">By</span>
+                      <span className="text-zinc-100">John Doe</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Sidebar - Status & Settings */}
-      <aside className="hidden lg:block w-80 border-l border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl overflow-auto">
-        <div className="p-6 space-y-6">
-          {/* Status */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Status</h3>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as "draft" | "published")}
-              className="w-full px-3 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-
-          {/* Locales Status */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Localization Status</h3>
-            <div className="space-y-2">
-              {localesWithContent.map((locale) => (
-                <div
-                  key={locale.code}
-                  className="flex items-center justify-between p-3 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{locale.flag}</span>
-                    <span className="text-sm">{locale.name}</span>
-                  </div>
-                  {locale.hasContent ? (
-                    <span className="flex items-center gap-1 text-xs text-green-400">
-                      <div className="w-2 h-2 bg-green-400 rounded-full" />
-                      Complete
-                    </span>
-                  ) : (
-                    <span className="text-xs text-zinc-500">Empty</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="pt-6 border-t border-zinc-800/50">
-            <h3 className="text-sm font-medium mb-3">Information</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Created</span>
-                <span className="text-zinc-100">Apr 3, 2026</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Updated</span>
-                <span className="text-zinc-100">Apr 3, 2026</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">By</span>
-                <span className="text-zinc-100">John Doe</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <AiTranslateModal
+        open={aiTranslateOpen}
+        onClose={() => setAiTranslateOpen(false)}
+        locales={availableLocales}
+        defaultSourceCode={currentLocale}
+        showSummaryField={aiTranslateShowSummary}
+        onSave={({ targetLocale, title, summary }) => {
+          setContentByLocale((prev) => {
+            const row = { ...(prev[targetLocale] ?? {}) };
+            row[aiTranslateKeys.titleKey] = title;
+            if (aiTranslateShowSummary) {
+              row[aiTranslateKeys.summaryKey] = summary;
+            }
+            return {
+              ...prev,
+              [targetLocale]: row,
+            };
+          });
+          setCurrentLocale(targetLocale);
+        }}
+      />
     </div>
   );
 }

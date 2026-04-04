@@ -10,6 +10,7 @@ import { UserManagement } from "./components/UserManagement";
 import { ApiPermissions } from "./components/ApiPermissions";
 import { Settings } from "./components/Settings";
 import { Plugins } from "./components/Plugins";
+import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { FeatureGapsShowcase } from "./components/FeatureGapsShowcase";
 import { LoginPage } from "./components/LoginPage";
 
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: "users", Component: UserManagement },
       { path: "api-permissions", Component: ApiPermissions },
       { path: "plugins", Component: Plugins },
+      { path: "analytics", Component: AnalyticsDashboard },
       { path: "feature-gaps", Component: FeatureGapsShowcase },
       { path: "settings", Component: Settings },
     ],

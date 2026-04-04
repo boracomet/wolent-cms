@@ -7,17 +7,32 @@ import {
   Eye,
   EyeOff,
   Shield,
-  Lock,
-  Unlock,
   X,
-  Check,
   FileText,
   Database,
   Image,
   Users,
   Settings,
   ChevronRight,
+  Globe,
+  Share2,
+  Save,
+  Check,
 } from "lucide-react";
+
+const API_METHOD_STORAGE_KEY = "cms-admin-api-method";
+
+export type ApiAccessMethod = "rest" | "graphql";
+
+function readStoredApiMethod(): ApiAccessMethod {
+  try {
+    const raw = localStorage.getItem(API_METHOD_STORAGE_KEY);
+    if (raw === "graphql" || raw === "rest") return raw;
+  } catch {
+    /* ignore */
+  }
+  return "rest";
+}
 
 interface ApiToken {
   id: string;
@@ -170,7 +185,11 @@ const mockRoles: Role[] = [
 ];
 
 export function ApiPermissions() {
-  const [activeTab, setActiveTab] = useState<"tokens" | "roles">("tokens");
+  const [activeTab, setActiveTab] = useState<"tokens" | "roles" | "apiSettings">(
+    "tokens"
+  );
+  const [apiMethod, setApiMethod] = useState<ApiAccessMethod>(readStoredApiMethod);
+  const [apiSettingsSavedFlash, setApiSettingsSavedFlash] = useState(false);
   const [tokens, setTokens] = useState(mockTokens);
   const [roles, setRoles] = useState(mockRoles);
   const [showTokenModal, setShowTokenModal] = useState(false);
@@ -194,6 +213,25 @@ export function ApiPermissions() {
     // Could add toast notification here
   };
 
+  const setApiAccessMethod = (method: ApiAccessMethod) => {
+    setApiMethod(method);
+    try {
+      localStorage.setItem(API_METHOD_STORAGE_KEY, method);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSaveApiSettings = () => {
+    try {
+      localStorage.setItem(API_METHOD_STORAGE_KEY, apiMethod);
+    } catch {
+      /* ignore */
+    }
+    setApiSettingsSavedFlash(true);
+    window.setTimeout(() => setApiSettingsSavedFlash(false), 2000);
+  };
+
   const getEnabledContentTypesCount = (permissions?: ApiPermissions) => {
     if (!permissions) return 0;
     return Object.values(permissions.contentTypes).filter(ct => ct.enabled).length;
@@ -208,13 +246,37 @@ export function ApiPermissions() {
             <h1 className="text-3xl font-semibold mb-2">API & Permissions</h1>
             <p className="text-zinc-400">Manage API tokens and user roles</p>
           </div>
-          <button
-            onClick={() => (activeTab === "tokens" ? setShowTokenModal(true) : setShowRoleModal(true))}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            {activeTab === "tokens" ? "Create API Token" : "Create Role"}
-          </button>
+          {activeTab === "apiSettings" ? (
+            <button
+              type="button"
+              onClick={handleSaveApiSettings}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+            >
+              {apiSettingsSavedFlash ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-700" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={() =>
+                activeTab === "tokens"
+                  ? setShowTokenModal(true)
+                  : setShowRoleModal(true)
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              {activeTab === "tokens" ? "Create API Token" : "Create Role"}
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -238,6 +300,16 @@ export function ApiPermissions() {
             }`}
           >
             Roles & Permissions
+          </button>
+          <button
+            onClick={() => setActiveTab("apiSettings")}
+            className={`px-4 py-2 border-b-2 transition-colors ${
+              activeTab === "apiSettings"
+                ? "border-zinc-100 text-zinc-100"
+                : "border-transparent text-zinc-400 hover:text-zinc-100"
+            }`}
+          >
+            API Settings
           </button>
         </div>
 
@@ -361,6 +433,96 @@ export function ApiPermissions() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* API Settings — REST vs GraphQL */}
+        {activeTab === "apiSettings" && (
+          <div className="w-full space-y-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full">
+              <h2 className="text-lg font-semibold text-zinc-100 mb-1">
+                Default API method
+              </h2>
+              <p className="text-sm text-zinc-400 mb-6">
+                Choose how client apps primarily access your headless CMS. Both
+                endpoints can stay enabled on the server; this preference drives
+                dashboard examples and generated snippets.
+              </p>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setApiAccessMethod("rest")}
+                  className={`text-left rounded-lg border p-5 transition-all ${
+                    apiMethod === "rest"
+                      ? "border-zinc-100 bg-zinc-800/40 ring-1 ring-zinc-100/20"
+                      : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+                      <Globe className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-zinc-100">REST</span>
+                        {apiMethod === "rest" && (
+                          <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-zinc-100 text-zinc-950 font-medium">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500 mb-3">
+                        Resource URLs, JSON bodies, standard HTTP verbs (GET,
+                        POST, PUT, DELETE).
+                      </p>
+                      <code className="text-[11px] text-zinc-400 font-mono block break-all">
+                        GET /api/articles · POST /api/articles
+                      </code>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setApiAccessMethod("graphql")}
+                  className={`text-left rounded-lg border p-5 transition-all ${
+                    apiMethod === "graphql"
+                      ? "border-zinc-100 bg-zinc-800/40 ring-1 ring-zinc-100/20"
+                      : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+                      <Share2 className="w-5 h-5 text-violet-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-zinc-100">
+                          GraphQL
+                        </span>
+                        {apiMethod === "graphql" && (
+                          <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-zinc-100 text-zinc-950 font-medium">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500 mb-3">
+                        One endpoint, typed schema, queries and mutations with
+                        the fields you need.
+                      </p>
+                      <code className="text-[11px] text-zinc-400 font-mono block">
+                        POST /graphql
+                      </code>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-600 mt-5">
+                Preference is saved in this browser ({apiMethod.toUpperCase()}).
+              </p>
+            </div>
           </div>
         )}
 

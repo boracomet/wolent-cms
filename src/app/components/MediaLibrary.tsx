@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Upload,
   Search,
@@ -24,126 +25,175 @@ import {
   Edit,
   Copy,
   Check,
+  GripVertical,
+  Settings,
 } from "lucide-react";
+import type { FolderItem, MediaFile } from "../data/mediaLibraryData";
+import { mockFolders, mockMedia } from "../data/mediaLibraryData";
+import {
+  accentPickerSolidDots,
+  cmsColorSwatches,
+  resolveFolderAccent,
+  resolveMediaAccent,
+  type CmsColorName,
+} from "../lib/cmsColors";
 
-interface MediaFile {
-  id: string;
-  name: string;
-  type: "image" | "video" | "document";
-  /** MIME type, e.g. image/jpeg */
-  mimeType: string;
-  /** Pixel width for images/video (optional) */
-  width?: number;
-  /** Pixel height for images/video (optional) */
-  height?: number;
-  size: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  /** Public or CDN URL */
-  url: string;
-  thumbnail?: string;
-  folderId: string | null;
+/** Klasör / dosya ⋮ menüsü genişliği (w-60) */
+const FOLDER_CONTEXT_MENU_W = 240;
+const FILE_CONTEXT_MENU_W = 240;
+const FOLDER_CONTEXT_MENU_EST_H = 340;
+const FILE_CONTEXT_MENU_EST_H = 300;
+
+function MediaLibraryAccentPicker({
+  value,
+  onChange,
+  dense,
+}: {
+  value: CmsColorName | undefined;
+  onChange: (next: CmsColorName | undefined) => void;
+  dense?: boolean;
+}) {
+  const btn = dense ? "h-6 w-6" : "h-7 w-7";
+  const dot = dense ? "h-3 w-3" : "h-4 w-4";
+  const gap = dense ? "gap-1 px-2 py-1.5" : "gap-1.5";
+  return (
+    <div className={`flex flex-wrap ${gap}`} role="group" aria-label="Accent color">
+      <button
+        type="button"
+        title="Automatic"
+        onClick={() => onChange(undefined)}
+        className={`flex ${btn} shrink-0 items-center justify-center rounded-full border-2 transition-transform hover:scale-105 ${
+          value === undefined
+            ? "border-zinc-100 ring-2 ring-cyan-500/35"
+            : "border-zinc-600 bg-zinc-900/80"
+        }`}
+      >
+        <span
+          className={`${dot} rounded-full bg-gradient-to-br from-zinc-300 via-zinc-500 to-zinc-700 ring-1 ring-inset ring-white/20 shadow-sm shadow-black/50`}
+        />
+      </button>
+      {cmsColorSwatches.map((s) => (
+        <button
+          key={s.name}
+          type="button"
+          title={s.name}
+          onClick={() => onChange(s.name)}
+          className={`flex ${btn} shrink-0 items-center justify-center rounded-full border-2 transition-transform hover:scale-105 ${
+            value === s.name ? "border-white ring-2 ring-white/40" : "border-zinc-700/80 bg-zinc-900/50"
+          }`}
+        >
+          <span className={`${dot} rounded-full ${accentPickerSolidDots[s.name]}`} />
+        </button>
+      ))}
+    </div>
+  );
 }
 
-interface FolderItem {
-  id: string;
-  name: string;
-  parentId: string | null;
-  createdAt: string;
+/** HTML5 drag — medya dosyası taşıma */
+const DND_MEDIA_MIME = "application/x-wolent-media";
+const DND_FOLDER_MIME = "application/x-wolent-folder";
+
+function parseMediaDragPayload(raw: string): string[] | null {
+  try {
+    const o = JSON.parse(raw) as { ids?: unknown };
+    if (!Array.isArray(o.ids)) return null;
+    const ids = o.ids.filter((x): x is string => typeof x === "string");
+    return ids.length ? ids : null;
+  } catch {
+    return null;
+  }
 }
 
-const mockFolders: FolderItem[] = [
-  { id: "products", name: "Products", parentId: null, createdAt: "2026-03-01" },
-  { id: "team", name: "Team Photos", parentId: null, createdAt: "2026-03-05" },
-  { id: "banners", name: "Banners", parentId: null, createdAt: "2026-03-10" },
-  { id: "documents", name: "Documents", parentId: null, createdAt: "2026-03-15" },
-  { id: "products-2024", name: "2024 Collection", parentId: "products", createdAt: "2026-03-20" },
-  { id: "products-2025", name: "2025 Collection", parentId: "products", createdAt: "2026-03-25" },
-];
+function dragEventHasMedia(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).includes(DND_MEDIA_MIME);
+}
 
-const mockMedia: MediaFile[] = [
-  {
-    id: "1",
-    name: "hero-image.jpg",
-    type: "image",
-    mimeType: "image/jpeg",
-    width: 3840,
-    height: 2160,
-    size: "2.4 MB",
-    uploadedAt: "2026-04-03",
-    uploadedBy: "John Doe",
-    url: "https://cdn.wolent.dev/media/1/hero-image.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-    folderId: null,
-  },
-  {
-    id: "2",
-    name: "product-photo.jpg",
-    type: "image",
-    mimeType: "image/jpeg",
-    width: 2400,
-    height: 1600,
-    size: "1.8 MB",
-    uploadedAt: "2026-04-02",
-    uploadedBy: "Jane Smith",
-    url: "https://cdn.wolent.dev/media/2/product-photo.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
-    folderId: "products",
-  },
-  {
-    id: "3",
-    name: "banner-design.jpg",
-    type: "image",
-    mimeType: "image/jpeg",
-    width: 3000,
-    height: 2000,
-    size: "3.2 MB",
-    uploadedAt: "2026-04-01",
-    uploadedBy: "John Doe",
-    url: "https://cdn.wolent.dev/media/3/banner-design.jpg",
-    thumbnail: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
-    folderId: "banners",
-  },
-  {
-    id: "4",
-    name: "team-photo.jpg",
-    type: "image",
-    mimeType: "image/png",
-    width: 1920,
-    height: 1080,
-    size: "2.1 MB",
-    uploadedAt: "2026-03-30",
-    uploadedBy: "Sarah Wilson",
-    url: "https://cdn.wolent.dev/media/4/team-photo.png",
-    thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400",
-    folderId: "team",
-  },
-  {
-    id: "5",
-    name: "office-space.jpg",
-    type: "image",
-    mimeType: "image/webp",
-    width: 2560,
-    height: 1707,
-    size: "2.7 MB",
-    uploadedAt: "2026-03-28",
-    uploadedBy: "Mike Johnson",
-    url: "https://cdn.wolent.dev/media/5/office-space.webp",
-    thumbnail: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400",
-    folderId: null,
-  },
-  {
-    id: "6",
-    name: "product-catalog.pdf",
-    type: "document",
-    mimeType: "application/pdf",
-    size: "4.5 MB",
-    uploadedAt: "2026-03-25",
-    uploadedBy: "Jane Smith",
-    url: "https://cdn.wolent.dev/media/6/product-catalog.pdf",
-    folderId: "documents",
-  },
-];
+function parseFolderDragPayload(raw: string): string | null {
+  try {
+    const o = JSON.parse(raw) as { id?: unknown };
+    return typeof o.id === "string" ? o.id : null;
+  } catch {
+    return null;
+  }
+}
+
+function dragEventHasFolderDrag(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).includes(DND_FOLDER_MIME);
+}
+
+function dragEventHasOsFiles(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).includes("Files");
+}
+
+/** newParent, taşınan klasörün kendisi veya alt klasörü olamaz */
+function wouldCreateFolderCycle(
+  folders: FolderItem[],
+  movingId: string,
+  newParentId: string | null
+): boolean {
+  if (newParentId === null) return false;
+  if (newParentId === movingId) return true;
+  let id: string | null = newParentId;
+  const seen = new Set<string>();
+  while (id) {
+    if (id === movingId) return true;
+    if (seen.has(id)) break;
+    seen.add(id);
+    const f = folders.find((x) => x.id === id);
+    id = f?.parentId ?? null;
+  }
+  return false;
+}
+
+/**
+ * Ağaç satırında dikey konum: üst/alt = aynı üstte sırala, orta = içine taşı.
+ * Yanlışlıkla hedef satıra bırakınca hep "alt klasör" olmasını azaltır.
+ */
+function folderDropZoneFromEvent(e: React.DragEvent, el: HTMLElement): "before" | "into" | "after" {
+  const rect = el.getBoundingClientRect();
+  const h = rect.height;
+  if (h <= 0) return "into";
+  const r = (e.clientY - rect.top) / h;
+  if (r < 0.3) return "before";
+  if (r > 0.7) return "after";
+  return "into";
+}
+
+/** Aynı parent altında diziyi güncelle; anchor satırının üstüne / altına yerleştirir */
+function reorderFolderAmongSiblings(
+  folders: FolderItem[],
+  movingId: string,
+  anchorId: string,
+  place: "before" | "after"
+): FolderItem[] | null {
+  if (movingId === anchorId) return null;
+  const moving = folders.find((f) => f.id === movingId);
+  const anchor = folders.find((f) => f.id === anchorId);
+  if (!moving || !anchor) return null;
+  const parentId = anchor.parentId;
+  if (wouldCreateFolderCycle(folders, movingId, parentId)) return null;
+
+  const updatedMoving: FolderItem = { ...moving, parentId };
+  const without = folders.filter((f) => f.id !== movingId);
+  const anchorIdx = without.findIndex((f) => f.id === anchorId);
+  if (anchorIdx === -1) return null;
+  const insertAt = place === "before" ? anchorIdx : anchorIdx + 1;
+  return [...without.slice(0, insertAt), updatedMoving, ...without.slice(insertAt)];
+}
+
+function treeFolderRowDropClass(folderId: string, dropTargetKey: string | null): string {
+  const p = `folder:${folderId}`;
+  if (dropTargetKey === `${p}:before`) {
+    return "shadow-[inset_0_2px_0_0] shadow-emerald-400/90 relative z-[1]";
+  }
+  if (dropTargetKey === `${p}:after`) {
+    return "shadow-[inset_0_-2px_0_0] shadow-emerald-400/90 relative z-[1]";
+  }
+  if (dropTargetKey === `${p}:into` || dropTargetKey === p) {
+    return "ring-2 ring-blue-500/70 ring-offset-2 ring-offset-zinc-950";
+  }
+  return "";
+}
 
 function parseMediaSizeToBytes(size: string): number {
   const m = size.trim().match(/^([\d.]+)\s*(KB|MB|GB|B)?$/i);
@@ -223,9 +273,21 @@ export function MediaLibrary() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [contextMenuFolder, setContextMenuFolder] = useState<string | null>(null);
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [contextMenuPosition, setContextMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  /** Bırakma hedefi: `root` = kök, `main-view` = mevcut klasör alanı, aksi `folder:${id}` */
+  const [dropTargetKey, setDropTargetKey] = useState<string | null>(null);
+  const [fileDropOverMain, setFileDropOverMain] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [newFolderAccent, setNewFolderAccent] = useState<CmsColorName | undefined>(
+    undefined
+  );
+  const [contextMenuFile, setContextMenuFile] = useState<string | null>(null);
+  const [uploadAccent, setUploadAccent] = useState<CmsColorName | undefined>(undefined);
 
   const currentFolder = folders.find((f) => f.id === currentFolderId);
   const filteredMedia = media.filter((file) => file.folderId === currentFolderId);
@@ -279,6 +341,30 @@ export function MediaLibrary() {
     setExpandedFolders(newExpanded);
   };
 
+  const setMediaFileAccent = (fileId: string, accent: CmsColorName | undefined) => {
+    setMedia((prev) =>
+      prev.map((f) => (f.id === fileId ? { ...f, accentColor: accent } : f))
+    );
+    setSelectedFile((sf) =>
+      sf?.id === fileId ? { ...sf, accentColor: accent } : sf
+    );
+  };
+
+  const handleDeleteFileFromMenu = (fileId: string) => {
+    const file = media.find((f) => f.id === fileId);
+    if (!file) return;
+    if (confirm(`Delete "${file.name}"?`)) {
+      setMedia((prev) => prev.filter((f) => f.id !== fileId));
+      setSelectedFiles((sel) => {
+        const next = new Set(sel);
+        next.delete(fileId);
+        return next;
+      });
+      setSelectedFile((sf) => (sf?.id === fileId ? null : sf));
+      setContextMenuFile(null);
+    }
+  };
+
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
       const newFolder: FolderItem = {
@@ -286,9 +372,11 @@ export function MediaLibrary() {
         name: newFolderName,
         parentId: currentFolderId,
         createdAt: new Date().toISOString().split("T")[0],
+        ...(newFolderAccent ? { accentColor: newFolderAccent } : {}),
       };
       setFolders([...folders, newFolder]);
       setNewFolderName("");
+      setNewFolderAccent(undefined);
       setShowCreateFolderModal(false);
     }
   };
@@ -303,6 +391,165 @@ export function MediaLibrary() {
     setMedia(updatedMedia);
     setSelectedFiles(new Set());
     setShowMoveModal(false);
+  };
+
+  const resolveDragFileIds = (file: MediaFile): string[] => {
+    if (selectedFiles.has(file.id) && selectedFiles.size > 0) {
+      const inFolder = filteredMedia
+        .filter((f) => selectedFiles.has(f.id))
+        .map((f) => f.id);
+      if (inFolder.length > 0) return inFolder;
+    }
+    return [file.id];
+  };
+
+  const moveFileIdsToFolder = (fileIds: string[], targetFolderId: string | null) => {
+    if (!fileIds.length) return;
+    setMedia((prev) =>
+      prev.map((f) => {
+        if (!fileIds.includes(f.id)) return f;
+        if (f.folderId === targetFolderId) return f;
+        return { ...f, folderId: targetFolderId };
+      })
+    );
+    setSelectedFiles((sel) => {
+      const next = new Set(sel);
+      fileIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  };
+
+  const moveFolderToParent = (folderId: string, newParentId: string | null) => {
+    setFolders((prev) => {
+      if (wouldCreateFolderCycle(prev, folderId, newParentId)) return prev;
+      return prev.map((f) => (f.id === folderId ? { ...f, parentId: newParentId } : f));
+    });
+    if (newParentId) {
+      setExpandedFolders((prev) => new Set(prev).add(newParentId));
+    }
+    setContextMenuFolder(null);
+    setContextMenuFile(null);
+  };
+
+  const addOsFilesToFolder = (
+    fileList: FileList,
+    targetFolderId: string | null,
+    accentColor?: CmsColorName
+  ) => {
+    const files = Array.from(fileList).filter((f) => f.size > 0);
+    if (!files.length) return;
+    setMedia((prev) => {
+      const next = [...prev];
+      for (const file of files) {
+        const isImage = file.type.startsWith("image/");
+        const url = URL.createObjectURL(file);
+        const sizeMb = file.size / (1024 * 1024);
+        const sizeLabel =
+          sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+        next.push({
+          id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          name: file.name,
+          type: isImage ? "image" : "document",
+          mimeType: file.type || "application/octet-stream",
+          size: sizeLabel,
+          uploadedAt: new Date().toISOString().split("T")[0],
+          uploadedBy: "You",
+          url,
+          thumbnail: isImage ? url : undefined,
+          folderId: targetFolderId,
+          ...(accentColor ? { accentColor } : {}),
+        });
+      }
+      return next;
+    });
+  };
+
+  const handleDropOnFolderTarget = (e: React.DragEvent, targetFolderId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropTargetKey(null);
+    setFileDropOverMain(false);
+
+    const movedFolderId = parseFolderDragPayload(e.dataTransfer.getData(DND_FOLDER_MIME));
+    if (movedFolderId) {
+      if (targetFolderId !== null) {
+        const row = e.currentTarget as HTMLElement;
+        if (row.hasAttribute("data-tree-folder-row")) {
+          const zone = folderDropZoneFromEvent(e, row);
+          if (zone === "into") {
+            moveFolderToParent(movedFolderId, targetFolderId);
+          } else {
+            setFolders((prev) => {
+              const next = reorderFolderAmongSiblings(
+                prev,
+                movedFolderId,
+                targetFolderId,
+                zone
+              );
+              return next ?? prev;
+            });
+            setContextMenuFolder(null);
+            setContextMenuFile(null);
+          }
+        } else {
+          moveFolderToParent(movedFolderId, targetFolderId);
+        }
+      } else {
+        moveFolderToParent(movedFolderId, null);
+      }
+      return;
+    }
+
+    const ids = parseMediaDragPayload(e.dataTransfer.getData(DND_MEDIA_MIME));
+    if (ids) {
+      moveFileIdsToFolder(ids, targetFolderId);
+      return;
+    }
+
+    if (e.dataTransfer.files?.length) {
+      addOsFilesToFolder(e.dataTransfer.files, targetFolderId);
+    }
+  };
+
+  const handleDragOverFolderTarget = (e: React.DragEvent, key: string) => {
+    const internal = dragEventHasMedia(e) || dragEventHasFolderDrag(e);
+    const osFiles = dragEventHasOsFiles(e);
+    if (!internal && !osFiles) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = osFiles && !internal ? "copy" : "move";
+    setDropTargetKey(key);
+  };
+
+  const handleFolderDragLeave = (e: React.DragEvent) => {
+    const rel = e.relatedTarget as Node | null;
+    if (rel && e.currentTarget.contains(rel)) return;
+    setDropTargetKey(null);
+  };
+
+  const bindFolderDropHandlers = (folderId: string) => {
+    const key = `folder:${folderId}`;
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        const internal = dragEventHasMedia(e) || dragEventHasFolderDrag(e);
+        const osFiles = dragEventHasOsFiles(e);
+        if (!internal && !osFiles) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = osFiles && !internal ? "copy" : "move";
+        const el = e.currentTarget as HTMLElement;
+        if (
+          dragEventHasFolderDrag(e) &&
+          !dragEventHasMedia(e) &&
+          el.hasAttribute("data-tree-folder-row")
+        ) {
+          const z = folderDropZoneFromEvent(e, el);
+          setDropTargetKey(`${key}:${z}`);
+        } else {
+          setDropTargetKey(key);
+        }
+      },
+      onDragLeave: handleFolderDragLeave,
+      onDrop: (e: React.DragEvent) => handleDropOnFolderTarget(e, folderId),
+    };
   };
 
   const handleDeleteFolder = (folderId: string) => {
@@ -375,24 +622,29 @@ export function MediaLibrary() {
       const isExpanded = expandedFolders.has(folder.id);
       const isActive = currentFolderId === folder.id;
       const fileCount = media.filter((f) => f.folderId === folder.id).length;
+      const folderAccent = resolveFolderAccent(folder);
 
       return (
         <div key={folder.id}>
           <div
-            className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+            data-tree-folder-row
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-md transition-colors border ${
               isActive
-                ? "bg-blue-500/10 text-blue-400"
-                : "hover:bg-zinc-800/50 text-zinc-300"
-            }`}
+                ? `${folderAccent.bg} ${folderAccent.border} ${folderAccent.icon}`
+                : "border-transparent hover:bg-zinc-800/50 text-zinc-300"
+            } ${treeFolderRowDropClass(folder.id, dropTargetKey)}`}
             style={{ paddingLeft: `${level * 16 + 12}px` }}
+            {...bindFolderDropHandlers(folder.id)}
           >
-            {hasChildren && (
+            {hasChildren ? (
               <button
+                type="button"
+                draggable={false}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleFolderExpansion(folder.id);
                 }}
-                className="p-0.5 hover:bg-zinc-700/50 rounded"
+                className="shrink-0 p-0.5 hover:bg-zinc-700/50 rounded"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4" />
@@ -400,19 +652,50 @@ export function MediaLibrary() {
                   <ChevronRight className="w-4 h-4" />
                 )}
               </button>
+            ) : (
+              <div className="w-5 shrink-0" aria-hidden />
             )}
-            {!hasChildren && <div className="w-5" />}
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label={`Move folder ${folder.name}`}
+              draggable
+              onDragStart={(e) => {
+                e.stopPropagation();
+                e.dataTransfer.setData(DND_FOLDER_MIME, JSON.stringify({ id: folder.id }));
+                e.dataTransfer.effectAllowed = "move";
+                const row = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-tree-folder-row]");
+                if (row) {
+                  try {
+                    e.dataTransfer.setDragImage(row, 24, 18);
+                  } catch {
+                    /* ignore */
+                  }
+                }
+              }}
+              onDragEnd={() => setDropTargetKey(null)}
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 touch-none cursor-grab rounded p-0.5 text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400 active:cursor-grabbing outline-none focus-visible:ring-1 focus-visible:ring-zinc-500"
+            >
+              <GripVertical className="w-3.5 h-3.5 pointer-events-none" />
+            </div>
             <button
+              type="button"
+              draggable={false}
               onClick={() => setCurrentFolderId(folder.id)}
-              className="flex items-center gap-2 flex-1 min-w-0"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
             >
               {isActive ? (
-                <FolderOpen className="w-4 h-4 flex-shrink-0" />
+                <FolderOpen className={`h-4 w-4 shrink-0 ${folderAccent.icon}`} />
               ) : (
-                <Folder className="w-4 h-4 flex-shrink-0" />
+                <Folder className={`h-4 w-4 shrink-0 ${folderAccent.icon}`} />
               )}
-              <span className="text-sm truncate flex-1 text-left">{folder.name}</span>
-              <span className="text-xs text-zinc-500">{fileCount}</span>
+              <span
+                className={`flex-1 truncate text-sm ${isActive ? "text-zinc-100" : "text-zinc-300"}`}
+              >
+                {folder.name}
+              </span>
+              <span className="shrink-0 text-xs text-zinc-500">{fileCount}</span>
             </button>
           </div>
           {isExpanded && renderFolderTree(folder.id, level + 1)}
@@ -444,11 +727,20 @@ export function MediaLibrary() {
           {/* Sidebar - Folder Tree */}
           <div className="col-span-3">
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 sticky top-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="min-w-0">
                 <h3 className="font-semibold text-sm">Folders</h3>
+                  <p className="text-[10px] leading-snug text-zinc-500 mt-1">
+                    Klasör sürüklerken: satırın üstü veya altı = sıra · ortası = içine taşı
+                  </p>
+                </div>
                 <button
-                  onClick={() => setShowCreateFolderModal(true)}
-                  className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors"
+                  type="button"
+                  onClick={() => {
+                    setNewFolderAccent(undefined);
+                    setShowCreateFolderModal(true);
+                  }}
+                  className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors shrink-0"
                   title="Create folder"
                 >
                   <FolderPlus className="w-4 h-4 text-zinc-400" />
@@ -458,10 +750,17 @@ export function MediaLibrary() {
               {/* Root */}
               <div
                 onClick={() => setCurrentFolderId(null)}
+                onDragOver={(e) => handleDragOverFolderTarget(e, "root")}
+                onDragLeave={handleFolderDragLeave}
+                onDrop={(e) => handleDropOnFolderTarget(e, null)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors mb-2 ${
                   currentFolderId === null
                     ? "bg-blue-500/10 text-blue-400"
                     : "hover:bg-zinc-800/50 text-zinc-300"
+                } ${
+                  dropTargetKey === "root"
+                    ? "ring-2 ring-blue-500/70 ring-offset-2 ring-offset-zinc-950"
+                    : ""
                 }`}
               >
                 <Home className="w-4 h-4" />
@@ -478,6 +777,72 @@ export function MediaLibrary() {
 
           {/* Main Content */}
           <div className="col-span-9">
+            <div
+              className={`rounded-xl min-h-[min(40vh,20rem)] transition-colors ${
+                dropTargetKey === "main-view" || fileDropOverMain
+                  ? "ring-2 ring-dashed ring-blue-500/50 bg-blue-500/5"
+                  : ""
+              }`}
+              onDragEnter={(e) => {
+                const onlyOs =
+                  dragEventHasOsFiles(e) &&
+                  !dragEventHasMedia(e) &&
+                  !dragEventHasFolderDrag(e);
+                if (onlyOs) {
+                  e.preventDefault();
+                  setFileDropOverMain(true);
+                }
+              }}
+              onDragOver={(e) => {
+                const t = e.target as HTMLElement;
+                if (t.closest("[data-folder-card]")) return;
+
+                if (dragEventHasMedia(e) || dragEventHasFolderDrag(e)) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setDropTargetKey("main-view");
+                  return;
+                }
+                if (dragEventHasOsFiles(e)) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "copy";
+                  setFileDropOverMain(true);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setFileDropOverMain(false);
+                  setDropTargetKey((k) => (k === "main-view" ? null : k));
+                }
+              }}
+              onDrop={(e) => {
+                const t = e.target as HTMLElement;
+                if (t.closest("[data-folder-card]")) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                setFileDropOverMain(false);
+                setDropTargetKey(null);
+
+                const movedFolderId = parseFolderDragPayload(
+                  e.dataTransfer.getData(DND_FOLDER_MIME)
+                );
+                if (movedFolderId) {
+                  moveFolderToParent(movedFolderId, currentFolderId);
+                  return;
+                }
+
+                const ids = parseMediaDragPayload(e.dataTransfer.getData(DND_MEDIA_MIME));
+                if (ids) {
+                  moveFileIdsToFolder(ids, currentFolderId);
+                  return;
+                }
+
+                if (e.dataTransfer.files?.length) {
+                  addOsFilesToFolder(e.dataTransfer.files, currentFolderId);
+                }
+              }}
+            >
             {/* Breadcrumb */}
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-2 text-sm">
@@ -623,21 +988,65 @@ export function MediaLibrary() {
                   return (
                     <div
                       key={folder.id}
-                      onDoubleClick={() => !isRenaming && setCurrentFolderId(folder.id)}
-                      className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 hover:border-zinc-700/50 transition-colors cursor-pointer group relative"
+                      data-folder-card
+                      draggable={!isRenaming}
+                      onDragStart={(e) => {
+                        if ((e.target as HTMLElement).closest("[data-folder-no-drag]")) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.stopPropagation();
+                        e.dataTransfer.setData(
+                          DND_FOLDER_MIME,
+                          JSON.stringify({ id: folder.id })
+                        );
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => setDropTargetKey(null)}
+                      onClick={() => {
+                        if (!isRenaming) setCurrentFolderId(folder.id);
+                      }}
+                      {...bindFolderDropHandlers(folder.id)}
+                      className={`bg-zinc-900/50 backdrop-blur-xl border rounded-lg p-4 transition-colors cursor-pointer group relative ${
+                        dropTargetKey === `folder:${folder.id}`
+                          ? "border-blue-500/60 ring-2 ring-blue-500/50"
+                          : "border-zinc-800/50 hover:border-zinc-700/50"
+                      } ${!isRenaming ? "active:cursor-grabbing" : ""}`}
                     >
                       <div className="flex items-start justify-between mb-3">
-                        <Folder className="w-10 h-10 text-blue-400" />
+                        <Folder
+                          className={`w-10 h-10 ${resolveFolderAccent(folder).icon}`}
+                        />
                         <button
+                          type="button"
+                          data-folder-no-drag
                           onClick={(e) => {
                             e.stopPropagation();
-                            setContextMenuFolder(folder.id);
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setContextMenuPosition({ x: rect.left, y: rect.bottom });
+                            setContextMenuFile(null);
+                            const br = e.currentTarget.getBoundingClientRect();
+                            const padX = 8;
+                            const padY = 10;
+                            const menuH = FOLDER_CONTEXT_MENU_EST_H;
+                            let left = br.right - FOLDER_CONTEXT_MENU_W;
+                            left = Math.max(
+                              padX,
+                              Math.min(left, window.innerWidth - FOLDER_CONTEXT_MENU_W - padX)
+                            );
+                            const roomBelow = window.innerHeight - br.bottom;
+                            const openBelow = roomBelow >= menuH + padY;
+                            const top = openBelow
+                              ? br.bottom + padY
+                              : Math.max(padY, br.top - menuH - padY);
+                            setContextMenuPosition({ top, left });
+                            setContextMenuFolder((prev) =>
+                              prev === folder.id ? null : folder.id
+                            );
                           }}
-                          className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-zinc-800/50 rounded transition-all"
+                          className="relative z-10 p-1.5 rounded-md hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 transition-colors"
+                          aria-haspopup="menu"
+                          aria-expanded={contextMenuFolder === folder.id}
                         >
-                          <MoreVertical className="w-4 h-4 text-zinc-400" />
+                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                       {isRenaming ? (
@@ -664,38 +1073,6 @@ export function MediaLibrary() {
                         <span className="text-zinc-600"> · </span>
                         {formatFolderTotalBytes(totalBytes)}
                       </p>
-
-                      {/* Context Menu */}
-                      {contextMenuFolder === folder.id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setContextMenuFolder(null)}
-                          />
-                          <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg shadow-xl overflow-hidden z-50">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRenameFolder(folder.id);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors text-left"
-                            >
-                              <Edit className="w-4 h-4 text-zinc-400" />
-                              <span>Rename</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteFolder(folder.id);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition-colors text-left"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </>
-                      )}
                     </div>
                   );
                 })}
@@ -705,68 +1082,123 @@ export function MediaLibrary() {
             {/* Media Grid */}
             {viewMode === "grid" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredMedia.map((file) => (
+                {filteredMedia.map((file) => {
+                  const fileAccent = resolveMediaAccent(file);
+                  return (
                   <div
                     key={file.id}
-                    className={`bg-zinc-900/50 backdrop-blur-xl border rounded-lg overflow-hidden hover:border-zinc-700/50 transition-colors cursor-pointer group relative ${
+                    className={`group relative overflow-hidden rounded-lg border bg-zinc-900/50 backdrop-blur-xl transition-colors ${
                       selectedFiles.has(file.id)
                         ? "border-blue-500 ring-2 ring-blue-500/20"
-                        : "border-zinc-800/50"
+                        : `${fileAccent.border} hover:opacity-95`
                     }`}
                   >
-                    {/* Checkbox */}
                     <div className="absolute top-3 left-3 z-10">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFileSelection(file.id);
                         }}
-                        className="p-1 bg-zinc-900/80 backdrop-blur-sm rounded hover:bg-zinc-800 transition-colors"
+                        className="rounded bg-zinc-900/80 p-1 backdrop-blur-sm transition-colors hover:bg-zinc-800"
                       >
                         {selectedFiles.has(file.id) ? (
-                          <CheckSquare className="w-5 h-5 text-blue-400" />
+                          <CheckSquare className="h-5 w-5 text-blue-400" />
                         ) : (
-                          <Square className="w-5 h-5 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <Square className="h-5 w-5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
                         )}
+                      </button>
+                    </div>
+                    <div className="absolute top-3 right-3 z-10">
+                      <button
+                        type="button"
+                        data-media-no-drag
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setContextMenuFolder(null);
+                          const br = e.currentTarget.getBoundingClientRect();
+                          const padX = 8;
+                          const padY = 10;
+                          const menuH = FILE_CONTEXT_MENU_EST_H;
+                          let left = br.right - FILE_CONTEXT_MENU_W;
+                          left = Math.max(
+                            padX,
+                            Math.min(left, window.innerWidth - FILE_CONTEXT_MENU_W - padX)
+                          );
+                          const roomBelow = window.innerHeight - br.bottom;
+                          const openBelow = roomBelow >= menuH + padY;
+                          const top = openBelow
+                            ? br.bottom + padY
+                            : Math.max(padY, br.top - menuH - padY);
+                          setContextMenuPosition({ top, left });
+                          setContextMenuFile((prev) =>
+                            prev === file.id ? null : file.id
+                          );
+                        }}
+                        className="rounded bg-zinc-900/80 p-1.5 backdrop-blur-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+                        aria-haspopup="menu"
+                        aria-expanded={contextMenuFile === file.id}
+                      >
+                        <MoreVertical className="h-4 w-4" />
                       </button>
                     </div>
 
                     <div
+                      draggable
+                      onDragStart={(e) => {
+                        if ((e.target as HTMLElement).closest("button, [data-media-no-drag]")) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const ids = resolveDragFileIds(file);
+                        e.dataTransfer.setData(
+                          DND_MEDIA_MIME,
+                          JSON.stringify({ ids })
+                        );
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => setDropTargetKey(null)}
+                      className="cursor-grab active:cursor-grabbing"
+                    >
+                    <div
                       onClick={() => setSelectedFile(file)}
-                      className="aspect-square bg-zinc-800 flex items-center justify-center relative overflow-hidden"
+                        className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden bg-zinc-800"
                     >
                       {file.thumbnail ? (
                         <img
                           src={file.thumbnail}
                           alt={file.name}
-                          className="w-full h-full object-cover"
+                            className="h-full w-full object-cover"
+                            draggable={false}
                         />
                       ) : (
-                        <FileText className="w-12 h-12 text-zinc-600" />
+                          <FileText className="h-12 w-12 text-zinc-600" />
                       )}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
+                            type="button"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 transition-colors"
+                            className="rounded bg-zinc-900 p-2 transition-colors hover:bg-zinc-800"
                         >
-                          <Download className="w-4 h-4" />
+                            <Download className="h-4 w-4" />
                         </button>
                         <button
+                            type="button"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 bg-zinc-900 rounded hover:bg-zinc-800 transition-colors"
+                            className="rounded bg-zinc-900 p-2 transition-colors hover:bg-zinc-800"
                         >
-                          <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
-                    <div onClick={() => setSelectedFile(file)} className="p-3">
-                      <p className="text-sm font-medium truncate mb-1">
-                        {file.name}
-                      </p>
+                      <div onClick={() => setSelectedFile(file)} className="cursor-pointer p-3">
+                        <p className="mb-1 truncate text-sm font-medium">{file.name}</p>
                       <p className="text-xs text-zinc-500">{file.size}</p>
                     </div>
                   </div>
-                ))}
+                  </div>
+                );
+                })}
               </div>
             ) : (
               <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
@@ -795,11 +1227,29 @@ export function MediaLibrary() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800">
-                    {filteredMedia.map((file) => (
+                    {filteredMedia.map((file) => {
+                      const rowAccent = resolveMediaAccent(file);
+                      return (
                       <tr
                         key={file.id}
-                        className={`hover:bg-zinc-800/30 transition-colors ${
-                          selectedFiles.has(file.id) ? "bg-blue-500/10" : ""
+                        draggable
+                        onDragStart={(e) => {
+                          if ((e.target as HTMLElement).closest("button, [data-media-no-drag]")) {
+                            e.preventDefault();
+                            return;
+                          }
+                          const ids = resolveDragFileIds(file);
+                          e.dataTransfer.setData(
+                            DND_MEDIA_MIME,
+                            JSON.stringify({ ids })
+                          );
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragEnd={() => setDropTargetKey(null)}
+                        className={`cursor-grab transition-colors active:cursor-grabbing hover:bg-zinc-800/30 ${
+                          selectedFiles.has(file.id)
+                            ? "bg-blue-500/10"
+                            : rowAccent.bg
                         }`}
                       >
                         <td className="px-3 py-4">
@@ -850,17 +1300,47 @@ export function MediaLibrary() {
                             <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
                               <Trash2 className="w-4 h-4 text-zinc-400" />
                             </button>
-                            <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
+                            <button
+                              type="button"
+                              data-media-no-drag
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContextMenuFolder(null);
+                                const br = e.currentTarget.getBoundingClientRect();
+                                const padX = 8;
+                                const padY = 10;
+                                const menuH = FILE_CONTEXT_MENU_EST_H;
+                                let left = br.right - FILE_CONTEXT_MENU_W;
+                                left = Math.max(
+                                  padX,
+                                  Math.min(left, window.innerWidth - FILE_CONTEXT_MENU_W - padX)
+                                );
+                                const roomBelow = window.innerHeight - br.bottom;
+                                const openBelow = roomBelow >= menuH + padY;
+                                const top = openBelow
+                                  ? br.bottom + padY
+                                  : Math.max(padY, br.top - menuH - padY);
+                                setContextMenuPosition({ top, left });
+                                setContextMenuFile((prev) =>
+                                  prev === file.id ? null : file.id
+                                );
+                              }}
+                              className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                              aria-haspopup="menu"
+                              aria-expanded={contextMenuFile === file.id}
+                            >
                               <MoreVertical className="w-4 h-4 text-zinc-400" />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
+            </div>
           </div>
         </div>
 
@@ -936,6 +1416,16 @@ export function MediaLibrary() {
                       <p className="text-zinc-100 font-mono text-sm">
                         {resolutionLabel(selectedFile)}
                       </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-zinc-400 mb-2">
+                        Accent color
+                      </label>
+                      <MediaLibraryAccentPicker
+                        value={selectedFile.accentColor}
+                        onChange={(c) => setMediaFileAccent(selectedFile.id, c)}
+                      />
                     </div>
 
                     <div>
@@ -1028,26 +1518,81 @@ export function MediaLibrary() {
               <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
                 <h2 className="text-xl font-semibold">Upload Files</h2>
                 <button
-                  onClick={() => setShowUploadModal(false)}
+                  type="button"
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setUploadAccent(undefined);
+                  }}
                   className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-6">
-                <div className="border-2 border-dashed border-zinc-800/50 rounded-lg p-12 text-center hover:border-zinc-700/50 transition-colors">
-                  <Upload className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
+              <div className="p-6 space-y-4">
+                <div>
+                  <p className="text-sm text-zinc-400 mb-2">Accent for new files</p>
+                  <MediaLibraryAccentPicker
+                    value={uploadAccent}
+                    onChange={setUploadAccent}
+                  />
+                </div>
+                <input
+                  ref={uploadInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept="image/*,video/*,.pdf,application/pdf"
+                  onChange={(e) => {
+                    const list = e.target.files;
+                    if (list?.length) {
+                      addOsFilesToFolder(list, currentFolderId, uploadAccent);
+                      e.target.value = "";
+                      setShowUploadModal(false);
+                      setUploadAccent(undefined);
+                    }
+                  }}
+                />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      uploadInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files?.length) {
+                      addOsFilesToFolder(
+                        e.dataTransfer.files,
+                        currentFolderId,
+                        uploadAccent
+                      );
+                      setShowUploadModal(false);
+                      setUploadAccent(undefined);
+                    }
+                  }}
+                  className="border-2 border-dashed border-zinc-800/50 rounded-lg p-12 text-center hover:border-zinc-700/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-zinc-600"
+                  onClick={() => uploadInputRef.current?.click()}
+                >
+                  <Upload className="w-12 h-12 text-zinc-400 mx-auto mb-4 pointer-events-none" />
+                  <h3 className="text-lg font-medium mb-2 pointer-events-none">
                     Drop files to upload
                   </h3>
-                  <p className="text-sm text-zinc-400 mb-4">
+                  <p className="text-sm text-zinc-400 mb-4 pointer-events-none">
                     or click to browse
                   </p>
-                  <button className="px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+                  <span className="inline-flex px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md font-medium pointer-events-none">
                     Select Files
-                  </button>
-                  <p className="text-xs text-zinc-500 mt-4">
+                  </span>
+                  <p className="text-xs text-zinc-500 mt-4 pointer-events-none">
                     Supported formats: JPG, PNG, GIF, PDF, MP4 (Max 10MB)
                   </p>
                 </div>
@@ -1063,7 +1608,11 @@ export function MediaLibrary() {
               <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
                 <h2 className="text-xl font-semibold">Create New Folder</h2>
                 <button
-                  onClick={() => setShowCreateFolderModal(false)}
+                  type="button"
+                  onClick={() => {
+                    setShowCreateFolderModal(false);
+                    setNewFolderAccent(undefined);
+                  }}
                   className="p-2 hover:bg-zinc-800/50 rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -1085,14 +1634,29 @@ export function MediaLibrary() {
                   />
                 </div>
 
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">
+                    Folder color
+                  </label>
+                  <MediaLibraryAccentPicker
+                    value={newFolderAccent}
+                    onChange={setNewFolderAccent}
+                  />
+                </div>
+
                 <div className="flex items-center justify-end gap-3">
                   <button
-                    onClick={() => setShowCreateFolderModal(false)}
+                    type="button"
+                    onClick={() => {
+                      setShowCreateFolderModal(false);
+                      setNewFolderAccent(undefined);
+                    }}
                     className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={handleCreateFolder}
                     className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
                   >
@@ -1143,7 +1707,9 @@ export function MediaLibrary() {
                         }px`,
                       }}
                     >
-                      <Folder className="w-5 h-5 text-blue-400" />
+                      <Folder
+                        className={`w-5 h-5 ${resolveFolderAccent(folder).icon}`}
+                      />
                       <span>{folder.name}</span>
                     </button>
                   ))}
@@ -1162,6 +1728,126 @@ export function MediaLibrary() {
           </div>
         )}
       </div>
+
+      {typeof document !== "undefined" &&
+        contextMenuFolder &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[200]"
+              role="presentation"
+              aria-hidden
+              onClick={() => setContextMenuFolder(null)}
+            />
+            <div
+              className="fixed z-[210] w-60 rounded-lg border border-zinc-700/90 bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
+              style={{
+                top: `${contextMenuPosition.top}px`,
+                left: `${contextMenuPosition.left}px`,
+              }}
+              role="menu"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="border-b border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400">
+                Folder
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleRenameFolder(contextMenuFolder)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-100 transition-colors hover:bg-zinc-800/90 hover:text-white"
+              >
+                <Edit className="h-4 w-4 shrink-0 text-zinc-400" />
+                Rename
+              </button>
+              <div className="border-t border-zinc-800 px-3 py-2">
+                <div className="mb-1.5 text-xs font-medium text-zinc-500">
+                  Accent color
+                </div>
+                <MediaLibraryAccentPicker
+                  dense
+                  value={folders.find((f) => f.id === contextMenuFolder)?.accentColor}
+                  onChange={(c) => {
+                    const id = contextMenuFolder;
+                    if (!id) return;
+                    setFolders((prev) =>
+                      prev.map((f) => (f.id === id ? { ...f, accentColor: c } : f))
+                    );
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleDeleteFolder(contextMenuFolder)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-400 transition-colors hover:bg-red-950/50 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4 shrink-0" />
+                Delete
+              </button>
+            </div>
+          </>,
+          document.body
+        )}
+
+      {typeof document !== "undefined" &&
+        contextMenuFile &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[200]"
+              role="presentation"
+              aria-hidden
+              onClick={() => setContextMenuFile(null)}
+            />
+            <div
+              className="fixed z-[210] w-60 rounded-lg border border-zinc-700/90 bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
+              style={{
+                top: `${contextMenuPosition.top}px`,
+                left: `${contextMenuPosition.left}px`,
+              }}
+              role="menu"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="border-b border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400">
+                File
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  const f = media.find((x) => x.id === contextMenuFile);
+                  if (f) setSelectedFile(f);
+                  setContextMenuFile(null);
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-100 transition-colors hover:bg-zinc-800/90 hover:text-white"
+              >
+                <Settings className="h-4 w-4 shrink-0 text-zinc-400" />
+                File settings
+              </button>
+              <div className="border-t border-zinc-800 px-3 py-2">
+                <div className="mb-1.5 text-xs font-medium text-zinc-500">
+                  Accent color
+                </div>
+                <MediaLibraryAccentPicker
+                  dense
+                  value={media.find((f) => f.id === contextMenuFile)?.accentColor}
+                  onChange={(c) => setMediaFileAccent(contextMenuFile, c)}
+                />
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleDeleteFileFromMenu(contextMenuFile)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-400 transition-colors hover:bg-red-950/50 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4 shrink-0" />
+                Delete
+              </button>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

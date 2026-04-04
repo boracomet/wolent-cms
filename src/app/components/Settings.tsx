@@ -19,9 +19,17 @@ import {
   Link2,
   X,
   Check,
+  Copy,
   User,
+  Archive,
+  Server,
+  HardDrive,
+  Terminal,
+  RefreshCw,
+  Play,
 } from "lucide-react";
 import { AccountSettings } from "./AccountSettings";
+import { BackupSettings } from "./BackupSettings";
 import { useI18n, type AdminLocale } from "../i18n";
 
 interface MenuItem {
@@ -48,6 +56,7 @@ export function Settings() {
     { id: "appearance", icon: Palette },
     { id: "database", icon: Database },
     { id: "integrations", icon: Zap },
+    { id: "backup", icon: Archive },
   ];
 
   return (
@@ -95,6 +104,7 @@ export function Settings() {
               {activeTab === "appearance" && <AppearanceSettings />}
               {activeTab === "database" && <DatabaseSettings />}
               {activeTab === "integrations" && <IntegrationSettings />}
+              {activeTab === "backup" && <BackupSettings />}
             </div>
           </div>
         </div>
@@ -889,17 +899,23 @@ function AppearanceSettings() {
           <label className="block text-sm font-medium mb-2">
             {t("settings.appearance.panelLanguage")}
           </label>
-          <select
-            value={locale}
-            onChange={(e) => setLocale(e.target.value as AdminLocale)}
-            className="w-full max-w-md px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
-          >
-            {panelLanguageOptions.map((opt) => (
-              <option key={opt.code} value={opt.code}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative w-full max-w-md">
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as AdminLocale)}
+              className="h-10 w-full cursor-pointer appearance-none rounded-md border border-zinc-800 bg-zinc-950 py-2 pl-3 pr-10 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+            >
+              {panelLanguageOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden
+            />
+          </div>
           <p className="text-xs text-zinc-500 mt-2 max-w-2xl leading-relaxed">
             {t("settings.appearance.panelLanguageHint")}
           </p>
@@ -981,98 +997,347 @@ function AppearanceSettings() {
   );
 }
 
+type DbDriver = "sqlite" | "postgres";
+
+type MigrationRow = {
+  id: string;
+  name: string;
+  status: "applied" | "pending";
+  appliedAt: string | null;
+};
+
 function DatabaseSettings() {
+  const { t } = useI18n();
+  const [driver, setDriver] = useState<DbDriver>("postgres");
+  const [sqlitePath, setSqlitePath] = useState("./data/cms.sqlite");
+  const [pgHost, setPgHost] = useState("localhost");
+  const [pgPort, setPgPort] = useState("5432");
+  const [pgDatabase, setPgDatabase] = useState("wolent_cms");
+  const [pgUser, setPgUser] = useState("cms");
+  const [pgPassword, setPgPassword] = useState("");
+  const [pgSsl, setPgSsl] = useState(true);
+  const [migrations, setMigrations] = useState<MigrationRow[]>([
+    {
+      id: "20260301000000",
+      name: "init_core_tables",
+      status: "applied",
+      appliedAt: "2026-03-01",
+    },
+    {
+      id: "20260315120000",
+      name: "add_locale_columns",
+      status: "applied",
+      appliedAt: "2026-03-15",
+    },
+    {
+      id: "20260404000000",
+      name: "media_folder_indexes",
+      status: "pending",
+      appliedAt: null,
+    },
+  ]);
+  const [migrationBusy, setMigrationBusy] = useState(false);
+  const [cliCopied, setCliCopied] = useState(false);
+
+  const cliExample =
+    driver === "sqlite"
+      ? "npx prisma migrate deploy --schema=./prisma/schema.sqlite.prisma"
+      : "npx prisma migrate deploy";
+
+  const pendingCount = migrations.filter((m) => m.status === "pending").length;
+
+  const handleSave = () => {
+    window.alert(t("settings.database.savedDemo"));
+  };
+
+  const handleTestConnection = () => {
+    window.alert(t("settings.database.testDemo"));
+  };
+
+  const handleRunMigrations = () => {
+    if (pendingCount === 0) return;
+    setMigrationBusy(true);
+    window.setTimeout(() => {
+      setMigrations((prev) =>
+        prev.map((m) =>
+          m.status === "pending"
+            ? {
+                ...m,
+                status: "applied" as const,
+                appliedAt: new Date().toISOString().split("T")[0],
+              }
+            : m
+        )
+      );
+      setMigrationBusy(false);
+      window.alert(t("settings.database.migrateDemoDone"));
+    }, 800);
+  };
+
+  const copyCli = () => {
+    void navigator.clipboard.writeText(cliExample);
+    setCliCopied(true);
+    window.setTimeout(() => setCliCopied(false), 2000);
+  };
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
-        <h2 className="text-xl font-semibold">Database Settings</h2>
-        <p className="text-sm text-zinc-400 mt-1">
-          Configure database connection and backups
-        </p>
+        <h2 className="text-xl font-semibold">{t("settings.database.heading")}</h2>
+        <p className="text-sm text-zinc-400 mt-1">{t("settings.database.description")}</p>
       </div>
 
-      <div className="p-6 space-y-6">
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+      <div className="p-6 space-y-8">
+        <div className="rounded-lg border border-zinc-700/60 bg-zinc-950/80 p-4">
           <div className="flex items-start gap-3">
-            <Database className="w-5 h-5 text-blue-400 mt-0.5" />
+            <Terminal className="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
             <div>
-              <p className="text-sm text-blue-400 font-medium">
-                Database Connected
+              <p className="text-sm font-medium text-zinc-200">
+                {t("settings.database.bannerTitle")}
               </p>
-              <p className="text-sm text-zinc-400 mt-1">
-                PostgreSQL 14.5 • Last backup: 2 hours ago
-              </p>
+              <p className="mt-1 text-sm text-zinc-500">{t("settings.database.bannerBody")}</p>
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Database Type
+          <label className="mb-3 block text-sm font-medium text-zinc-300">
+            {t("settings.database.driverLabel")}
           </label>
-          <select
-            disabled
-            className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md opacity-50"
-          >
-            <option value="postgresql">PostgreSQL</option>
-            <option value="mysql">MySQL</option>
-            <option value="mongodb">MongoDB</option>
-          </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setDriver("sqlite")}
+              className={`rounded-lg border p-4 text-left transition-colors ${
+                driver === "sqlite"
+                  ? "border-zinc-100/90 bg-zinc-800/40 ring-1 ring-zinc-600/80"
+                  : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+              }`}
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+                  <HardDrive className="h-5 w-5 text-emerald-400" />
+                </div>
+                <span className="font-semibold text-zinc-100">{t("settings.database.sqlite")}</span>
+              </div>
+              <p className="text-sm text-zinc-500">{t("settings.database.sqliteDesc")}</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDriver("postgres")}
+              className={`rounded-lg border p-4 text-left transition-colors ${
+                driver === "postgres"
+                  ? "border-zinc-100/90 bg-zinc-800/40 ring-1 ring-zinc-600/80"
+                  : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+              }`}
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+                  <Server className="h-5 w-5 text-sky-400" />
+                </div>
+                <span className="font-semibold text-zinc-100">{t("settings.database.postgres")}</span>
+              </div>
+              <p className="text-sm text-zinc-500">{t("settings.database.postgresDesc")}</p>
+            </button>
+          </div>
         </div>
 
         <div>
-          <h3 className="font-medium mb-3">Automatic Backups</h3>
-          <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="font-medium text-sm">Enable Automatic Backups</p>
-                <p className="text-xs text-zinc-500">
-                  Create backups on a schedule
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+          <h3 className="mb-4 text-sm font-medium text-zinc-300">
+            {t("settings.database.connectionHeading")}
+          </h3>
+          {driver === "sqlite" ? (
+            <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+              <label className="block text-sm font-medium">{t("settings.database.sqlitePath")}</label>
+              <input
+                type="text"
+                value={sqlitePath}
+                onChange={(e) => setSqlitePath(e.target.value)}
+                className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-zinc-700"
+              />
+              <p className="text-xs text-zinc-500">{t("settings.database.sqlitePathHint")}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 rounded-lg border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-medium">{t("settings.database.pgHost")}</label>
                 <input
-                  type="checkbox"
-                  defaultChecked
-                  className="sr-only peer"
+                  type="text"
+                  value={pgHost}
+                  onChange={(e) => setPgHost(e.target.value)}
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
                 />
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">{t("settings.database.pgPort")}</label>
+                <input
+                  type="text"
+                  value={pgPort}
+                  onChange={(e) => setPgPort(e.target.value)}
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  {t("settings.database.pgDatabase")}
+                </label>
+                <input
+                  type="text"
+                  value={pgDatabase}
+                  onChange={(e) => setPgDatabase(e.target.value)}
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">{t("settings.database.pgUser")}</label>
+                <input
+                  type="text"
+                  value={pgUser}
+                  onChange={(e) => setPgUser(e.target.value)}
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  {t("settings.database.pgPassword")}
+                </label>
+                <input
+                  type="password"
+                  value={pgPassword}
+                  onChange={(e) => setPgPassword(e.target.value)}
+                  autoComplete="off"
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950/80 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-zinc-800/80 bg-zinc-900/40 px-4 py-3 sm:col-span-2">
+                <div>
+                  <p className="text-sm font-medium">{t("settings.database.pgSsl")}</p>
+                  <p className="text-xs text-zinc-500">{t("settings.database.pgSslSub")}</p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={pgSsl}
+                    onChange={() => setPgSsl((v) => !v)}
+                    className="sr-only peer"
+                  />
+                  <div className="h-6 w-11 rounded-full bg-zinc-700 peer-focus:outline-none peer peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-blue-600 after:content-['']" />
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-zinc-800 pt-8">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-100">
+                {t("settings.database.migrationsHeading")}
+              </h3>
+              <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+                {t("settings.database.migrationsDescription")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setMigrations((m) => [...m])}
+                className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-800"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("settings.database.refreshStatus")}
+              </button>
+              <button
+                type="button"
+                disabled={pendingCount === 0 || migrationBusy}
+                onClick={handleRunMigrations}
+                className="inline-flex items-center gap-2 rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Play className="h-4 w-4" />
+                {migrationBusy ? "…" : t("settings.database.runMigrations")}
+              </button>
             </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Backup Frequency
-          </label>
-          <select className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
-            <option value="hourly">Every Hour</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
+          <p className="mb-4 text-xs text-zinc-500">{t("settings.database.runMigrationsSub")}</p>
 
-        <div className="pt-4 border-t border-zinc-800">
-          <button className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors text-left">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">Create Backup Now</p>
-                <p className="text-xs text-zinc-500">
-                  Manually create a database backup
-                </p>
-              </div>
-              <Database className="w-5 h-5 text-zinc-400" />
+          <div className="overflow-hidden rounded-lg border border-zinc-800">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-zinc-800 bg-zinc-950/90">
+                <tr>
+                  <th className="px-4 py-3 font-medium text-zinc-400">
+                    {t("settings.database.colRevision")}
+                  </th>
+                  <th className="px-4 py-3 font-medium text-zinc-400">{t("settings.database.colName")}</th>
+                  <th className="px-4 py-3 font-medium text-zinc-400">
+                    {t("settings.database.colApplied")}
+                  </th>
+                  <th className="w-36 px-4 py-3 text-right font-medium text-zinc-400">
+                    {t("settings.database.colStatus")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {migrations.map((row) => (
+                  <tr key={row.id} className="bg-zinc-950/50 hover:bg-zinc-900/40">
+                    <td className="px-4 py-3 font-mono text-xs text-zinc-400">{row.id}</td>
+                    <td className="px-4 py-3 text-zinc-200">{row.name}</td>
+                    <td className="px-4 py-3 text-zinc-500">
+                      {row.appliedAt ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          row.status === "applied"
+                            ? "bg-emerald-500/15 text-emerald-400"
+                            : "bg-amber-500/15 text-amber-400"
+                        }`}
+                      >
+                        {row.status === "applied"
+                          ? t("settings.database.statusApplied")
+                          : t("settings.database.statusPending")}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <Terminal className="h-4 w-4 shrink-0 text-zinc-500" />
+              <code className="truncate text-xs text-zinc-400">{cliExample}</code>
             </div>
-          </button>
+            <button
+              type="button"
+              onClick={copyCli}
+              className="inline-flex shrink-0 items-center gap-2 rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {cliCopied ? t("settings.database.cliCopied") : t("settings.database.cliCopy")}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-zinc-600">{t("settings.database.cliHint")}</p>
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
-          <Save className="w-4 h-4" />
-          Save Changes
+      <div className="flex flex-col gap-3 border-t border-zinc-800 px-6 py-4 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={handleTestConnection}
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-800 sm:order-1"
+        >
+          <Database className="h-4 w-4" />
+          {t("settings.database.testConnection")}
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-zinc-100 px-6 py-2 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200"
+        >
+          <Save className="h-4 w-4" />
+          {t("settings.database.saveChanges")}
         </button>
       </div>
     </>
