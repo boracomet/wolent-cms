@@ -1,0 +1,122 @@
+{
+  "layout": {
+    "brand": {
+      "title": "CMS",
+      "subtitle": "Headless CMS"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "contentTypes": "Content Types",
+      "mediaLibrary": "Media Library",
+      "users": "Users",
+      "apiPermissions": "API Permissions",
+      "plugins": "Plugins",
+      "featureGaps": "UI Lab",
+      "settings": "Settings"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back to your CMS",
+    "createContentType": "Create Content Type",
+    "createContentTypeShort": "New Content",
+    "stats": {
+      "contentTypes": "Content Types",
+      "articles": "Articles",
+      "mediaFiles": "Media Files",
+      "users": "Users"
+    },
+    "viewAll": "View all →",
+    "recentContent": "Recent Content"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your CMS configuration",
+    "tabs": {
+      "account": "Account",
+      "general": "General",
+      "i18n": "Internationalization",
+      "menu": "Menu Builder",
+      "page-access": "Page Access",
+      "security": "Security",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "database": "Database",
+      "integrations": "Integrations"
+    },
+    "general": {
+      "heading": "General Settings",
+      "description": "Configure basic application settings",
+      "applicationName": "Application Name",
+      "applicationUrl": "Application URL",
+      "defaultLanguage": "Default Language",
+      "timezone": "Timezone",
+      "descriptionLabel": "Description",
+      "saveChanges": "Save Changes"
+    },
+    "appearance": {
+      "heading": "Appearance Settings",
+      "description": "Customize the look and feel of your CMS",
+      "panelLanguage": "Admin panel language",
+      "panelLanguageHint": "UI copy is loaded from JSON files in src/locales/ (e.g. en.json, tr.json). Edit those files or add a new locale and register it in src/app/i18n/catalog.ts to customize wording.",
+      "theme": "Theme",
+      "darkMode": "Dark Mode",
+      "darkModeSub": "Default theme",
+      "lightMode": "Light Mode",
+      "lightModeSub": "Coming soon",
+      "logo": "Logo",
+      "uploadLogo": "Upload Logo",
+      "logoHint": "Recommended size: 200x200px",
+      "accentColor": "Accent Color",
+      "saveChanges": "Save Changes"
+    }
+  },
+  "plugins": {
+    "title": "Plugins",
+    "subtitle": "Extend your CMS with optional features. Enable or configure each plugin below.",
+    "installedHeading": "Installed plugins",
+    "installedDescription": "Plugins that ship with this workspace. Additional plugins can be added later.",
+    "cookie": {
+      "name": "Cookie Management",
+      "description": "Show a consent banner, respect visitor preferences, and keep cookie categories in sync with your front-end."
+    },
+    "gemini": {
+      "name": "Gemini API Auto Translate",
+      "description": "Use Google Gemini to suggest or fill translations for content locales from the editor (configure your API key below).",
+      "apiKeyLabel": "Gemini API key",
+      "apiKeyPlaceholder": "Paste your key from Google AI Studio",
+      "apiKeyHint": "Keys are kept in this browser only (localStorage) for this demo — use a server secret in production.",
+      "modelLabel": "Model",
+      "saveKey": "Save",
+      "keyMissing": "Add an API key to enable translation requests.",
+      "keySaved": "Key saved in this browser."
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "configure": "Configure",
+    "footer": "More plugins and a marketplace will appear here as they become available."
+  },
+  "login": {
+    "mockupLabel": "Admin preview",
+    "mockupCaption": "Illustrative mockup — not a live screenshot.",
+    "title": "Sign in",
+    "subtitle": "Headless CMS admin",
+    "language": "Language",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "forgot": "Forgot password?",
+    "submit": "Sign in",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "demoHint": "Demo: no real authentication.",
+    "skipToPanel": "Continue to panel",
+    "unsplashAttribution": "Photo: Ryan Le — Unsplash"
+  },
+  "featureGaps": {
+    "badge": "Visual prototype only",
+    "title": "Planned features — admin UI mockups",
+    "subtitle": "Static screens aligned with eksikler.md §19. No backend or live API calls."
+  }
+}

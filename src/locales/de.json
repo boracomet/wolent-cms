@@ -1,0 +1,122 @@
+{
+  "layout": {
+    "brand": {
+      "title": "CMS",
+      "subtitle": "Headless CMS"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "contentTypes": "Inhaltstypen",
+      "mediaLibrary": "Medienbibliothek",
+      "users": "Benutzer",
+      "apiPermissions": "API-Berechtigungen",
+      "plugins": "Plugins",
+      "featureGaps": "UI-Labor",
+      "settings": "Einstellungen"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Willkommen zurück in Ihrem CMS",
+    "createContentType": "Inhaltstyp erstellen",
+    "createContentTypeShort": "Neuer Inhalt",
+    "stats": {
+      "contentTypes": "Inhaltstypen",
+      "articles": "Artikel",
+      "mediaFiles": "Mediendateien",
+      "users": "Benutzer"
+    },
+    "viewAll": "Alle anzeigen →",
+    "recentContent": "Neueste Inhalte"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "CMS-Konfiguration verwalten",
+    "tabs": {
+      "account": "Konto",
+      "general": "Allgemein",
+      "i18n": "Internationalisierung",
+      "menu": "Menü-Editor",
+      "page-access": "Seitenzugriff",
+      "security": "Sicherheit",
+      "notifications": "Benachrichtigungen",
+      "appearance": "Erscheinungsbild",
+      "database": "Datenbank",
+      "integrations": "Integrationen"
+    },
+    "general": {
+      "heading": "Allgemeine Einstellungen",
+      "description": "Grundlegende Anwendungseinstellungen",
+      "applicationName": "Anwendungsname",
+      "applicationUrl": "Anwendungs-URL",
+      "defaultLanguage": "Standardsprache",
+      "timezone": "Zeitzone",
+      "descriptionLabel": "Beschreibung",
+      "saveChanges": "Änderungen speichern"
+    },
+    "appearance": {
+      "heading": "Erscheinungsbild",
+      "description": "Look & Feel Ihres CMS anpassen",
+      "panelLanguage": "Sprache des Admin-Panels",
+      "panelLanguageHint": "UI-Texte werden aus JSON-Dateien unter src/locales/ geladen (z. B. en.json, de.json). Passen Sie die Dateien an oder registrieren Sie neue Sprachen in src/app/i18n/catalog.ts.",
+      "theme": "Design",
+      "darkMode": "Dunkelmodus",
+      "darkModeSub": "Standarddesign",
+      "lightMode": "Hellmodus",
+      "lightModeSub": "Demnächst",
+      "logo": "Logo",
+      "uploadLogo": "Logo hochladen",
+      "logoHint": "Empfohlene Größe: 200×200 px",
+      "accentColor": "Akzentfarbe",
+      "saveChanges": "Änderungen speichern"
+    }
+  },
+  "plugins": {
+    "title": "Plugins",
+    "subtitle": "Erweitern Sie Ihr CMS mit optionalen Funktionen. Aktivieren oder konfigurieren Sie jedes Plugin unten.",
+    "installedHeading": "Installierte Plugins",
+    "installedDescription": "Plugins, die mit diesem Arbeitsbereich ausgeliefert werden. Weitere Plugins können später hinzukommen.",
+    "cookie": {
+      "name": "Cookie-Verwaltung",
+      "description": "Einwilligungsbanner anzeigen, Besucherpräferenzen respektieren und Cookie-Kategorien mit dem Frontend abstimmen."
+    },
+    "gemini": {
+      "name": "Gemini API Auto-Übersetzung",
+      "description": "Google Gemini nutzen, um Übersetzungen für Inhalts-Locales vorzuschlagen oder zu befüllen (API-Schlüssel unten eintragen).",
+      "apiKeyLabel": "Gemini-API-Schlüssel",
+      "apiKeyPlaceholder": "Schlüssel aus Google AI Studio einfügen",
+      "apiKeyHint": "In dieser Demo nur im Browser (localStorage) — in Produktion geheimer Serverschlüssel.",
+      "modelLabel": "Modell",
+      "saveKey": "Speichern",
+      "keyMissing": "API-Schlüssel hinzufügen, um Übersetzungen anzufordern.",
+      "keySaved": "Schlüssel lokal im Browser gespeichert."
+    },
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "configure": "Konfigurieren",
+    "footer": "Weitere Plugins und ein Marktplatz erscheinen hier, sobald sie verfügbar sind."
+  },
+  "login": {
+    "mockupLabel": "Admin-Vorschau",
+    "mockupCaption": "Illustratives Mockup — kein Live-Screenshot.",
+    "title": "Anmelden",
+    "subtitle": "Headless-CMS-Admin",
+    "language": "Sprache",
+    "email": "E-Mail",
+    "emailPlaceholder": "sie@firma.de",
+    "password": "Passwort",
+    "passwordPlaceholder": "••••••••",
+    "forgot": "Passwort vergessen?",
+    "submit": "Anmelden",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort ausblenden",
+    "demoHint": "Demo: keine echte Authentifizierung.",
+    "skipToPanel": "Zum Panel",
+    "unsplashAttribution": "Foto: Ryan Le — Unsplash"
+  },
+  "featureGaps": {
+    "badge": "Nur visueller Prototyp",
+    "title": "Geplante Funktionen — Admin-UI-Mockups",
+    "subtitle": "Statische Screens gemäß eksikler.md §19. Kein Backend, keine Live-APIs."
+  }
+}

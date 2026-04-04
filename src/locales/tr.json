@@ -1,0 +1,122 @@
+{
+  "layout": {
+    "brand": {
+      "title": "CMS",
+      "subtitle": "Headless CMS"
+    },
+    "nav": {
+      "dashboard": "Kontrol paneli",
+      "contentTypes": "İçerik türleri",
+      "mediaLibrary": "Medya kütüphanesi",
+      "users": "Kullanıcılar",
+      "apiPermissions": "API izinleri",
+      "plugins": "Eklentiler",
+      "featureGaps": "Arayüz lab",
+      "settings": "Ayarlar"
+    }
+  },
+  "dashboard": {
+    "title": "Kontrol paneli",
+    "welcome": "CMS’inize tekrar hoş geldiniz",
+    "createContentType": "İçerik türü oluştur",
+    "createContentTypeShort": "Yeni içerik",
+    "stats": {
+      "contentTypes": "İçerik türleri",
+      "articles": "Makaleler",
+      "mediaFiles": "Medya dosyaları",
+      "users": "Kullanıcılar"
+    },
+    "viewAll": "Tümünü gör →",
+    "recentContent": "Son içerikler"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "CMS yapılandırmanızı yönetin",
+    "tabs": {
+      "account": "Hesap",
+      "general": "Genel",
+      "i18n": "Uluslararasılaştırma",
+      "menu": "Menü oluşturucu",
+      "page-access": "Sayfa erişimi",
+      "security": "Güvenlik",
+      "notifications": "Bildirimler",
+      "appearance": "Görünüm",
+      "database": "Veritabanı",
+      "integrations": "Entegrasyonlar"
+    },
+    "general": {
+      "heading": "Genel ayarlar",
+      "description": "Temel uygulama ayarlarını yapılandırın",
+      "applicationName": "Uygulama adı",
+      "applicationUrl": "Uygulama URL’si",
+      "defaultLanguage": "Varsayılan dil",
+      "timezone": "Saat dilimi",
+      "descriptionLabel": "Açıklama",
+      "saveChanges": "Değişiklikleri kaydet"
+    },
+    "appearance": {
+      "heading": "Görünüm ayarları",
+      "description": "CMS’in görünümünü özelleştirin",
+      "panelLanguage": "Yönetim paneli dili",
+      "panelLanguageHint": "Arayüz metinleri src/locales/ altındaki JSON dosyalarından yüklenir (ör. en.json, tr.json). Metinleri özelleştirmek için bu dosyaları düzenleyin veya yeni bir dil ekleyip src/app/i18n/catalog.ts içinde kaydedin.",
+      "theme": "Tema",
+      "darkMode": "Koyu mod",
+      "darkModeSub": "Varsayılan tema",
+      "lightMode": "Açık mod",
+      "lightModeSub": "Yakında",
+      "logo": "Logo",
+      "uploadLogo": "Logo yükle",
+      "logoHint": "Önerilen boyut: 200x200 piksel",
+      "accentColor": "Vurgu rengi",
+      "saveChanges": "Değişiklikleri kaydet"
+    }
+  },
+  "plugins": {
+    "title": "Eklentiler",
+    "subtitle": "CMS’inizi isteğe bağlı özelliklerle genişletin. Her eklentiyi aşağıdan etkinleştirin veya yapılandırın.",
+    "installedHeading": "Yüklü eklentiler",
+    "installedDescription": "Bu çalışma alanıyla gelen eklentiler. İleride daha fazla eklenti eklenebilir.",
+    "cookie": {
+      "name": "Çerez yönetimi",
+      "description": "Onay bildirimi gösterin, ziyaretçi tercihlerine saygı duyun ve çerez kategorilerini ön yüzünüzle uyumlu tutun."
+    },
+    "gemini": {
+      "name": "Gemini API Otomatik Çeviri",
+      "description": "Google Gemini ile içerik yerelleri için çeviri önerisi veya otomatik doldurma (API anahtarını aşağıda girin).",
+      "apiKeyLabel": "Gemini API anahtarı",
+      "apiKeyPlaceholder": "Google AI Studio’dan anahtarınızı yapıştırın",
+      "apiKeyHint": "Bu demoda anahtar yalnızca bu tarayıcıda (localStorage) saklanır — üretimde sunucu tarafı gizli kullanın.",
+      "modelLabel": "Model",
+      "saveKey": "Kaydet",
+      "keyMissing": "Çeviri istekleri için API anahtarı ekleyin.",
+      "keySaved": "Anahtar bu tarayıcıya kaydedildi."
+    },
+    "active": "Etkin",
+    "inactive": "Kapalı",
+    "configure": "Yapılandır",
+    "footer": "Yeni eklentiler ve bir pazar yeri hazır olduğunda burada görünecek."
+  },
+  "login": {
+    "mockupLabel": "Admin önizleme",
+    "mockupCaption": "Temsili mockup — canlı ekran görüntüsü değildir.",
+    "title": "Giriş yap",
+    "subtitle": "Headless CMS yönetim paneli",
+    "language": "Dil",
+    "email": "E-posta",
+    "emailPlaceholder": "siz@sirket.com",
+    "password": "Şifre",
+    "passwordPlaceholder": "••••••••",
+    "forgot": "Şifremi unuttum",
+    "submit": "Giriş yap",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle",
+    "demoHint": "Demo: gerçek kimlik doğrulama yok.",
+    "skipToPanel": "Panele geç",
+    "unsplashAttribution": "Fotoğraf: Ryan Le — Unsplash"
+  },
+  "featureGaps": {
+    "badge": "Yalnızca görsel prototip",
+    "title": "Planlanan özellikler — admin arayüz örnekleri",
+    "subtitle": "eksikler.md §19 ile hizalı statik ekranlar. Arka uç veya canlı API yok."
+  }
+}
