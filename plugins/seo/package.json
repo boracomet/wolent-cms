@@ -1,0 +1,19 @@
+{
+  "name": "@wolent/plugin-seo",
+  "version": "0.1.0",
+  "description": "Wolent CMS — SEO plugin",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean"
+  },
+  "peerDependencies": {
+    "@wolent/core": "workspace:*",
+    "@wolent/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  }
+}

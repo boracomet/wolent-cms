@@ -1,0 +1,26 @@
+{
+  "name": "@wolent/utils",
+  "version": "0.1.0",
+  "description": "Wolent CMS — shared types and utilities",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "my-wolent-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "develop": "concurrently \"npm run api:dev\" \"npm run admin:dev\"",
+    "api:dev": "tsx watch node_modules/@wolent/core/src/index.ts",
+    "api:start": "node node_modules/@wolent/core/dist/index.js",
+    "admin:dev": "vite --config node_modules/@wolent/admin/vite.config.ts",
+    "admin:build": "vite build --config node_modules/@wolent/admin/vite.config.ts",
+    "build": "npm run admin:build",
+    "start": "npm run api:start",
+    "db:push": "prisma db push --schema node_modules/@wolent/database/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema node_modules/@wolent/database/prisma/schema.prisma",
+    "db:studio": "prisma studio --schema node_modules/@wolent/database/prisma/schema.prisma",
+    "db:generate": "prisma generate --schema node_modules/@wolent/database/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@wolent/core": "^0.1.0",
+    "@wolent/admin": "^0.1.0",
+    "@wolent/database": "^0.1.0",
+    "concurrently": "^9.0.0"
+  }
+}

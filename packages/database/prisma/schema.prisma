@@ -1,0 +1,277 @@
+// Wolent CMS — Prisma Schema
+// Supports: SQLite (dev) and PostgreSQL (prod)
+// Multi-tenant: row-level isolation via tenantId
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Tenant ────────────────────────────────────────────────────────────────────
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  contentTypes    ContentType[]
+  entries         Entry[]
+  mediaFiles      MediaFile[]
+  mediaFolders    MediaFolder[]
+  apiTokens       ApiToken[]
+  refreshTokens   RefreshToken[]
+  auditLogs       AuditLog[]
+  pluginConfigs   PluginConfig[]
+  analyticsEvents AnalyticsEvent[]
+  cookieConsents  CookieConsent[]
+}
+
+// ─── User ──────────────────────────────────────────────────────────────────────
+model User {
+  id             String    @id @default(cuid())
+  tenantId       String
+  email          String
+  firstName      String
+  lastName       String
+  passwordHash   String
+  role           String    @default("author") // super_admin|admin|editor|author|viewer
+  isActive       Boolean   @default(true)
+  twoFactorEnabled   Boolean   @default(false)
+  twoFactorSecret    String?
+  backupCodes        String?   // JSON array of argon2 hashed codes
+  loginAttempts      Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  lastLoginIp        String?
+  lastLoginUa        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+// ─── Refresh Token ─────────────────────────────────────────────────────────────
+model RefreshToken {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String
+  tokenHash  String   @unique // SHA-256 hash of plaintext token
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  ipAddress  String?
+  userAgent  String?
+  revoked    Boolean  @default(false)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([tokenHash])
+}
+
+// ─── Content Type ──────────────────────────────────────────────────────────────
+model ContentType {
+  id             String   @id @default(cuid())
+  tenantId       String
+  uid            String   // e.g. "api::article.article"
+  kind           String   @default("collectionType") // collectionType|singleType
+  displayName    String
+  singularName   String
+  pluralName     String
+  description    String?
+  draftAndPublish Boolean @default(true)
+  schema         String   // JSON: ContentTypeDefinition
+  color          String?  // UI hint e.g. "#3b82f6"
+  icon           String?  // UI hint
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries Entry[]
+
+  @@unique([tenantId, uid])
+  @@index([tenantId])
+}
+
+// ─── Entry ─────────────────────────────────────────────────────────────────────
+// All content lives here as JSONB/JSON data column (document model)
+model Entry {
+  id             String    @id @default(cuid())
+  documentId     String    @default(cuid()) // stable across locales
+  tenantId       String
+  contentTypeId  String
+  locale         String    @default("en")
+  status         String    @default("draft") // draft|published
+  data           String    // JSON: field values
+  publishedAt    DateTime?
+  createdById    String?
+  updatedById    String?
+  deletedAt      DateTime? // soft delete
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contentType ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, contentTypeId])
+  @@index([tenantId, contentTypeId, status])
+  @@index([documentId])
+  @@index([deletedAt])
+}
+
+// ─── Media Folder ──────────────────────────────────────────────────────────────
+model MediaFolder {
+  id         String   @id @default(cuid())
+  tenantId   String
+  parentId   String?
+  name       String
+  path       String   // full path e.g. "/images/banners"
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent     MediaFolder?  @relation("FolderTree", fields: [parentId], references: [id])
+  children   MediaFolder[] @relation("FolderTree")
+  files      MediaFile[]
+
+  @@unique([tenantId, path])
+  @@index([tenantId])
+}
+
+// ─── Media File ────────────────────────────────────────────────────────────────
+model MediaFile {
+  id           String   @id @default(cuid())
+  tenantId     String
+  folderId     String?
+  name         String
+  alternativeText String?
+  caption      String?
+  hash         String   // unique filename on storage
+  ext          String   // file extension e.g. ".jpg"
+  mime         String   // e.g. "image/jpeg"
+  size         Float    // bytes
+  url          String
+  previewUrl   String?
+  provider     String   @default("local") // local|s3|cloudinary
+  providerMeta String?  // JSON: provider-specific metadata
+  width        Int?
+  height       Int?
+  formats      String?  // JSON: image format variants (thumbnail, small, medium, large)
+  color        String?  // UI accent
+  createdById  String?
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  folder  MediaFolder? @relation(fields: [folderId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, folderId])
+  @@index([hash])
+}
+
+// ─── API Token ─────────────────────────────────────────────────────────────────
+model ApiToken {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  tokenHash   String    @unique // SHA-256 of plaintext
+  type        String    @default("read-only") // full-access|read-only|custom
+  permissions String?   // JSON: custom permissions
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ─── Audit Log ─────────────────────────────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String   // e.g. "content.create", "user.login"
+  subject    String?  // e.g. "api::article.article"
+  subjectId  String?
+  payload    String?  // JSON: changed data (sanitized)
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, action])
+  @@index([tenantId, createdAt])
+}
+
+// ─── Plugin Config ─────────────────────────────────────────────────────────────
+model PluginConfig {
+  id        String   @id @default(cuid())
+  tenantId  String
+  pluginId  String   // e.g. "s3-object-storage", "smtp-mail"
+  enabled   Boolean  @default(false)
+  config    String   @default("{}") // JSON: plugin-specific config (secrets AES-256 encrypted)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, pluginId])
+  @@index([tenantId])
+}
+
+// ─── Analytics Event ──────────────────────────────────────────────────────────
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  siteKey   String
+  event     String   @default("pageview") // pageview | custom
+  url       String
+  referrer  String?
+  userAgent String?
+  ip        String?
+  country   String?
+  sessionId String?
+  meta      String?  // JSON: extra data
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, siteKey])
+  @@index([tenantId, createdAt])
+}
+
+// ─── Cookie Consent Log ───────────────────────────────────────────────────────
+model CookieConsent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  sessionId  String
+  accepted   Boolean
+  categories String   @default("{}") // JSON: { analytics: true, marketing: false }
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+}

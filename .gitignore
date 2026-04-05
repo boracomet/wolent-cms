@@ -5,3 +5,6 @@ dist
 .env
 .env.*
 !.env.example
+.claude/
+packages/database/prisma/*.db
+packages/database/prisma/*.db-journal

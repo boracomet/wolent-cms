@@ -1,0 +1,93 @@
+version: '3.9'
+
+# Wolent CMS — Development Docker Compose
+# Usage: docker-compose up
+
+services:
+  # ─── Backend API ──────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DATABASE_URL=${DATABASE_URL:-postgresql://wolent:wolent@postgres:5432/wolent_cms}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      - COOKIE_SECRET=${COOKIE_SECRET:-change_me_in_production_minimum_32_chars_long}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET:-change_me_in_production_minimum_32_chars_long}
+      - CORS_ORIGINS=http://localhost:1337
+      - UPLOAD_PROVIDER=local
+      - UPLOAD_DIR=/app/public/uploads
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/public/uploads
+      - ./packages/core/src:/app/src:ro
+    restart: unless-stopped
+    networks:
+      - wolent
+
+  # ─── Admin Panel ──────────────────────────────────────────────────────────────
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    ports:
+      - "1337:80"
+    depends_on:
+      - api
+    networks:
+      - wolent
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: wolent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wolent}
+      POSTGRES_DB: wolent_cms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wolent -d wolent_cms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - wolent
+
+  # ─── Redis (optional — for rate limiting & caching) ───────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - wolent
+    profiles:
+      - redis
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  wolent:
+    driver: bridge

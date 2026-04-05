@@ -1,0 +1,23 @@
+{
+  "name": "@wolent/plugin-graphql",
+  "version": "0.1.0",
+  "description": "Wolent CMS — GraphQL API plugin",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean"
+  },
+  "dependencies": {
+    "mercurius": "^14.0.0",
+    "graphql": "^16.9.0"
+  },
+  "peerDependencies": {
+    "@wolent/core": "workspace:*",
+    "@wolent/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  }
+}

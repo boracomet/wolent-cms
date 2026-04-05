@@ -1,0 +1,23 @@
+{
+  "name": "@wolent/plugin-email",
+  "version": "0.1.0",
+  "description": "Wolent CMS — Email plugin (SMTP/Resend)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.15",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "@wolent/core": "workspace:*",
+    "@wolent/utils": "workspace:*"
+  }
+}

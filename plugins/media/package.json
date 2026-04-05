@@ -1,0 +1,23 @@
+{
+  "name": "@wolent/plugin-media",
+  "version": "0.1.0",
+  "description": "Wolent CMS — Media / Storage plugin (local + S3)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0"
+  },
+  "peerDependencies": {
+    "@wolent/core": "workspace:*",
+    "@wolent/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  }
+}
