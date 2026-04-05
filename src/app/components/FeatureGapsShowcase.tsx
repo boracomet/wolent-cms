@@ -36,9 +36,9 @@ export function FeatureGapsShowcase() {
   const { t } = useI18n();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="border-b border-zinc-800/50 bg-zinc-900/40 backdrop-blur-xl sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+    <div className="min-h-[100dvh] min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="border-b border-zinc-800/50 bg-zinc-900/40 backdrop-blur-xl sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <p className="text-xs font-medium text-amber-400/90 uppercase tracking-wider mb-2">
             {t("featureGaps.badge")}
           </p>
@@ -58,7 +58,7 @@ export function FeatureGapsShowcase() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] space-y-16">
         {/* Kimlik */}
         <section id="auth" className="scroll-mt-24 space-y-4">
           <SectionTitle icon={Shield} title="Kimlik & oturum" hint="§19.1, §19.2 — YOK" />
@@ -145,7 +145,8 @@ export function FeatureGapsShowcase() {
                   Yeni webhook
                 </button>
               </div>
-              <div className="rounded-lg border border-zinc-800 overflow-hidden text-sm">
+              <div className="overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+                <div className="rounded-lg border border-zinc-800 overflow-hidden text-sm min-w-[28rem]">
                 <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-zinc-900/80 text-xs text-zinc-500 border-b border-zinc-800">
                   <span className="col-span-4">URL</span>
                   <span className="col-span-3">Olay</span>
@@ -173,6 +174,7 @@ export function FeatureGapsShowcase() {
                       <Trash2 className="w-3.5 h-3.5 inline text-zinc-600" />
                     </span>
                   </div>
+                </div>
                 </div>
               </div>
               <p className="text-xs text-zinc-600">İmza doğrulama, yeniden deneme kuyruğu (planlı)</p>
@@ -342,7 +344,8 @@ export function FeatureGapsShowcase() {
         {/* Denetim */}
         <section id="audit" className="scroll-mt-24 space-y-4">
           <SectionTitle icon={Search} title="Denetim günlüğü" hint="§19.9 — YOK" />
-          <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 overflow-hidden text-sm">
+          <div className="overflow-x-auto rounded-xl border border-zinc-800/60 bg-zinc-900/40 text-sm">
+            <div className="min-w-[32rem] overflow-hidden rounded-xl">
             <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-zinc-900/80 text-xs text-zinc-500 border-b border-zinc-800">
               <span className="col-span-2">Zaman</span>
               <span className="col-span-2">Kullanıcı</span>
@@ -364,6 +367,7 @@ export function FeatureGapsShowcase() {
                 <span className="col-span-5 text-zinc-500 truncate">{row[3]}</span>
               </div>
             ))}
+            </div>
           </div>
           <p className="text-xs text-zinc-600">
             Gerçek kayıt yok; arayüz §19 ile hizalı prototiptir.

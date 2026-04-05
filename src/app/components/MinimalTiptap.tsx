@@ -109,8 +109,9 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
 
   return (
     <div className="border border-zinc-800/50 rounded-lg overflow-hidden bg-zinc-950/50 backdrop-blur-sm">
-      {/* Toolbar */}
-      <div className="border-b border-zinc-800/50 bg-zinc-900/30 p-2 flex flex-wrap gap-1">
+      {/* Toolbar — dar ekranda yatay kaydırma; genişte sarma */}
+      <div className="border-b border-zinc-800/50 bg-zinc-900/30 overflow-x-auto overscroll-x-contain touch-pan-x">
+        <div className="flex flex-nowrap gap-1 p-2 min-w-min sm:flex-wrap sm:min-w-0">
         {/* Text Formatting */}
         <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
           <button
@@ -305,6 +306,7 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           >
             <Redo className="w-4 h-4" />
           </button>
+        </div>
         </div>
       </div>
 

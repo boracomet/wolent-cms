@@ -84,7 +84,7 @@ export function UserManagement() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pt-12 lg:pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold mb-2">User Management</h1>
             <p className="text-zinc-400">{users.length} users</p>

@@ -170,11 +170,11 @@ export function ContentEditor() {
       : "Back to list";
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex min-h-0 h-[100dvh] h-screen bg-zinc-950">
       {/* Main Content Area */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Üst blok — ContentList ile aynı hiyerarşi: geri linki, başlık satırı, araç şeridi */}
-        <div className="shrink-0 w-full px-4 sm:px-6 lg:px-8 pt-12 lg:pt-6">
+        <div className="shrink-0 w-full px-4 sm:px-6 lg:px-8 lg:pt-6">
           <div className="max-w-7xl mx-auto w-full">
           <div className="flex flex-col gap-4 mb-6">
             <Link

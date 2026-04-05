@@ -4,6 +4,10 @@
       "title": "CMS",
       "subtitle": "Headless CMS"
     },
+    "a11y": {
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
     "nav": {
       "dashboard": "Dashboard",
       "contentTypes": "Content Types",

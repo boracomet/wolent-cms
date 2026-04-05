@@ -708,7 +708,7 @@ export function MediaLibrary() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pt-12 lg:pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold mb-2">Media Library</h1>
             <p className="text-zinc-400">{filteredMedia.length} files in current folder</p>
@@ -723,10 +723,10 @@ export function MediaLibrary() {
           </button>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Sidebar - Folder Tree */}
-          <div className="col-span-3">
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 sticky top-6">
+          <div className="lg:col-span-3 min-w-0">
+            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 lg:sticky lg:top-6">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">
                 <h3 className="font-semibold text-sm">Folders</h3>
@@ -776,7 +776,7 @@ export function MediaLibrary() {
           </div>
 
           {/* Main Content */}
-          <div className="col-span-9">
+          <div className="lg:col-span-9 min-w-0">
             <div
               className={`rounded-xl min-h-[min(40vh,20rem)] transition-colors ${
                 dropTargetKey === "main-view" || fileDropOverMain

@@ -60,18 +60,18 @@ export function Settings() {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold mb-2">{t("settings.title")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold mb-2">{t("settings.title")}</h1>
           <p className="text-zinc-400">{t("settings.subtitle")}</p>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Sidebar Tabs */}
-          <div className="col-span-3">
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
+          <div className="lg:col-span-3">
+            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden lg:sticky lg:top-4">
               <div className="divide-y divide-zinc-800/50">
                 {tabs.map((tab) => (
                   <button
@@ -92,7 +92,7 @@ export function Settings() {
           </div>
 
           {/* Content */}
-          <div className="col-span-9">
+          <div className="lg:col-span-9 min-w-0">
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg">
               {activeTab === "account" && <AccountSettings />}
               {activeTab === "general" && <GeneralSettings />}

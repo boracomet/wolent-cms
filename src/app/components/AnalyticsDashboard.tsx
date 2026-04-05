@@ -260,8 +260,8 @@ export function AnalyticsDashboard() {
 
   if (!allowed) {
     return (
-      <div className="p-8">
-        <div className="max-w-lg mx-auto mt-16 rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-xl p-8 text-center">
+      <div className="p-4 sm:p-8">
+        <div className="max-w-lg mx-auto mt-8 sm:mt-16 rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-xl p-6 sm:p-8 text-center">
           <BarChart3 className="w-12 h-12 text-blue-400 mx-auto mb-4 opacity-90" />
           <h1 className="text-xl font-semibold text-zinc-100 mb-2">{t("analytics.disabledTitle")}</h1>
           <p className="text-sm text-zinc-400 mb-6 leading-relaxed">{t("analytics.disabledBody")}</p>
@@ -279,7 +279,7 @@ export function AnalyticsDashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8 pt-12 lg:pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center shrink-0">
               <BarChart3 className="w-6 h-6 text-blue-400" />

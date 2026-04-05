@@ -217,7 +217,7 @@ export function ContentBuilder() {
     <div className="bg-zinc-950">
       <div className="p-4 sm:p-6 lg:p-8 pb-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-4 mb-6 pt-12 lg:pt-0">
+          <div className="flex flex-col gap-4 mb-6">
             <Link
               to="/content-types"
               className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors w-fit"
@@ -254,7 +254,7 @@ export function ContentBuilder() {
           </div>
 
           <div className="relative z-20 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg px-4 pt-3 mb-6">
-            <div className="flex items-center gap-8 border-b border-zinc-800/50">
+            <div className="flex items-center gap-6 sm:gap-8 border-b border-zinc-800/50 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab("basic")}
@@ -364,10 +364,11 @@ export function ContentBuilder() {
                           if (!fromId || fromId === field.id) return;
                           setFields((prev) => reorderFieldsById(prev, fromId, field.id));
                         }}
-                        className={`flex items-center gap-4 px-4 py-3 bg-zinc-950/50 border rounded-lg transition-colors group ${listColors.border} ${
+                        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 px-4 py-3 bg-zinc-950/50 border rounded-lg transition-colors group ${listColors.border} ${
                           isOver ? "ring-2 ring-zinc-400/50 border-zinc-500/60" : ""
                         } ${isDragging ? "opacity-50" : ""} hover:border-zinc-600/50`}
                       >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
                           role="button"
                           tabIndex={0}
@@ -414,11 +415,12 @@ export function ContentBuilder() {
                             {field.description || def.label}
                           </p>
                         </div>
+                        </div>
 
                         <button
                           type="button"
                           draggable={false}
-                          className="opacity-0 group-hover:opacity-100 p-2 hover:bg-zinc-800/50 rounded transition-all"
+                          className="self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-zinc-800/50 rounded transition-all"
                           aria-label="Remove field"
                         >
                           <Trash2 className="w-4 h-4 text-zinc-400" />
@@ -443,15 +445,15 @@ export function ContentBuilder() {
               <h3 className="text-lg font-semibold mb-6">Advanced Settings</h3>
 
               <div className="space-y-6">
-                <div className="flex items-start justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-medium mb-1">Draft & Publish</h4>
                     <p className="text-sm text-zinc-400">Write a draft version of each entry before publishing it</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setDraftAndPublish(!draftAndPublish)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                    className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${
                       draftAndPublish ? "bg-blue-500" : "bg-zinc-700"
                     }`}
                   >
@@ -463,15 +465,15 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="flex items-start justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-medium mb-1">Internationalization</h4>
                     <p className="text-sm text-zinc-400">Manage content in multiple languages (i18n)</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setI18n(!i18n)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${i18n ? "bg-blue-500" : "bg-zinc-700"}`}
+                    className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${i18n ? "bg-blue-500" : "bg-zinc-700"}`}
                   >
                     <div
                       className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -481,15 +483,15 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="flex items-start justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-medium mb-1">Review Workflow</h4>
                     <p className="text-sm text-zinc-400">Add a review stage before publishing content</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setReviewWorkflow(!reviewWorkflow)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                    className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${
                       reviewWorkflow ? "bg-blue-500" : "bg-zinc-700"
                     }`}
                   >
@@ -501,7 +503,7 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                <div className="p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg min-w-0">
                   <h4 className="font-medium mb-3">API Settings</h4>
                   <div className="space-y-3">
                     <div>

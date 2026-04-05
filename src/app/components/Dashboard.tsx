@@ -74,7 +74,7 @@ export function Dashboard() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 lg:mb-8 pt-12 lg:pt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 lg:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold mb-2">{t("dashboard.title")}</h1>
             <p className="text-zinc-400">{t("dashboard.welcome")}</p>
@@ -133,12 +133,12 @@ export function Dashboard() {
                 key={item.id}
                 className="px-6 py-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+                  <div className="min-w-0">
                     <h3 className="font-medium mb-1">{item.title}</h3>
                     <p className="text-sm text-zinc-400">{item.type}</p>
                   </div>
-                  <span className="text-sm text-zinc-500">{item.date}</span>
+                  <span className="text-sm text-zinc-500 shrink-0">{item.date}</span>
                 </div>
               </div>
             ))}

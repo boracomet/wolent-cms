@@ -56,27 +56,48 @@ export function Layout() {
     return base;
   }, [analyticsNav]);
 
-  return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/50 rounded-lg"
-      >
-        {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+  const mobileChromeTop = "calc(3.5rem + env(safe-area-inset-top, 0px))";
 
-      {/* Overlay for mobile */}
+  return (
+    <div className="flex min-h-[100dvh] min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Mobil: logo solda, menü sağda — lg+ gizli */}
+      <header className="fixed inset-x-0 top-0 z-50 flex items-center border-b border-zinc-800/50 bg-zinc-950/95 backdrop-blur-xl pt-[env(safe-area-inset-top,0px)] lg:hidden">
+        <div className="flex h-14 w-full items-center justify-between gap-3 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]">
+          <Link
+            to="/"
+            onClick={() => setSidebarOpen(false)}
+            className="flex min-w-0 max-w-[70%] items-center gap-2.5 rounded-lg py-1 pr-2 outline-none focus-visible:ring-2 focus-visible:ring-zinc-600"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+              <Layers className="h-5 w-5 text-zinc-950" />
+            </div>
+            <span className="truncate font-semibold text-zinc-100">{t("layout.brand.title")}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((o) => !o)}
+            className="shrink-0 rounded-lg border border-zinc-800/50 bg-zinc-900/90 p-2 backdrop-blur-xl"
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? t("layout.a11y.closeMenu") : t("layout.a11y.openMenu")}
+          >
+            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+      </header>
+
+      {/* Overlay — üst barın altından; blur yok */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 bg-zinc-950/55 lg:hidden"
+          style={{ top: mobileChromeTop }}
           onClick={() => setSidebarOpen(false)}
+          aria-hidden
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — mobilde üst barın altında açılır */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 border-r border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl flex flex-col transition-transform duration-300 ${
+        className={`fixed left-0 z-40 flex w-64 max-w-[min(16rem,100vw-2rem)] flex-col border-r border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl transition-transform duration-300 max-lg:bottom-0 max-lg:top-[calc(3.5rem+env(safe-area-inset-top,0px))] max-lg:pb-[env(safe-area-inset-bottom,0px)] lg:static lg:min-h-0 lg:pb-[env(safe-area-inset-bottom,0px)] ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -127,7 +148,7 @@ export function Layout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-auto pb-[env(safe-area-inset-bottom,0px)] pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-0">
         <Outlet />
       </main>
     </div>

@@ -19,7 +19,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-zinc-950 text-zinc-100">
+    <div className="min-h-[100dvh] min-h-screen flex flex-col md:flex-row bg-zinc-950 text-zinc-100">
       {/* Sol: yalnızca görsel */}
       <div className="relative w-full md:w-1/2 min-h-[240px] md:min-h-screen overflow-hidden border-b md:border-b-0 md:border-r border-zinc-800/60">
         <img
@@ -31,7 +31,7 @@ export function LoginPage() {
       </div>
 
       {/* Sağ: form */}
-      <div className="w-full md:w-1/2 flex flex-col justify-center px-6 py-12 md:px-14 lg:px-20 bg-zinc-950">
+      <div className="w-full md:w-1/2 flex flex-col justify-center px-6 md:px-14 lg:px-20 bg-zinc-950 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))] md:py-12">
         <div className="w-full max-w-md mx-auto space-y-8">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">

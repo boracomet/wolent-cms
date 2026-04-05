@@ -564,7 +564,7 @@ export function ContentList() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 mb-6 pt-12 lg:pt-0">
+        <div className="flex flex-col gap-4 mb-6">
           <Link
             to="/content-types"
             className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors w-fit"
@@ -837,39 +837,39 @@ export function ContentList() {
 
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[36rem]">
               <thead className="border-b border-zinc-800/50">
                 <tr>
                   {v.id && (
-                    <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">ID</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">ID</th>
                   )}
                   {v.title && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">Title</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Title</th>
                   )}
                   {showDescriptionCol && v.description && (
-                    <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400 min-w-[140px]">
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400 min-w-[140px]">
                       Description
                     </th>
                   )}
                   {showGalleryColumns && v.cover && (
-                    <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400 w-px whitespace-nowrap">
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400 w-px whitespace-nowrap">
                       {coverColumnLabel}
                     </th>
                   )}
                   {v.status && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">Status</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Status</th>
                   )}
                   {v.locale && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">Locale</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Locale</th>
                   )}
                   {v.updatedAt && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">Updated</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Updated</th>
                   )}
                   {v.updatedBy && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">By</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">By</th>
                   )}
                   {v.actions && (
-                  <th className="px-6 py-4 text-right text-sm font-medium text-zinc-400">Actions</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-right text-sm font-medium text-zinc-400">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -880,11 +880,11 @@ export function ContentList() {
                     className="hover:bg-zinc-800/30 transition-colors"
                   >
                     {v.id && (
-                      <td className="px-6 py-4 text-sm text-zinc-400 font-mono">{content.id}</td>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-zinc-400 font-mono">{content.id}</td>
                     )}
                     {v.title && (
                       <td
-                        className="px-6 py-4 font-medium max-w-[280px] truncate"
+                        className="px-3 py-3 sm:px-6 sm:py-4 font-medium max-w-[280px] truncate"
                         title={content.title}
                       >
                         {content.title}
@@ -892,7 +892,7 @@ export function ContentList() {
                     )}
                     {showDescriptionCol && v.description && (
                       <td
-                        className="px-6 py-4 text-sm text-zinc-400 max-w-xs truncate"
+                        className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-zinc-400 max-w-xs truncate"
                         title={content.description}
                       >
                         {content.description && content.description !== "—"
@@ -919,7 +919,7 @@ export function ContentList() {
                       </td>
                     )}
                     {v.status && (
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">
                       <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                           content.status === "published"
@@ -932,16 +932,16 @@ export function ContentList() {
                     </td>
                     )}
                     {v.locale && (
-                    <td className="px-6 py-4 text-zinc-400 uppercase text-sm">{content.locale}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400 uppercase text-sm">{content.locale}</td>
                     )}
                     {v.updatedAt && (
-                    <td className="px-6 py-4 text-zinc-400">{content.updatedAt}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400">{content.updatedAt}</td>
                     )}
                     {v.updatedBy && (
-                    <td className="px-6 py-4 text-zinc-400">{content.updatedBy}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400">{content.updatedBy}</td>
                     )}
                     {v.actions && (
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           to={`/content/${type}/${content.id}`}
