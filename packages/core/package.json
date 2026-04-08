@@ -46,6 +46,7 @@
     "nanoid": "^5.0.7",
     "nodemailer": "^6.10.1",
     "otplib": "^12.0.1",
+    "pg": "^8.13.1",
     "pino": "^9.4.0",
     "pino-pretty": "^13.0.0",
     "qrcode": "^1.5.4",
@@ -57,6 +58,7 @@
   "devDependencies": {
     "@types/ms": "^0.7.34",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
     "@types/nodemailer": "^6.4.23",
     "@types/qrcode": "^1.5.5",
     "@types/sanitize-html": "^2.13.0",

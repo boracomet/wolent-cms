@@ -29,7 +29,7 @@ export async function pluginConfigRoutes(app: FastifyInstance) {
   const adminOnly = requireRole(['super_admin', 'admin'])
 
   // ─── GET /api/admin/plugins ───────────────────────────────────────────────
-  app.get('/api/admin/plugins', { preHandler: [requireAuth] }, async (req) => {
+  app.get('/api/admin/plugins', { preHandler: [requireAuth, await adminOnly] }, async (req) => {
     const rows = await runInTenantContext({ tenantId: req.tenantId }, () =>
       (prisma as any).pluginConfig.findMany({ orderBy: { pluginId: 'asc' } })
     ) as any[]
@@ -46,7 +46,7 @@ export async function pluginConfigRoutes(app: FastifyInstance) {
   })
 
   // ─── GET /api/admin/plugins/:pluginId ─────────────────────────────────────
-  app.get('/api/admin/plugins/:pluginId', { preHandler: [requireAuth] }, async (req) => {
+  app.get('/api/admin/plugins/:pluginId', { preHandler: [requireAuth, await adminOnly] }, async (req) => {
     const { pluginId } = req.params as { pluginId: string }
     const row = await runInTenantContext({ tenantId: req.tenantId }, () =>
       (prisma as any).pluginConfig.findFirst({ where: { pluginId } })
@@ -62,6 +62,11 @@ export async function pluginConfigRoutes(app: FastifyInstance) {
   // Upsert: create or update plugin config
   app.put('/api/admin/plugins/:pluginId', { preHandler: [requireAuth, await adminOnly] }, async (req, reply) => {
     const { pluginId } = req.params as { pluginId: string }
+    if (!KNOWN_PLUGIN_IDS.includes(pluginId as PluginId)) {
+      return reply.status(400).send({
+        error: { status: 400, name: 'BadRequestError', message: `Unknown plugin: ${pluginId}` },
+      })
+    }
     const schema = z.object({
       enabled: z.boolean().optional(),
       config: z.record(z.unknown()).optional(),
@@ -98,6 +103,11 @@ export async function pluginConfigRoutes(app: FastifyInstance) {
   // ─── POST /api/admin/plugins/:pluginId/toggle ─────────────────────────────
   app.post('/api/admin/plugins/:pluginId/toggle', { preHandler: [requireAuth, await adminOnly] }, async (req, reply) => {
     const { pluginId } = req.params as { pluginId: string }
+    if (!KNOWN_PLUGIN_IDS.includes(pluginId as PluginId)) {
+      return reply.status(400).send({
+        error: { status: 400, name: 'BadRequestError', message: `Unknown plugin: ${pluginId}` },
+      })
+    }
     const { enabled } = z.object({ enabled: z.boolean() }).parse(req.body)
 
     const row = await runInTenantContext({ tenantId: req.tenantId }, async () => {

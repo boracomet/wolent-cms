@@ -24,7 +24,6 @@ export function validateEntryData(
 
     // Type-specific validation
     switch (fieldDef.type) {
-      case 'string':
       case 'text':
       case 'text_long':
       case 'richtext':
@@ -44,8 +43,20 @@ export function validateEntryData(
         if (fieldDef.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           errors.push({ field: fieldName, message: `"${fieldName}" must be a valid email` })
         }
-        if (fieldDef.regex && !new RegExp(fieldDef.regex).test(value)) {
-          errors.push({ field: fieldName, message: `"${fieldName}" format is invalid` })
+        if (fieldDef.regex) {
+          const pat = fieldDef.regex
+          if (typeof pat !== 'string' || pat.length > 500) {
+            errors.push({ field: fieldName, message: `"${fieldName}" has an invalid validation rule` })
+            break
+          }
+          try {
+            const re = new RegExp(pat)
+            if (!re.test(value)) {
+              errors.push({ field: fieldName, message: `"${fieldName}" format is invalid` })
+            }
+          } catch {
+            errors.push({ field: fieldName, message: `"${fieldName}" has an invalid validation pattern` })
+          }
         }
         break
       }

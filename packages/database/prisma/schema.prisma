@@ -3,7 +3,8 @@
 // Multi-tenant: row-level isolation via tenantId
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {

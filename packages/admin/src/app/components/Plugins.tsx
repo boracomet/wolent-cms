@@ -18,6 +18,8 @@ import {
   BarChart3,
   ImageDown,
   KeyRound,
+  Loader2,
+  RefreshCw,
   Share2,
   Zap,
   Webhook,
@@ -30,6 +32,7 @@ import {
   getS3ProviderMeta,
   isKnownS3ProviderId,
 } from "../data/s3CompatibleProviders";
+import { estimateGeminiUsdForTokens, formatUsdEstimate } from "../lib/geminiPricing";
 
 const GEMINI_API_KEY_STORAGE = "cms-plugin-gemini-api-key";
 const GEMINI_MODEL_STORAGE = "cms-plugin-gemini-model";
@@ -299,7 +302,7 @@ function loadRedisConfig(): RedisPluginConfig {
 const DEFAULT_ROBOTS_TXT = `User-agent: *
 Allow: /
 
-# Sitemap: https://www.example.com/sitemap.xml
+# Sitemap: https://your-domain.com/sitemap.xml
 `;
 
 function loadRobotsTxt(): string {
@@ -525,12 +528,31 @@ export function Plugins() {
     "image-optimization": false,
   });
 
+  const [pluginSaveError, setPluginSaveError] = useState<string | null>(null);
+
   const [geminiApiKey, setGeminiApiKey] = useState(() => readStorage(GEMINI_API_KEY_STORAGE));
   const [geminiModel, setGeminiModel] = useState(
     () => readStorage(GEMINI_MODEL_STORAGE) || "gemini-2.0-flash"
   );
   const [geminiSettingsOpen, setGeminiSettingsOpen] = useState(false);
   const [geminiSaveHint, setGeminiSaveHint] = useState(false);
+  const [geminiModels, setGeminiModels] = useState<{ id: string; name: string }[]>([]);
+  const [geminiModelsLoading, setGeminiModelsLoading] = useState(false);
+  const [geminiModelsError, setGeminiModelsError] = useState<string | null>(null);
+  // Test ekranı state
+  const [geminiTestOpen, setGeminiTestOpen] = useState(false);
+  const [geminiTestSrc, setGeminiTestSrc] = useState("en");
+  const [geminiTestDst, setGeminiTestDst] = useState("tr");
+  const [geminiTestInput, setGeminiTestInput] = useState("");
+  const [geminiTestResult, setGeminiTestResult] = useState<{ title: string; summary?: string; model?: string } | null>(null);
+  const [geminiTestTokens, setGeminiTestTokens] = useState<{
+    input: number;
+    output: number;
+    usd: number;
+    longContext: boolean;
+  } | null>(null);
+  const [geminiTesting, setGeminiTesting] = useState(false);
+  const [geminiTestError, setGeminiTestError] = useState<string | null>(null);
 
   const [s3Config, setS3Config] = useState<S3PluginConfig>(() => loadS3Config());
   const [s3SettingsOpen, setS3SettingsOpen] = useState(false);
@@ -744,81 +766,168 @@ export function Plugins() {
     });
   }, []);
 
+  async function persistPlugin(
+    storageKey: string,
+    storageValue: string,
+    pluginId: PluginId,
+    config: Record<string, unknown>,
+    setHint: (v: boolean) => void
+  ) {
+    setPluginSaveError(null);
+    try {
+      await savePluginConfig(pluginId, config);
+      // Only write localStorage after API succeeds
+      try { localStorage.setItem(storageKey, storageValue); } catch { /* ignore */ }
+      setHint(true);
+      window.setTimeout(() => setHint(false), 2500);
+    } catch (err) {
+      setPluginSaveError(err instanceof Error ? err.message : 'Failed to save plugin config.');
+    }
+  }
+
   const persistGeminiCredentials = () => {
-    try { localStorage.setItem(GEMINI_API_KEY_STORAGE, geminiApiKey); localStorage.setItem(GEMINI_MODEL_STORAGE, geminiModel); } catch { /* ignore */ }
-    savePluginConfig('gemini-auto-translate', { apiKey: geminiApiKey, model: geminiModel }).catch(() => {});
-    setGeminiSaveHint(true);
-    window.setTimeout(() => setGeminiSaveHint(false), 2500);
+    void persistPlugin(GEMINI_API_KEY_STORAGE, JSON.stringify({ apiKey: geminiApiKey, model: geminiModel }), 'gemini-auto-translate', { apiKey: geminiApiKey, model: geminiModel }, setGeminiSaveHint);
   };
 
-  const persistS3Config = () => {
-    try { localStorage.setItem(S3_PLUGIN_STORAGE_KEY, JSON.stringify(s3Config)); } catch { /* ignore */ }
-    savePluginConfig('s3-object-storage', s3Config as unknown as Record<string, unknown>).catch(() => {});
-    setS3SaveHint(true);
-    window.setTimeout(() => setS3SaveHint(false), 2500);
-  };
+  const persistS3Config = () =>
+    void persistPlugin(S3_PLUGIN_STORAGE_KEY, JSON.stringify(s3Config), 's3-object-storage', s3Config as unknown as Record<string, unknown>, setS3SaveHint);
 
-  const persistSitemapConfig = () => {
-    try { localStorage.setItem(SITEMAP_PLUGIN_STORAGE_KEY, JSON.stringify(sitemapConfig)); } catch { /* ignore */ }
-    savePluginConfig('sitemap-xml', sitemapConfig as unknown as Record<string, unknown>).catch(() => {});
-    setSitemapSaveHint(true);
-    window.setTimeout(() => setSitemapSaveHint(false), 2500);
-  };
+  const persistSitemapConfig = () =>
+    void persistPlugin(SITEMAP_PLUGIN_STORAGE_KEY, JSON.stringify(sitemapConfig), 'sitemap-xml', sitemapConfig as unknown as Record<string, unknown>, setSitemapSaveHint);
 
-  const persistRobotsTxt = () => {
-    try { localStorage.setItem(ROBOTS_TXT_STORAGE_KEY, robotsTxt); } catch { /* ignore */ }
-    savePluginConfig('robots-txt', { content: robotsTxt }).catch(() => {});
-    setRobotsSaveHint(true);
-    window.setTimeout(() => setRobotsSaveHint(false), 2500);
-  };
+  const persistRobotsTxt = () =>
+    void persistPlugin(ROBOTS_TXT_STORAGE_KEY, robotsTxt, 'robots-txt', { content: robotsTxt }, setRobotsSaveHint);
 
-  const persistRedisConfig = () => {
-    try { localStorage.setItem(REDIS_PLUGIN_STORAGE_KEY, JSON.stringify(redisConfig)); } catch { /* ignore */ }
-    savePluginConfig('redis-cache', redisConfig as unknown as Record<string, unknown>).catch(() => {});
-    setRedisSaveHint(true);
-    window.setTimeout(() => setRedisSaveHint(false), 2500);
-  };
+  const persistRedisConfig = () =>
+    void persistPlugin(REDIS_PLUGIN_STORAGE_KEY, JSON.stringify(redisConfig), 'redis-cache', redisConfig as unknown as Record<string, unknown>, setRedisSaveHint);
 
-  const persistSmtpConfig = () => {
-    try { localStorage.setItem(SMTP_PLUGIN_STORAGE_KEY, JSON.stringify(smtpConfig)); } catch { /* ignore */ }
-    savePluginConfig('smtp-mail', smtpConfig as unknown as Record<string, unknown>).catch(() => {});
-    setSmtpSaveHint(true);
-    window.setTimeout(() => setSmtpSaveHint(false), 2500);
-  };
+  const persistSmtpConfig = () =>
+    void persistPlugin(SMTP_PLUGIN_STORAGE_KEY, JSON.stringify(smtpConfig), 'smtp-mail', smtpConfig as unknown as Record<string, unknown>, setSmtpSaveHint);
 
-  const persistN8nConfig = () => {
-    try { localStorage.setItem(N8N_PLUGIN_STORAGE_KEY, JSON.stringify(n8nConfig)); } catch { /* ignore */ }
-    savePluginConfig('n8n-automation', n8nConfig as unknown as Record<string, unknown>).catch(() => {});
-    setN8nSaveHint(true);
-    window.setTimeout(() => setN8nSaveHint(false), 2500);
-  };
+  const persistN8nConfig = () =>
+    void persistPlugin(N8N_PLUGIN_STORAGE_KEY, JSON.stringify(n8nConfig), 'n8n-automation', n8nConfig as unknown as Record<string, unknown>, setN8nSaveHint);
 
-  const persistOutboundWebhookConfig = () => {
-    try { localStorage.setItem(OUTBOUND_WEBHOOK_STORAGE_KEY, JSON.stringify(outboundWebhookConfig)); } catch { /* ignore */ }
-    savePluginConfig('outbound-webhook', outboundWebhookConfig as unknown as Record<string, unknown>).catch(() => {});
-    setOutboundWebhookSaveHint(true);
-    window.setTimeout(() => setOutboundWebhookSaveHint(false), 2500);
-  };
+  const persistOutboundWebhookConfig = () =>
+    void persistPlugin(OUTBOUND_WEBHOOK_STORAGE_KEY, JSON.stringify(outboundWebhookConfig), 'outbound-webhook', outboundWebhookConfig as unknown as Record<string, unknown>, setOutboundWebhookSaveHint);
 
-  const persistNativeAnalyticsConfig = () => {
-    try { localStorage.setItem(NATIVE_ANALYTICS_PLUGIN_STORAGE_KEY, JSON.stringify(nativeAnalyticsConfig)); } catch { /* ignore */ }
-    savePluginConfig('native-analytics', nativeAnalyticsConfig as unknown as Record<string, unknown>).catch(() => {});
-    setNativeAnalyticsSaveHint(true);
-    window.setTimeout(() => setNativeAnalyticsSaveHint(false), 2500);
-  };
+  const persistNativeAnalyticsConfig = () =>
+    void persistPlugin(NATIVE_ANALYTICS_PLUGIN_STORAGE_KEY, JSON.stringify(nativeAnalyticsConfig), 'native-analytics', nativeAnalyticsConfig as unknown as Record<string, unknown>, setNativeAnalyticsSaveHint);
 
-  const persistImageOptimizationConfig = () => {
-    try { localStorage.setItem(IMAGE_OPTIMIZATION_PLUGIN_STORAGE_KEY, JSON.stringify(imageOptimizationConfig)); } catch { /* ignore */ }
-    savePluginConfig('image-optimization', imageOptimizationConfig as unknown as Record<string, unknown>).catch(() => {});
-    setImageOptimizationSaveHint(true);
-    window.setTimeout(() => setImageOptimizationSaveHint(false), 2500);
-  };
+  const persistImageOptimizationConfig = () =>
+    void persistPlugin(IMAGE_OPTIMIZATION_PLUGIN_STORAGE_KEY, JSON.stringify(imageOptimizationConfig), 'image-optimization', imageOptimizationConfig as unknown as Record<string, unknown>, setImageOptimizationSaveHint);
 
   const hasGeminiKey = geminiApiKey.trim().length > 0;
+
+  const fetchGeminiModels = useCallback(async () => {
+    const key = geminiApiKey.trim();
+    if (!key) return;
+    setGeminiModelsError(null);
+    setGeminiModelsLoading(true);
+    try {
+      const res = await fetch("/api/plugins/gemini/models", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("wolent_access_token") ?? ""}`,
+          "X-Wolent-Tenant": "default",
+        },
+        body: JSON.stringify({ apiKey: key }),
+      });
+      const json = await res.json() as {
+        data?: { id: string; name: string }[];
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setGeminiModels([]);
+        setGeminiModelsError(json.error?.message ?? `HTTP ${res.status}`);
+        return;
+      }
+      if (json.data?.length) {
+        setGeminiModels(json.data);
+      } else {
+        setGeminiModels([]);
+        setGeminiModelsError(t("plugins.gemini.modelsEmpty"));
+      }
+    } catch (err) {
+      setGeminiModels([]);
+      setGeminiModelsError(err instanceof Error ? err.message : t("plugins.gemini.modelsFetchFailed"));
+    } finally {
+      setGeminiModelsLoading(false);
+    }
+  }, [geminiApiKey, t]);
+
+  const GEMINI_TEST_LOCALES = [
+    { code: 'en', name: 'English' }, { code: 'tr', name: 'Turkish' },
+    { code: 'de', name: 'German' }, { code: 'fr', name: 'French' },
+    { code: 'es', name: 'Spanish' }, { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' }, { code: 'ru', name: 'Russian' },
+    { code: 'ar', name: 'Arabic' }, { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' }, { code: 'ko', name: 'Korean' },
+  ];
+
+  const runGeminiTest = async () => {
+    if (!geminiTestInput.trim()) return;
+    setGeminiTesting(true);
+    setGeminiTestResult(null);
+    setGeminiTestError(null);
+    setGeminiTestTokens(null);
+    const startMs = Date.now();
+    try {
+      const res = await fetch('/api/plugins/gemini/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('wolent_access_token') ?? ''}`,
+          'X-Wolent-Tenant': 'default',
+        },
+        body: JSON.stringify({
+          title: geminiTestInput.trim(),
+          targetLocale: geminiTestDst,
+          sourceLocale: geminiTestSrc,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string } | string;
+        };
+        const msg =
+          typeof errBody.error === "object" && errBody.error?.message
+            ? errBody.error.message
+            : typeof errBody.error === "string"
+              ? errBody.error
+              : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      const json = await res.json() as { data: { title: string; summary?: string; model?: string } };
+      setGeminiTestResult(json.data);
+      // Kaba token tahmini: ~4 karakter = 1 token
+      const inputTokens = Math.ceil((geminiTestInput.length + 200) / 4); // 200 = prompt overhead
+      const outputTokens = Math.ceil((json.data.title.length + (json.data.summary?.length ?? 0)) / 4);
+      const modelForPricing = json.data.model?.trim() || geminiModel.trim() || "gemini-2.5-flash";
+      const est = estimateGeminiUsdForTokens(modelForPricing, inputTokens, outputTokens);
+      setGeminiTestTokens({
+        input: inputTokens,
+        output: outputTokens,
+        usd: est.usd,
+        longContext: est.usedLongContextTier,
+      });
+    } catch (err) {
+      setGeminiTestError(err instanceof Error ? err.message : 'Translation failed');
+    } finally {
+      setGeminiTesting(false);
+      void startMs; // suppress unused warning
+    }
+  };
 
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
+        {pluginSaveError && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <span className="flex-1">{pluginSaveError}</span>
+            <button type="button" onClick={() => setPluginSaveError(null)} className="text-red-400/70 hover:text-red-300">✕</button>
+          </div>
+        )}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-zinc-800/80 border border-zinc-700/50 rounded-lg flex items-center justify-center">
@@ -1158,12 +1267,10 @@ export function Plugins() {
                     </div>
 
                     {isGemini && enabled && geminiSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-4">
+                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-5">
+                        {/* API Key */}
                         <div>
-                          <label
-                            htmlFor="gemini-api-key"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
-                          >
+                          <label htmlFor="gemini-api-key" className="block text-sm font-medium text-zinc-200 mb-2">
                             {t("plugins.gemini.apiKeyLabel")}
                           </label>
                           <input
@@ -1171,33 +1278,56 @@ export function Plugins() {
                             type="password"
                             autoComplete="off"
                             value={geminiApiKey}
-                            onChange={(e) => setGeminiApiKey(e.target.value)}
+                            onChange={(e) => {
+                              setGeminiApiKey(e.target.value);
+                              setGeminiModelsError(null);
+                            }}
                             placeholder={t("plugins.gemini.apiKeyPlaceholder")}
                             className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 font-mono"
                           />
-                          <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                            {t("plugins.gemini.apiKeyHint")}
-                          </p>
+                          <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{t("plugins.gemini.apiKeyHint")}</p>
                         </div>
-                        <div className="max-w-md">
-                          <label
-                            htmlFor="gemini-model"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
-                          >
-                            {t("plugins.gemini.modelLabel")}
-                          </label>
+                        {/* Model seçimi — API'dan */}
+                        <div className="max-w-md space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <label htmlFor="gemini-model" className="block text-sm font-medium text-zinc-200">
+                              {t("plugins.gemini.modelLabel")}
+                            </label>
+                            <button
+                              type="button"
+                              disabled={!hasGeminiKey || geminiModelsLoading}
+                              onClick={() => void fetchGeminiModels()}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              {geminiModelsLoading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden />
+                              ) : (
+                                <RefreshCw className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              )}
+                              {t("plugins.gemini.fetchModels")}
+                            </button>
+                          </div>
+                          {geminiModelsError && (
+                            <p className="text-xs text-red-400 leading-relaxed">{geminiModelsError}</p>
+                          )}
                           <select
                             id="gemini-model"
                             value={geminiModel}
                             onChange={(e) => setGeminiModel(e.target.value)}
                             className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
                           >
-                            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-                            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                            <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                            {(geminiModels.length > 0 ? geminiModels : [
+                              { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (latest)' },
+                              { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite' },
+                              { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (fast)' },
+                              { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (accurate)' },
+                            ]).map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
                           </select>
+                          <p className="text-xs text-zinc-500 mt-1.5">Tier ve fiyat bilgisi için Google AI Studio'yu kontrol edin.</p>
                         </div>
+                        {/* Kaydet */}
                         <div className="flex flex-wrap items-center gap-3">
                           <button
                             type="button"
@@ -1206,8 +1336,134 @@ export function Plugins() {
                           >
                             {t("plugins.gemini.saveKey")}
                           </button>
-                          {geminiSaveHint && (
-                            <span className="text-xs text-green-400">{t("plugins.gemini.keySaved")}</span>
+                          {geminiSaveHint && <span className="text-xs text-green-400">{t("plugins.gemini.keySaved")}</span>}
+                        </div>
+
+                        {/* ─── Test Ekranı ─── */}
+                        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-cyan-400" />
+                              <span className="text-sm font-medium text-cyan-300">Çeviri Test Ekranı</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGeminiTestOpen((o) => !o);
+                                setGeminiTestResult(null);
+                                setGeminiTestError(null);
+                                setGeminiTestTokens(null);
+                              }}
+                              className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                            >
+                              {geminiTestOpen ? "Kapat" : "Aç"}
+                            </button>
+                          </div>
+                          {geminiTestOpen && (
+                            <div className="space-y-3">
+                              {/* Dil seçimi */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex-1 min-w-[120px]">
+                                  <label className="block text-xs text-zinc-400 mb-1">Kaynak dil</label>
+                                  <select
+                                    value={geminiTestSrc}
+                                    onChange={e => setGeminiTestSrc(e.target.value)}
+                                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+                                  >
+                                    {GEMINI_TEST_LOCALES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                                  </select>
+                                </div>
+                                <div className="mt-4 text-zinc-500 text-lg">→</div>
+                                <div className="flex-1 min-w-[120px]">
+                                  <label className="block text-xs text-zinc-400 mb-1">Hedef dil</label>
+                                  <select
+                                    value={geminiTestDst}
+                                    onChange={e => setGeminiTestDst(e.target.value)}
+                                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+                                  >
+                                    {GEMINI_TEST_LOCALES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                              {/* Giriş metni */}
+                              <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Çevrilecek metin</label>
+                                <textarea
+                                  rows={3}
+                                  value={geminiTestInput}
+                                  onChange={e => setGeminiTestInput(e.target.value)}
+                                  placeholder="Örnek: The quick brown fox jumps over the lazy dog."
+                                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 resize-none"
+                                />
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  disabled={geminiTesting || !geminiTestInput.trim() || !hasGeminiKey}
+                                  onClick={() => void runGeminiTest()}
+                                  className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors"
+                                >
+                                  {geminiTesting ? (
+                                    <><svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Çevriliyor…</>
+                                  ) : (
+                                    <><Sparkles className="w-3.5 h-3.5" />Çevir</>
+                                  )}
+                                </button>
+                                {!hasGeminiKey && <span className="text-xs text-amber-400">API anahtarı gerekli</span>}
+                              </div>
+                              {/* Hata */}
+                              {geminiTestError && (
+                                <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                                  {geminiTestError}
+                                </div>
+                              )}
+                              {/* Sonuç */}
+                              {geminiTestResult && (
+                                <div className="rounded-md border border-zinc-700 bg-zinc-900 p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Çeviri Sonucu</span>
+                                    <div className="flex flex-col items-end gap-1 text-xs text-zinc-500 text-right">
+                                      {geminiTestResult.model && (
+                                        <span>
+                                          Model:{" "}
+                                          <span className="text-zinc-300">{geminiTestResult.model}</span>
+                                        </span>
+                                      )}
+                                      {geminiTestTokens && (
+                                        <div className="flex flex-col items-end gap-0.5">
+                                          <span>
+                                            ~<span className="text-cyan-300 font-medium">
+                                              {geminiTestTokens.input + geminiTestTokens.output}
+                                            </span>{" "}
+                                            token
+                                            <span className="text-zinc-600">
+                                              {" "}
+                                              ({geminiTestTokens.input} {t("plugins.gemini.tokensIn")} /{" "}
+                                              {geminiTestTokens.output} {t("plugins.gemini.tokensOut")})
+                                            </span>
+                                          </span>
+                                          <span className="text-emerald-400/90">
+                                            {t("plugins.gemini.estUsdCost")}: {formatUsdEstimate(geminiTestTokens.usd)}
+                                            {geminiTestTokens.longContext && (
+                                              <span className="text-amber-400/80 ml-1">
+                                                ({t("plugins.gemini.longContextTierHint")})
+                                              </span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-zinc-100 leading-relaxed">{geminiTestResult.title}</p>
+                                  {geminiTestResult.summary && (
+                                    <p className="text-sm text-zinc-300 border-t border-zinc-700/50 pt-2">{geminiTestResult.summary}</p>
+                                  )}
+                                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
+                                    {t("plugins.gemini.tokenCostFootnote")}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>

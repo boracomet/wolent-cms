@@ -214,6 +214,21 @@ program
       }
     }
 
+    // ─── Auto DB setup ────────────────────────────────────────────────────────
+    if (!opts.skipInstall) {
+      const dbSpinner = ora('Setting up database...').start()
+      try {
+        if (answers['db'] === 'sqlite') {
+          runCommand('npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss', targetDir)
+        } else {
+          runCommand('npx prisma migrate deploy --schema=./prisma/schema.prisma', targetDir)
+        }
+        dbSpinner.succeed('Database ready!')
+      } catch {
+        dbSpinner.warn('Database setup failed — run manually: ' + (answers['db'] === 'sqlite' ? 'npm run db:push' : 'npm run db:migrate'))
+      }
+    }
+
     // ─── Done ─────────────────────────────────────────────────────────────────
     console.log()
     console.log(chalk.green('✅ Wolent CMS project created successfully!'))
@@ -221,13 +236,6 @@ program
     console.log(chalk.bold('Next steps:'))
     console.log()
     console.log(`  ${chalk.cyan('cd')} ${projectName}`)
-
-    if (answers['db'] === 'sqlite') {
-      console.log(`  ${chalk.cyan('npm run db:push')}         ${chalk.gray('# Create database tables')}`)
-    } else {
-      console.log(`  ${chalk.cyan('npm run db:migrate')}     ${chalk.gray('# Run database migrations')}`)
-    }
-
     console.log(`  ${chalk.cyan('npm run develop')}        ${chalk.gray('# Start development server')}`)
     console.log()
     console.log(`  Admin panel: ${chalk.bold.cyan('http://localhost:1337')}`)

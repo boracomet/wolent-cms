@@ -6,20 +6,37 @@ import { api } from "../api/client";
 
 export function Dashboard() {
   const { t } = useI18n();
-  const [counts, setCounts] = useState({ contentTypes: "—", users: "—", mediaFiles: "—" });
+  const [counts, setCounts] = useState({ contentTypes: "—", users: "—", mediaFiles: "—", articles: "—" });
 
   useEffect(() => {
-    Promise.allSettled([
-      api.contentTypes.list(),
-      api.users.list(),
-      api.media.files(),
-    ]).then(([ct, usr, media]) => {
+    void (async () => {
+      const [ct, usr, media] = await Promise.allSettled([
+        api.contentTypes.list(),
+        api.users.list(),
+        api.media.files(),
+      ]);
+      let entryTotal = "—";
+      if (ct.status === "fulfilled") {
+        const types = ct.value.data as { kind?: string; singularName?: string; uid?: string }[];
+        const firstCollection = types.find((t) => t.kind !== "singleType") ?? types[0];
+        const slug = firstCollection?.singularName ?? firstCollection?.uid ?? "articles";
+        const er = await api.entries.list(slug, { page: 1, pageSize: 1 }).catch(() => null);
+        if (er) {
+          entryTotal = String((er as { meta: { pagination: { total: number } } }).meta?.pagination?.total ?? "—");
+        }
+      }
       setCounts({
-        contentTypes: ct.status === 'fulfilled' ? String((ct.value.data as unknown[]).length) : "—",
-        users: usr.status === 'fulfilled' ? String((usr.value.data as unknown[]).length) : "—",
-        mediaFiles: media.status === 'fulfilled' ? String((media.value as { meta: { pagination: { total: number } } }).meta?.pagination?.total ?? "—") : "—",
+        contentTypes: ct.status === "fulfilled" ? String((ct.value.data as unknown[]).length) : "—",
+        users: usr.status === "fulfilled" ? String((usr.value.data as unknown[]).length) : "—",
+        mediaFiles:
+          media.status === "fulfilled"
+            ? String(
+                (media.value as { meta: { pagination: { total: number } } }).meta?.pagination?.total ?? "—",
+              )
+            : "—",
+        articles: entryTotal,
       });
-    });
+    })();
   }, []);
 
   const stats = [
@@ -32,9 +49,9 @@ export function Dashboard() {
     },
     {
       nameKey: "dashboard.stats.articles",
-      value: "—",
+      value: counts.articles,
       icon: FileText,
-      href: "/content/articles",
+      href: "/content-types",
       color: "green",
     },
     {
@@ -80,31 +97,30 @@ export function Dashboard() {
     },
   };
 
-  const [recentContent, setRecentContent] = useState<{ id: string; title: string; type: string; date: string }[]>([]);
+  const [recentContent, setRecentContent] = useState<{ id: string; title: string; type: string; typeApiId: string; date: string }[]>([]);
 
   useEffect(() => {
-    // Load recent entries from the first available content type
     api.contentTypes.list().then(res => {
       const types = res.data as { singularName?: string; uid?: string; displayName?: string }[];
       if (!types.length) return;
-      const promises = types.slice(0, 3).map(ct =>
-        api.entries.list(ct.uid ?? ct.singularName ?? '', { pageSize: '2' })
-          .then(r => ({ entries: r.data as { id?: string; data?: Record<string, unknown>; createdAt?: string }[], type: ct.displayName ?? ct.singularName ?? ct.uid ?? '' }))
-          .catch(() => ({ entries: [], type: '' }))
-      );
+      const promises = types.slice(0, 3).map(ct => {
+        const apiId = ct.singularName ?? ct.uid ?? '';
+        return api.entries.list(apiId, { pageSize: '2' })
+          .then(r => ({ entries: r.data as Record<string, unknown>[], typeLabel: ct.displayName ?? ct.singularName ?? ct.uid ?? '', typeApiId: apiId }))
+          .catch(() => ({ entries: [], typeLabel: '', typeApiId: apiId }));
+      });
       Promise.all(promises).then(results => {
-        const items: { id: string; title: string; type: string; date: string }[] = [];
-        for (const { entries, type } of results) {
+        const items: { id: string; title: string; type: string; typeApiId: string; date: string }[] = [];
+        for (const { entries, typeLabel, typeApiId } of results) {
           for (const entry of entries) {
-            const data = entry.data as Record<string, unknown> ?? {};
-            const title = (data['title'] ?? data['name'] ?? data['headline'] ?? `Entry ${entry.id}`) as string;
-            const date = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '';
-            items.push({ id: entry.id ?? String(Math.random()), title: String(title), type, date });
+            const title = String(entry['title'] ?? entry['name'] ?? entry['headline'] ?? `Entry ${entry['id']}`);
+            const date = entry['createdAt'] ? new Date(entry['createdAt'] as string).toLocaleDateString() : '';
+            items.push({ id: String(entry['id'] ?? ''), title, type: typeLabel, typeApiId, date });
           }
         }
-        if (items.length > 0) setRecentContent(items.slice(0, 5));
+        setRecentContent(items.slice(0, 5));
       });
-    }).catch(() => { /* ignore */ });
+    }).catch(() => { /* content types may not exist yet */ });
   }, []);
 
   return (
@@ -165,10 +181,15 @@ export function Dashboard() {
             <h2 className="text-lg font-semibold">{t("dashboard.recentContent")}</h2>
           </div>
           <div className="divide-y divide-zinc-800/50">
-            {recentContent.map((item) => (
-              <div
+            {recentContent.length === 0 ? (
+              <div className="px-6 py-8 text-center text-zinc-500 text-sm">
+                {t("dashboard.noRecentContent")}
+              </div>
+            ) : recentContent.map((item) => (
+              <Link
                 key={item.id}
-                className="px-6 py-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                to={`/content/${item.typeApiId ?? item.type}/${item.id}`}
+                className="block px-6 py-4 hover:bg-zinc-800/50 transition-colors"
               >
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
                   <div className="min-w-0">
@@ -177,7 +198,7 @@ export function Dashboard() {
                   </div>
                   <span className="text-sm text-zinc-500 shrink-0">{item.date}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

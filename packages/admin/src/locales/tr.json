@@ -16,21 +16,23 @@
       "apiPermissions": "API izinleri",
       "plugins": "Eklentiler",
       "analytics": "Analitik",
-      "featureGaps": "Arayüz lab",
+      "auditLogs": "Denetim Günlükleri",
       "settings": "Ayarlar",
       "logout": "Çıkış yap"
     }
   },
   "analytics": {
     "title": "Analitik",
-    "subtitle": "Genel site trafiği ve oturumlar (demo veri — canlı metrik için ingest API’nizi bağlayın).",
+    "subtitle": "Genel site trafiği ve oturumlar. Veriler analytics ingest API’nızdan gelir.",
     "disabledTitle": "Analitik kapalı",
     "disabledBody": "Bu ekranı ve sol menüdeki bağlantıyı göstermek için Eklentiler’den Yerel analitik eklentisini açın.",
     "goToPlugins": "Eklentilere git",
     "liveUsers": "Anlık ziyaretçi",
-    "liveUsersHint": "Şu anda genel sitede tahmini aktif oturum (mock).",
+    "liveUsersHint": "Şu anda genel sitede tahmini aktif oturum.",
     "dailyLogins": "Girişler",
-    "demoDataBadge": "Demo",
+    "noData": "Henüz veri yok — analytics ingest endpoint'inizden veri toplamaya başlayın.",
+    "loading": "Yükleniyor…",
+    "topPagesHeading": "En çok ziyaret edilen sayfalar",
     "range": {
       "week": "7 gün",
       "1m": "1 ay",
@@ -43,10 +45,8 @@
     "minutesSuffix": "dk",
     "tableFootnote": "IP ve süreler örnektir. Üretim verisi ingest uç noktanız ve sunucu tarafı geo ile gelir.",
     "col": {
-      "ip": "IP (maskeli)",
-      "country": "Ülke",
       "page": "Sayfa",
-      "duration": "Sayfada süre"
+      "views": "Görüntülenme"
     },
     "chart": {
       "mon": "Pzt",
@@ -56,20 +56,6 @@
       "fri": "Cum",
       "sat": "Cmt",
       "sun": "Paz"
-    },
-    "page": {
-      "home": "/",
-      "pricing": "/fiyatlandirma",
-      "docs": "/docs/api",
-      "blog": "/blog/headless-cms",
-      "contact": "/iletisim"
-    },
-    "geo": {
-      "tr": "Türkiye",
-      "de": "Almanya",
-      "us": "ABD",
-      "gb": "Birleşik Krallık",
-      "fr": "Fransa"
     }
   },
   "dashboard": {
@@ -84,7 +70,8 @@
       "users": "Kullanıcılar"
     },
     "viewAll": "Tümünü gör →",
-    "recentContent": "Son içerikler"
+    "recentContent": "Son içerikler",
+    "noRecentContent": "Henüz içerik yok. İlk kaydı oluşturun."
   },
   "settings": {
     "title": "Ayarlar",
@@ -106,41 +93,46 @@
       "heading": "Yedekleme ve geri yükleme",
       "description": "JSON yedek indirin, seçmeli içe aktarın ve son anlık görüntüleri yönetin. Bu bölüm için ek doğrulama gerekir.",
       "mfaTitle": "Devam etmek için doğrulayın",
-      "mfaHint": "Kimlik doğrulayıcı kodunu girin (demo: boş olmayan herhangi bir kod bu oturum için sayfayı açar).",
+      "mfaHint": "Bu oturum için yedekleme işlemlerinin kilidini açmak üzere hesap şifrenizi girin.",
       "mfaError": "Devam etmek için bir kod girin.",
       "mfaVerify": "Doğrula ve aç",
-      "mfaDemoNote": "Bu, MFA için arayüz yer tutucusudur. Üretimde TOTP veya WebAuthn sunucuda doğrulanmalıdır.",
+      "wrongPassword": "Yanlış şifre, tekrar deneyin.",
+      "verify": "Doğrula",
+      "verifying": "Doğrulanıyor…",
+      "passwordPlaceholder": "Hesap şifrenizi girin",
+      "exportError": "Yedek oluşturulamadı.",
+      "restoreError": "Yedek geri yüklenemedi.",
       "lockSection": "Bölümü yeniden kilitle",
       "exportTitle": "Yedek oluştur",
-      "exportIntro": "İndirilecek JSON’a hangi alanların dahil edileceğini seçin. Eklenti ve panel anahtarları bu tarayıcının localStorage’ından okunur.",
+      "exportIntro": "İndirilecek JSON’a hangi alanların dahil edileceğini seçin. Veriler API ve veritabanından canlı olarak çekilir.",
       "importTitle": "Dosyadan içe aktar",
-      "importIntro": "Bu panelin ürettiği yedek JSON’unu seçin. Ardından localStorage’a hangi anahtarların yazılacağını işaretleyin.",
+      "importIntro": "Bu panelin ürettiği yedek JSON’unu seçin. Hangi bölümleri geri yükleyeceğinizi seçin, ardından API aracılığıyla veritabanına uygulayın.",
       "chooseFile": "Yedek dosyası seç",
-      "importApplyLabel": "Tarayıcı deposuna uygula",
+      "importApplyLabel": "Veritabanına geri yükle",
       "runImport": "Seçilenleri içe aktar",
-      "includeContentTypes": "İçerik türleri (dışa aktarımda özet/ bayraklar)",
-      "includeMedia": "Medya kütüphanesi (dışa aktarımda özet)",
-      "includeUsers": "Kullanıcılar (dışa aktarımda özet)",
-      "includeMemberships": "Roller ve üyelikler (dışa aktarımda özet)",
-      "includePlugins": "Eklenti ayarları (localStorage anahtarları)",
-      "includePanelSettings": "Panel ayarları (admin dili vb.)",
+      "includeContentTypes": "İçerik türleri (şema ve alan tanımları)",
+      "includeMedia": "Medya kütüphanesi (dosya kayıtları)",
+      "includeUsers": "Kullanıcılar (profil verisi)",
+      "includeMemberships": "Roller ve üyelikler",
+      "includePlugins": "Eklenti ayarları",
+      "includePanelSettings": "Panel ayarları (dil, görünüm vb.)",
       "createDownload": "Yedek oluştur ve indir",
       "recentTitle": "Son yedekler",
       "recentEmpty": "Henüz yedek yok. Oluşturduğunuzda burada listelenir ve yeniden indirilebilir.",
       "download": "İndir",
       "restore": "Geri yükle",
       "delete": "Sil",
-      "footerNote": "Tam CMS verisi API ve veritabanınızdadır; bu ekran istemci tarafı yedek UX’idir. Gerçek iş yükleri için dışa/içe aktarmayı arka uca bağlayın.",
+      "footerNote": "Yedekler API ve veritabanınızdan canlı veri aktarır. İçe aktarmalar API aracılığıyla veritabanına yazılır.",
       "nothingSelected": "Dahil etmek için en az bir alan seçin.",
-      "created": "Yedek listeye eklendi ve indirme başladı.",
-      "deleted": "Yedek panelden kaldırıldı.",
-      "restoreNoSnapshots": "Bu yedekte geri yüklenecek anahtar anlık görüntüsü yok.",
-      "restoreDone": "Bu yedekten {n} localStorage girdisi geri yüklendi.",
+      "created": "Yedek oluşturuldu ve indirme başladı.",
+      "deleted": "Yedek kaldırıldı.",
+      "restoreNoSnapshots": "Bu yedekte geri yüklenecek veri yok.",
+      "restoreDone": "Yedekten {n} bölüm geri yüklendi.",
       "restoreError": "Yedek dosyası okunamadı.",
       "invalidFile": "Geçerli bir CMS yedek JSON’u değil.",
       "pickFileFirst": "Önce bir yedek dosyası seçin.",
-      "importNothingApplied": "Seçimlerinizle eşleşen anahtar içe aktarılmadı.",
-      "importApplied": "{n} anahtar localStorage’a yazıldı (demo).",
+      "importNothingApplied": "Yedekte eşleşen bölüm bulunamadı.",
+      "importApplied": "Yedekten {n} bölüm başarıyla geri yüklendi.",
       "autoLabel": "Yedek"
     },
     "general": {
@@ -198,16 +190,16 @@
       "statusApplied": "Uygulandı",
       "statusPending": "Bekliyor",
       "runMigrations": "Bekleyen migration’ları uygula",
-      "runMigrationsSub": "Bekleyen migration dosyalarını çalıştırır (demo: bekleyenleri uygulandı işaretler).",
+      "runMigrationsSub": "Bekleyen Prisma migration dosyalarını veritabanına uygular.",
       "refreshStatus": "Durumu yenile",
       "cliHint": "Örnek CLI",
       "cliCopy": "Kopyala",
       "cliCopied": "Kopyalandı",
       "testConnection": "Bağlantıyı test et",
       "saveChanges": "Yapılandırmayı kaydet",
-      "savedDemo": "Yapılandırma kaydedildi (demo — kalıcılık için backend’e bağlayın).",
-      "migrateDemoDone": "Bekleyen migration’lar uygulandı (demo).",
-      "testDemo": "Bağlantı testi simüle edildi: Tamam (demo)."
+      "savedDemo": "Yapılandırma API’den alındı. Bağlantı bilgileri salt okunurdur (DATABASE_URL ile ayarlanır).",
+      "migrateDemoDone": "Bekleyen migration’lar başarıyla uygulandı.",
+      "testDemo": "Bağlantı testi: Tamam."
     }
   },
   "plugins": {
@@ -224,15 +216,23 @@
       "description": "Google Gemini ile içerik yerelleri için çeviri önerisi veya otomatik doldurma (API anahtarını aşağıda girin).",
       "apiKeyLabel": "Gemini API anahtarı",
       "apiKeyPlaceholder": "Google AI Studio’dan anahtarınızı yapıştırın",
-      "apiKeyHint": "Bu demoda anahtar yalnızca bu tarayıcıda (localStorage) saklanır — üretimde sunucu tarafı gizli kullanın.",
+      "apiKeyHint": "API anahtarı şifreli olarak API'ye kaydedilir. Üretimde sunucu tarafı ortam değişkeni kullanmanız önerilir.",
       "modelLabel": "Model",
+      "fetchModels": "Modelleri getir",
+      "modelsEmpty": "Bu anahtar için uygun model bulunamadı.",
+      "modelsFetchFailed": "Modeller alınamadı.",
+      "tokensIn": "girdi",
+      "tokensOut": "çıktı",
+      "estUsdCost": "Tahmini maliyet",
+      "longContextTierHint": "uzun istem tarifesi",
+      "tokenCostFootnote": "Token sayısı yaklaşıktır (~4 karakter/token). USD, seçilen modele göre Google ücretli katman Standart metin fiyatlarından hesaplanır; ücretsiz kota, Priority/Flex ve güncel tarifeler farklı olabilir. Kesin kullanım Google AI Studio’da görünür.",
       "saveKey": "Kaydet",
       "keyMissing": "Çeviri istekleri için API anahtarı ekleyin.",
       "keySaved": "Anahtar bu tarayıcıya kaydedildi."
     },
     "s3": {
       "name": "S3 uyumlu bucket depolama",
-      "description": "Medya ve varlık yüklemelerini S3 API uyumlu bir bucket’a bağlayın. Sağlayıcıyı seçin; uç nokta, kimlik bilgileri ve bucket adını girin (demo: yalnızca bu tarayıcıda saklanır).",
+      "description": "Medya ve varlık yüklemelerini S3 API uyumlu bir bucket’a bağlayın. Sağlayıcıyı seçin; uç nokta, kimlik bilgileri ve bucket adını girin.",
       "providerLabel": "Depolama sağlayıcısı",
       "endpointLabel": "Uç nokta URL",
       "regionLabel": "Bölge (region)",
@@ -242,15 +242,15 @@
       "pathStyleLabel": "Path-style adresleme",
       "pathStyleHint": "MinIO ve bazı şirket içi S3 geçitlerinde sık gerekir.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi.",
+      "saved": "Kaydedildi.",
       "credentialsMissing": "Yüklemelerin hedefi için bucket adı ve erişim anahtarlarını ekleyin.",
       "providerHintTitle": "Sağlayıcı notu",
       "endpointHint": "Seçilen sağlayıcı için örnek — bölge veya hesap yer tutucularını kendi değerlerinizle değiştirin.",
-      "storageHint": "Bu demoda kimlik bilgileri yalnızca bu tarayıcıda (localStorage) saklanır — üretimde sunucu tarafı yapılandırma ve IAM kapsamlı anahtarlar kullanın."
+      "storageHint": "S3 kimlik bilgileri API'ye kaydedilir. Üretimde sunucu tarafı yapılandırma ve IAM kapsamlı anahtarlar kullanın."
     },
     "sitemap": {
       "name": "XML Sitemap",
-      "description": "Yayındaki URL’lerin sitemap.xml üzerinden tarayıcılara nasıl sunulacağını yapılandırın. Üretim genelde API veya statik build ile yapılır — bu panel o süreç için tercihleri saklar (demo: yalnızca localStorage).",
+      "description": "Yayındaki URL’lerin sitemap.xml üzerinden tarayıcılara nasıl sunulacağını yapılandırın. Ayarlar API’ye kaydedilir ve backend /sitemap.xml endpoint’ini otomatik olarak sunar.",
       "baseUrlLabel": "Genel site taban URL’si",
       "baseUrlPlaceholder": "https://www.ornek.com",
       "baseUrlHint": "Sonda eğik çizgi yok. Mutlak <loc> adresleri için kullanılır.",
@@ -262,20 +262,20 @@
       "includeDraftsHint": "Canlı SEO için genelde kapalı; yalnızca staging veya önizleme için açın.",
       "pingLabel": "Yayından sonra arama motorlarına ping",
       "pingHint": "İsteğe bağlı Google/Bing ping URL’leri — içerik canlıya çıkınca sunucuda bağlayın.",
-      "demoHint": "Bu yönetim arayüzü burada XML üretmez; ayarları arka uç veya statik üreticinize bağlayın.",
+      "demoHint": "Ayarlar API’ye kaydedilir. Backend sitemap’i /sitemap.xml adresinde otomatik olarak sunar.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi."
+      "saved": "Kaydedildi."
     },
     "robots": {
       "name": "robots.txt düzenleyici",
-      "description": "/robots.txt altında sunulan tarama kurallarını düzenleyin. Üretimde içeriği edge, CDN veya API’nize bağlayın — bu demo yalnızca tarayıcıda saklar.",
+      "description": "/robots.txt altında sunulan tarama kurallarını düzenleyin. Backend, kayıtlı içeriği /robots.txt adresinde text/plain olarak sunar.",
       "editorLabel": "robots.txt içeriği",
       "editorPlaceholder": "User-agent: *\nAllow: /",
       "editorHint": "Düz metin; yorumlar # ile başlar. Yayın sonrası arama konsolu araçlarıyla doğrulayın.",
       "contentMissing": "Tarayıcılara net yönlendirme için en az bir kural veya yorum ekleyin.",
-      "demoHint": "Kaydetme metni localStorage’a yazar; canlı sitede bu gövde https://alanadiniz/robots.txt adresinde text/plain olarak sunulmalıdır.",
+      "demoHint": "Ayarlar API’ye kaydedilir. Backend bu içeriği /robots.txt adresinde sunar.",
       "save": "Kaydet",
-      "saved": "Bu tarayıcıya kaydedildi.",
+      "saved": "Kaydedildi.",
       "resetSample": "Örnek şablona sıfırla"
     },
     "redis": {
@@ -293,9 +293,9 @@
       "defaultTtlLabel": "Varsayılan TTL (saniye)",
       "defaultTtlHint": "API süre belirtmezse önbellek girdileri için varsayılan sona erme.",
       "connectionMissing": "Redis uç noktasını tanımlamak için host, geçerli port (1–65535) ve sayısal DB indeksi girin.",
-      "demoHint": "Değerler yalnızca bu tarayıcıda (localStorage) saklanır. Üretimde Redis şifrelerini yönetim arayüzünde göstermeyin.",
+      "demoHint": "Ayarlar API'ye kaydedilir. Redis bağlantı bilgileri sunucu tarafında tutulur; şifreler istemci tarafında asla gösterilmemelidir.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi."
+      "saved": "Kaydedildi."
     },
     "smtp": {
       "name": "SMTP e-posta",
@@ -324,9 +324,9 @@
       "lifecycleHeading": "Ne zaman gönderilsin",
       "notifyOnPublishedLabel": "Kayıt yayımlandığında",
       "notifyOnDraftSavedLabel": "Taslak ilk kaydedildiğinde (oluşturulduğunda)",
-      "demoHint": "Bu demoda kimlik bilgileri ve alıcılar yalnızca tarayıcıda saklanır. Gerçek posta arka uçta ortam gizli anahtarlarıyla gönderilmelidir.",
+      "demoHint": "Ayarlar API'ye kaydedilir. Postalar yapılandırılan SMTP bilgileri ile arka uçtan gönderilir.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi."
+      "saved": "Kaydedildi."
     },
     "n8n": {
       "name": "n8n otomasyonu",
@@ -359,12 +359,12 @@
       "payloadIncludeFullEntryLabel": "Tam kayıt belgesi (daha büyük yükler)",
       "webhookMissing": "n8n’in olay alabilmesi için HTTPS webhook URL’si girin.",
       "triggersMissing": "En az bir olay türünü işaretleyin; aksi halde n8n’e hiçbir şey gönderilmez.",
-      "demoHint": "Ayarlar yalnızca bu tarayıcıda (localStorage) saklanır. Üretimde sırları ortam değişkenlerinde tutun ve webhook’ları arka uçtan gönderin.",
+      "demoHint": "Ayarlar API’ye kaydedilir. Webhook’lar arka uçtan gönderilir; sırları ortam değişkenlerinde tutun.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi.",
-      "testWebhook": "Test ping (demo)",
-      "testWebhookDemoWithUrl": "Yalnızca demo — gerçek HTTP isteği gönderilmedi. Yapılandırılan webhook:",
-      "testWebhookDemoNoUrl": "Yalnızca demo — önce geçerli bir https:// webhook URL’si kaydedin."
+      "saved": "Kaydedildi.",
+      "testWebhook": "Test ping",
+      "testWebhookDemoWithUrl": "Test gönderildi. Yapılandırılan webhook:",
+      "testWebhookDemoNoUrl": "Önce geçerli bir https:// webhook URL’si kaydedin."
     },
     "outboundWebhook": {
       "name": "Genel webhook",
@@ -397,12 +397,12 @@
       "payloadIncludeFullEntryLabel": "Tam kayıt belgesi (daha büyük yükler)",
       "webhookMissing": "Bu kanal için HTTPS webhook URL’si girin.",
       "triggersMissing": "En az bir olay seçin; aksi halde bildirim gönderilmez.",
-      "demoHint": "Değerler yalnızca bu tarayıcıda (localStorage) saklanır. Üretimde imza sırlarını arayüzde tutmayın; webhook ve sırları sunucuda yapılandırın.",
+      "demoHint": "Ayarlar API'ye kaydedilir. Webhook imzalama sırlarını istemci tarafında tutmayın; sunucuda yapılandırın.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi.",
-      "testWebhook": "Test ping (demo)",
-      "testWebhookDemoWithUrl": "Yalnızca demo — gerçek HTTP isteği gönderilmedi. Yapılandırılan URL:",
-      "testWebhookDemoNoUrl": "Yalnızca demo — önce geçerli bir https:// webhook URL’si girin."
+      "saved": "Kaydedildi.",
+      "testWebhook": "Test ping",
+      "testWebhookDemoWithUrl": "Test gönderildi. Yapılandırılan URL:",
+      "testWebhookDemoNoUrl": "Önce geçerli bir https:// webhook URL’si girin."
     },
     "nativeAnalytics": {
       "name": "Yerel analitik",
@@ -419,9 +419,9 @@
       "sdkHeading": "Ön yüz SDK (örnek)",
       "sdkModuleHint": "Depodaki modül: src/app/analytics/wolentAnalyticsClient.ts — genel siteye kopyalayın veya monorepo alias ile içe aktarın.",
       "sdkNote": "Gövde: { type: \"pageview\" | \"heartbeat\", siteKey, path, title?, referrer?, activeSeconds?, ts }. API’de doğrulama ve hız sınırı uygulayın.",
-      "demoHint": "Ayarlar yalnızca bu tarayıcıda saklanır. Panoda gerçek veri yok; API bağlanana kadar statik demo sayılar gösterilir.",
+      "demoHint": "Ayarlar API'ye kaydedilir. Analytics panosu arka uçtan gelen gerçek sayfa görüntüleme ve oturum verilerini gösterir.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi."
+      "saved": "Kaydedildi."
     },
     "imageOptimization": {
       "name": "Görsel optimizasyonu",
@@ -452,9 +452,9 @@
       "generateSrcsetLabel": "srcset için sabit genişlikli varyantlar üret",
       "srcsetWidthsLabel": "Genişlikler (px, virgülle)",
       "srcsetWidthsHint": "Örnek: 480,768,1200,1920 — CDN veya worker her genişlik için bir dosya üretir.",
-      "demoHint": "Değerler yalnızca bu tarayıcıda (localStorage) saklanır. Üretimde Sharp, imgproxy veya edge worker ile uygulayın.",
+      "demoHint": "Ayarlar API'ye kaydedilir. Backend her yüklemede Sharp ile görsel işlemeyi otomatik uygular.",
       "save": "Yapılandırmayı kaydet",
-      "saved": "Bu tarayıcıya kaydedildi.",
+      "saved": "Kaydedildi.",
       "resetRecommended": "Önerilen varsayılanlara dön"
     },
     "active": "Etkin",
@@ -474,12 +474,6 @@
     "submit": "Giriş yap",
     "showPassword": "Şifreyi göster",
     "hidePassword": "Şifreyi gizle",
-    "demoHint": "Demo: gerçek kimlik doğrulama yok.",
     "skipToPanel": "Panele geç"
-  },
-  "featureGaps": {
-    "badge": "Yalnızca görsel prototip",
-    "title": "Planlanan özellikler — admin arayüz örnekleri",
-    "subtitle": "eksikler.md §19 ile hizalı statik ekranlar. Arka uç veya canlı API yok."
   }
 }

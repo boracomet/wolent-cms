@@ -8,15 +8,6 @@ import {
   readNativeAnalyticsPluginEnabled,
 } from "../lib/cmsPluginsEvents";
 
-const DEMO_DAILY_LOGINS = [
-  { dayKey: "analytics.chart.mon", value: 42 },
-  { dayKey: "analytics.chart.tue", value: 58 },
-  { dayKey: "analytics.chart.wed", value: 51 },
-  { dayKey: "analytics.chart.thu", value: 67 },
-  { dayKey: "analytics.chart.fri", value: 73 },
-  { dayKey: "analytics.chart.sat", value: 38 },
-  { dayKey: "analytics.chart.sun", value: 31 },
-];
 
 
 type LoginsRange = "7d" | "1m" | "3m" | "6m" | "12m";
@@ -38,11 +29,6 @@ function intlLocaleForPanel(locale: AdminLocale): string {
     default:
       return "en-US";
   }
-}
-
-function seededUnit(seed: number, i: number): number {
-  const x = Math.sin(seed * 9999 + i * 127) * 10000;
-  return x - Math.floor(x);
 }
 
 /** Dar sütunlar için: üstte gün, altta kısa ay (truncate olmadan okunur) */
@@ -94,7 +80,8 @@ type LoginsChartPoint = {
   title: string;
 };
 
-function buildLoginsSeries(
+/** Build empty placeholder series (all zeros) for the given range. Used when API has no data. */
+function buildEmptySeries(
   range: LoginsRange,
   panelLocale: AdminLocale,
   t: (key: string) => string
@@ -104,14 +91,18 @@ function buildLoginsSeries(
   today.setHours(12, 0, 0, 0);
 
   if (range === "7d") {
-    return DEMO_DAILY_LOGINS.map((d, i) => {
-      const label = t(d.dayKey);
-      return {
-        id: `7d-${i}`,
-        label,
-        value: d.value,
-        title: `${label}: ${d.value}`,
-      };
+    const days = [
+      "analytics.chart.mon",
+      "analytics.chart.tue",
+      "analytics.chart.wed",
+      "analytics.chart.thu",
+      "analytics.chart.fri",
+      "analytics.chart.sat",
+      "analytics.chart.sun",
+    ];
+    return days.map((dayKey, i) => {
+      const label = t(dayKey);
+      return { id: `7d-${i}`, label, value: 0, title: label };
     });
   }
 
@@ -121,65 +112,32 @@ function buildLoginsSeries(
     for (let i = n - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const v = Math.round(25 + seededUnit(1, i) * 55);
       const showLabel = i % 5 === 0 || i === 0 || i === n - 1;
       const label = showLabel ? compactDateLabel(d, tag) : "";
-      out.push({
-        id: `1m-${i}`,
-        label,
-        value: v,
-        title: `${d.toLocaleDateString(tag, { dateStyle: "medium" })}: ${v}`,
-      });
+      out.push({ id: `1m-${i}`, label, value: 0, title: d.toLocaleDateString(tag, { dateStyle: "medium" }) });
     }
     return out;
   }
 
   if (range === "3m") {
-    const weeks = 13;
     const out: LoginsChartPoint[] = [];
-    for (let w = weeks - 1; w >= 0; w--) {
+    for (let w = 12; w >= 0; w--) {
       const d = new Date(today);
       d.setDate(d.getDate() - w * 7);
-      const v = Math.round(180 + seededUnit(2, w) * 320);
-      const label = compactDateLabel(d, tag);
-      out.push({
-        id: `3m-${w}`,
-        label,
-        value: v,
-        title: `${d.toLocaleDateString(tag, { dateStyle: "medium" })} — ${v}`,
-      });
+      out.push({ id: `3m-${w}`, label: compactDateLabel(d, tag), value: 0, title: d.toLocaleDateString(tag, { dateStyle: "medium" }) });
     }
     return out;
   }
 
-  if (range === "6m") {
-    const months = 6;
-    const out: LoginsChartPoint[] = [];
-    for (let m = months - 1; m >= 0; m--) {
-      const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
-      const v = Math.round(800 + seededUnit(3, m) * 1400);
-      const label = d.toLocaleDateString(tag, { month: "short" });
-      out.push({
-        id: `6m-${m}`,
-        label,
-        value: v,
-        title: `${d.toLocaleDateString(tag, { month: "long", year: "numeric" })}: ${v}`,
-      });
-    }
-    return out;
-  }
-
-  const months = 12;
+  const months = range === "6m" ? 6 : 12;
   const out: LoginsChartPoint[] = [];
   for (let m = months - 1; m >= 0; m--) {
     const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
-    const v = Math.round(1200 + seededUnit(4, m) * 2200);
-    const label = d.toLocaleDateString(tag, { month: "short" });
     out.push({
-      id: `12m-${m}`,
-      label,
-      value: v,
-      title: `${d.toLocaleDateString(tag, { month: "long", year: "numeric" })}: ${v}`,
+      id: `${range}-${m}`,
+      label: d.toLocaleDateString(tag, { month: "short" }),
+      value: 0,
+      title: d.toLocaleDateString(tag, { month: "long", year: "numeric" }),
     });
   }
   return out;
@@ -214,7 +172,7 @@ export function AnalyticsDashboard() {
         label: d.date,
       }));
     }
-    return buildLoginsSeries(loginsRange, locale, t);
+    return buildEmptySeries(loginsRange, locale, t);
   }, [apiStats, loginsRange, locale, t]);
 
   const maxBar = useMemo(
@@ -232,15 +190,12 @@ export function AnalyticsDashboard() {
     };
   }, []);
 
+  // liveUsers is set from API stats when available
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setLiveUsers((n) => {
-        const delta = Math.floor(Math.random() * 5) - 2;
-        return Math.min(42, Math.max(8, n + delta));
-      });
-    }, 4000);
-    return () => clearInterval(id);
-  }, []);
+    if (apiStats?.liveUsers !== undefined) {
+      setLiveUsers(apiStats.liveUsers as number);
+    }
+  }, [apiStats]);
 
   if (!allowed) {
     return (
@@ -301,7 +256,7 @@ export function AnalyticsDashboard() {
               <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <LogIn className="w-4 h-4 text-blue-400 shrink-0" />
                 <h2 className="text-sm font-semibold text-zinc-200">{t("analytics.dailyLogins")}</h2>
-                <span className="text-xs text-zinc-500">{t("analytics.demoDataBadge")}</span>
+                {!apiStats?.dailySeries?.length && <span className="text-xs text-zinc-500">{t("analytics.noData")}</span>}
               </div>
               <div
                 className="flex flex-wrap items-center gap-1.5 shrink-0"
@@ -326,26 +281,37 @@ export function AnalyticsDashboard() {
               </div>
             </div>
             <div className="w-full pb-1">
-              <div className="flex w-full items-end gap-0.5 sm:gap-1">
-                {loginsSeries.map((point) => (
-                  <div
-                    key={point.id}
-                    className="flex min-w-0 flex-1 flex-col items-stretch gap-1.5"
-                  >
-                    <div className="flex h-36 w-full flex-col justify-end rounded-md border border-zinc-800/60 bg-zinc-950/60 overflow-hidden">
-                      <div
-                        className="w-full rounded-b-sm bg-gradient-to-t from-blue-600/90 to-blue-400/70 transition-all duration-500"
-                        style={{
-                          height: `${(point.value / maxBar) * 100}%`,
-                          minHeight: "8%",
-                        }}
-                        title={point.title}
-                      />
+              {apiLoading ? (
+                <div className="flex h-36 items-center justify-center text-zinc-500 text-sm gap-2">
+                  <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  {t("analytics.loading")}
+                </div>
+              ) : !apiStats?.dailySeries?.length ? (
+                <div className="flex h-36 items-center justify-center rounded-lg border border-zinc-800/60 bg-zinc-950/40 text-zinc-500 text-sm">
+                  {t("analytics.noData")}
+                </div>
+              ) : (
+                <div className="flex w-full items-end gap-0.5 sm:gap-1">
+                  {loginsSeries.map((point) => (
+                    <div
+                      key={point.id}
+                      className="flex min-w-0 flex-1 flex-col items-stretch gap-1.5"
+                    >
+                      <div className="flex h-36 w-full flex-col justify-end rounded-md border border-zinc-800/60 bg-zinc-950/60 overflow-hidden">
+                        <div
+                          className="w-full rounded-b-sm bg-gradient-to-t from-blue-600/90 to-blue-400/70 transition-all duration-500"
+                          style={{
+                            height: `${(point.value / maxBar) * 100}%`,
+                            minHeight: "8%",
+                          }}
+                          title={point.title}
+                        />
+                      </div>
+                      <ChartAxisLabel label={point.label} title={point.title} />
                     </div>
-                    <ChartAxisLabel label={point.label} title={point.title} />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

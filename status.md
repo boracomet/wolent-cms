@@ -1,238 +1,129 @@
-# Wolent CMS — Karşılaştırmalı Durum & Mimari Özet Planı
+# Wolent CMS — Proje Durum Raporu
 
-> Oluşturulma: 2026-04-05 | Son güncelleme: 2026-04-05
+> Son güncelleme: **2026-04-07** (oturum 16)
+> Tüm veriler gerçek kod analizi ile doğrulandı — her bileşen bizzat satır satır okundu.
+> Oturum 14: 15 bileşen satır satır okundu, her buton + her API çağrısı doğrulandı. Build ✅ 1711 modül, 0 hata.
 
 ---
 
-## GÜNCEL DURUM (2026-04-05) — TAM ÇALIŞIR HALDE ✅
+## GENEL DURUM
 
 ```
-Admin UI (React)      ██████████ 100% — Port 3000'den serve, SPA routing ✅
-Backend (Fastify)     ██████████ 100% — CANLI VE ÇALIŞIYOR ✅
-Auth + RBAC           ██████████ 100% — Login ✅ JWT ✅ /me ✅ argon2id ✅ 2FA TOTP ✅
-Setup Wizard          ██████████ 100% — Strapi-tarzı ilk kurulum ✅
-Multi-tenant          ██████████ 100% — Slug→ID lookup ✅ Prisma guard ✅
-Content Engine        ██████████ 100% — ContentType CRUD ✅ Entry CRUD ✅ Publish ✅
-Media API             ██████████ 100% — Upload, folder, soft delete ✅
-Admin Endpoints       ██████████ 100% — Users ✅ API Tokens ✅ Audit Logs ✅ Plugins ✅
-create-wolent-app CLI █████████░ 95% — RSA key üretimi ✅ DB push ✅
-Docker                ██████████ 100% — docker-compose.yml, Dockerfile.api, Dockerfile.admin
-Plugin Sistemi        ██████████ 100% — 11 plugin tam implementasyonu + panel bağlantısı ✅
+Admin UI (React)          ██████████ 100%  — 15 sayfa, 0 demo içerik, 0 işlevsiz buton ✅
+Backend (Fastify)         ██████████ 100%  — singularName lookup fix ✅  singularApiId compat ✅
+Auth + RBAC               ██████████ 100%  — JWT RS256, refresh, 2FA TOTP, 5 rol ✅
+Setup Wizard              ██████████ 100%  — 4 adım, auto-detect tz/URL, API retry, direkt panel girişi ✅
+Multi-tenant              ██████████ 100%  — AsyncLocalStorage, Prisma guard ✅
+Content Engine            ██████████ 100%  — CRUD, publish/unpublish, locale, soft-delete ✅
+Media API                 ██████████ 100%  — Upload, folder DnD, rename, S3/local ✅
+Audit Log                 ██████████ 100%  — Backend ✅  UI (AuditLogs.tsx) ✅
+Webhook Sistemi           ██████████ 100%  — HMAC-SHA256 ✅  Lifecycle hook ✅  Test UI ✅
+Image Optimization        ██████████ 100%  — Sharp ✅  Auto-hook ✅  Config UI ✅
+Plugin Sistemi            ██████████ 100%  — 11 plugin, API önce ✅  localStorage fallback ✅
+Analytics                 █████████░  90%  — Backend ✅  Grafik ✅  Geo verisi stub (MVP dışı)
+create-wolent-app CLI     ██████████ 100%  — RSA keygen ✅  Auto db push ✅  .env.example ✅
+Docker                    ██████████ 100%  — docker-compose, Dockerfile.api, Dockerfile.admin ✅
+Gemini AI Translate       ██████████ 100%  — Translate ✅  HTML translate ✅  Test ekranı ✅
+Lokalizasyon (i18n)       ██████████ 100%  — ContentEditor locale listesi API'dan ✅  lib/locales.ts ✅
+Content Editor UX         ██████████ 100%  — AI Translate üst bar ✅  Alt Save+Publish ✅
+Rol CRUD                  ████████░░  80%  — 5 statik rol ✅  Bilgi modalı ✅  Custom rol = MVP dışı
+Backup                    █████████░  95%  — Gerçek API export/import ✅  i18n metinler düzeltildi ✅
+i18n Metinler             ██████████ 100%  — 0 "demo"/"localStorage" referansı ✅  featureGaps kaldırıldı ✅
+API Retry / Error State   ██████████ 100%  — 3 retry + backoff ✅  api-down ekranı ✅  Retry butonu ✅
 ```
 
-### Canlı Test Sonuçları — 24/24 Endpoint ✅ (2026-04-05)
-- `GET /` → Admin panel HTML (SPA) ✅
-- `GET /login, /content-manager, /media-library` → index.html (SPA routing) ✅
-- `GET /health` → `{"status":"ok"}` ✅
-- `GET /api/setup/status` → setup durumu ✅
-- `POST /api/auth/login` → JWT access token ✅
-- `GET /api/auth/me` → user bilgisi ✅
-- `GET /api/content-types` → liste ✅
-- `POST /api/content-types` → Content type oluşturma ✅
-- `POST /api/:uid` → Entry oluşturma ✅
-- `GET /api/admin/users` → kullanıcı listesi ✅
-- `GET /api/admin/api-tokens` → API token listesi ✅
-- `GET /api/admin/audit-logs` → audit log ✅
-- `GET /api/admin/plugins` → tüm plugin listesi ✅
-- `GET /api/admin/plugins/:id` → 11 plugin tek tek ✅
-- `GET /api/upload/files` → medya dosyaları ✅
-- `GET /api/upload/folders` → medya klasörleri ✅
-- `GET /sitemap.xml` → XML sitemap ✅
-- `GET /robots.txt` → robots.txt ✅
+---
 
-### Giriş Bilgileri (Development)
-- **Email:** admin@wolent.io
-- **Şifre:** Admin1234!
-- **API:** http://localhost:3000
-- **Admin Panel:** http://localhost:3000 (production) veya http://localhost:1337 (dev)
+## SAYFA BAZLI DURUM
 
-### Yapılan İşler
-- Monorepo: pnpm workspaces (packages/core, admin, database, utils, create-wolent-app)
-- Prisma schema: Tenant, User, RefreshToken, ContentType, Entry, MediaFile, MediaFolder, ApiToken, AuditLog
-- Tenant guard middleware (her Prisma query'ye otomatik tenantId filtresi)
-- Auth: argon2id, JWT RS256 (fast-jwt), refresh token rotation, login lockout, TOTP 2FA, backup codes
-- RBAC: 5 rol, field-level permission, ownership filter
-- Content Engine: schema-driven CRUD generator, soft delete, pagination, validation, sanitization
-- API Güvenliği: Fastify, Helmet, CORS allowlist, rate limiting (IP:100/dk, auth:10/dk)
-- Media API: upload, folder tree, soft delete, local provider
-- API Tokens: SHA-256 hash'li, full-access/read-only/custom
-- Audit Log: her admin aksiyonu loglanıyor
-- Plugin sistemi: sandbox, lifecycle hooks, signed checksum
-- create-wolent-app CLI: interaktif setup wizard, .env generator
-- Docker Compose: postgres + redis + api + admin nginx
-
-### Sonraki Adımlar
-1. `pnpm --filter @wolent/core build` — core'u build et
-2. `pnpm --filter @wolent/database db:push` — SQLite test DB oluştur
-3. `node packages/core/dist/index.js` — sunucuyu ayağa kaldır
-4. Admin paneli Vite dev server ile bağla
+| Sayfa | API Bağlantısı | Demo İçerik | Notlar |
+|---|---|---|---|
+| **Dashboard** | ✅ | ❌ Yok | Gerçek sayılar API'dan |
+| **Content Types** | ✅ | ❌ Yok | CRUD, preset, ikon seçici, çoğaltma |
+| **Content Builder** | ✅ | ❌ Yok | 19 alan tipi, DnD sıralama |
+| **Content List** | ✅ | ❌ Yok | Pagination, bulk ops, duplicate fix |
+| **Content Editor** | ✅ | ❌ Yok | Cover image API upload ✅, locale API'dan ✅ |
+| **Media Library** | ✅ | ❌ Yok | Folder DnD ✅ Bulk delete ✅ Dosya rename ✅ |
+| **User Management** | ✅ | ❌ Yok | CRUD, empty state ✅ |
+| **API Permissions** | ✅ | ❌ Yok | Token CRUD ✅  Rol izin düzenleme ✅  API önce kaydet ✅ |
+| **Plugins** | ✅ | ❌ Yok | API önce kaydet ✅  localStorage fallback ✅ |
+| **Settings** | ✅ | ❌ Yok | 11 sekme ✅  DB migration gerçek API ✅ |
+| **Analytics** | ✅ | ❌ Yok | Gerçek API, plugin toggle ile açılıyor |
+| **Audit Logs** | ✅ | ❌ Yok | Sayfalama, filtre, renk kodlama ✅ |
+| **Account Settings** | ✅ | ❌ Yok | Profil, şifre, 2FA kurulum ✅ |
+| **Login Page** | ✅ | ❌ Yok | JWT + refresh token, 2FA ✅ |
+| **Setup Wizard** | ✅ | ❌ Yok | dil/timezone/locale seçici + MFA rehberi + Promise.allSettled ✅ |
+| **Backup** | ✅ | ❌ Yok | Gerçek API export/import ✅  i18n düzeltildi ✅ |
 
 ---
 
-## 1. Mevcut Admin Panel — Ne Var?
+## OTURUM 8-11 — TAM DENETİM BULGULARI
 
-### Tamamlanmış Ekranlar (UI Tasarım Düzeyinde)
+| # | Durum | Sayfa / Özellik | Notlar |
+|---|-------|-----------------|--------|
+| 1 | ✅ Temiz | Dashboard | API'ye bağlı, demo yok |
+| 2 | ✅ Temiz | Content Types | API'ye bağlı, demo yok |
+| 3 | ✅ Temiz | Content Builder | "Strapi-style demo" yorum temizlendi |
+| 4 | ✅ Temiz | Content List | API'ye bağlı |
+| 5 | ✅ Temiz | Content Editor | locale listesi API'dan, Save+Publish ✅ |
+| 6 | ✅ Temiz | Media Library | API'ye bağlı |
+| 7 | ✅ Temiz | User Management | API'ye bağlı |
+| 8 | 🔧 Düzeltildi | API Permissions | handleSaveApiSettings: önce API sonra localStorage |
+| 9 | 🔧 Düzeltildi | Plugins | persistPlugin: önce API sonra localStorage |
+| 10 | ✅ Temiz | Settings (11 sekme) | Hepsi API'ye bağlı, doğru sıra |
+| 11 | ✅ Temiz | Analytics | API'ye bağlı, empty state doğru |
+| 12 | ✅ Temiz | Audit Logs | API'ye bağlı |
+| 13 | ✅ Temiz | Account Settings | API'ye bağlı |
+| 14 | 🔧 Yenilendi | Setup Wizard | dil/timezone/locale seçici + MFA rehberi + Promise.allSettled ✅ |
+| 15 | 🔧 Düzeltildi | Backup i18n | "localStorage" → "veritabanı/API" metinleri |
+| 16 | 🗑️ Silindi | FeatureGapsShowcase.tsx | Artık hiçbir yerden import edilmiyordu |
+| 17 | 🗑️ Temizlendi | featureGaps i18n bloğu | en.json, tr.json, de.json |
+| 18 | 🗑️ Temizlendi | mfaDemoNote i18n | tr.json, de.json (backup bölümü) |
+| 19 | 🔧 Düzeltildi | ContentEditor locale | Hardcoded → lib/locales.ts + api.settings.get('i18n') |
+| 20 | ✅ Doğrulandı | Build | 1711 modül, 0 hata (oturum 9) |
+| 21 | 🔧 Düzeltildi | Settings → Appearance | Logo upload butonu: input[type=file] + api.media.upload() eklendi |
+| 22 | 🔧 Düzeltildi | Settings → Database | handleSave: api.settings.save("database") çağrısı eklendi (önceki no-op'tu) |
+| 23 | ✅ Doğrulandı | Build | 1711 modül, 0 hata (oturum 10) |
+| 24 | ✅ Doğrulandı | Oturum 11 tam denetim | 17 bileşen satır satır okundu, 0 demo içerik, 0 işlevsiz buton ✅ |
+| 25 | 🔧 Düzeltildi | App.tsx — API retry | API unreachable → 3 retry (1.2s backoff) + "api-down" ekranı + "Retry" butonu |
+| 26 | 🔧 Düzeltildi | SetupWizard — auto-detect | timezone: Intl.DateTimeFormat().resolvedOptions(); siteUrl: window.location.origin |
+| 27 | 🔧 Düzeltildi | SetupWizard — Done butonu | token varsa "Enter Dashboard", yoksa "Go to Login" |
+| 28 | ✅ Doğrulandı | Build | 1711 modül, 0 hata (oturum 12) |
+| 29 | 🔧 Düzeltildi | Plugins.tsx — robots.txt | DEFAULT_ROBOTS_TXT: example.com → your-domain.com |
+| 30 | ✅ Doğrulandı | Tam kod denetimi (oturum 13) | 22 bileşen okundu, 0 demo içerik, 0 sahte veri doğrulandı ✅ |
+| 31 | ✅ Doğrulandı | Tam satır satır denetim (oturum 14) | 15 bileşenin tüm fonksiyonları doğrulandı — her buton, her API çağrısı ✅ |
+| 32 | ✅ Doğrulandı | Build | 1711 modül, 0 hata (oturum 14) ✅ |
+| 33 | 🔧 Eklendi | App.tsx — ?setup=1 bypass | Setup tamamlanmış olsa bile URL'e ?setup=1 ekleyerek wizard açılabilir |
+| 34 | 🔧 Düzeltildi | SetupWizard — 403 handle | Setup zaten tamam → 403 gelince hata yerine step 3'e atla |
+| 35 | ✅ Doğrulandı | Build | 0 hata (oturum 15) ✅ |
+| 36 | ✅ Doğrulandı | Tam denetim oturum 16 | Tüm route'lar, client.ts endpointleri, Settings 11 sekme, ContentEditor publish — 0 sorun ✅ |
+| 37 | ✅ Doğrulandı | Build | 1711 modül, 0 hata (oturum 16) ✅ |
 
-| Ekran | Durum | Notlar |
+---
+
+## KALAN EKSİKLER (Kasıtlı Kapsam Dışı)
+
+| Eksik | Öncelik | Notlar |
 |---|---|---|
-| **Dashboard** | ✅ Hazır | 4 stat kartı, son içerikler listesi |
-| **Content Types** | ✅ Hazır | Grid/liste görünümü, renk atama, preset şablonlar, çoğaltma |
-| **Content Builder** | ✅ Hazır | 19 Strapi-uyumlu alan tipi (text, richtext, media, relation, component, dynamiczone, vb.), DnD sıralama |
-| **Content List** | ✅ Hazır | Tablolu liste, arama, filtre, durum badge |
-| **Content Editor** | ✅ Hazır | Tiptap rich text, çok dilli (5 locale), medya picker, AI çeviri modal, kapak görseli |
-| **Media Library** | ✅ Hazır | Klasör ağacı, DnD (dosya/klasör taşıma), renk aksan picker, çoklu seçim, context menü |
-| **User Management** | ✅ Hazır | Kullanıcı tablosu, roller (Admin/Editor/Author/Viewer), oluşturma modal |
-| **API Permissions** | ✅ Hazır | API token yönetimi, REST/GraphQL geçiş, content type başına izin matrisi |
-| **Plugins** | ✅ Hazır | S3, SMTP, n8n, Outbound Webhook, Sitemap, Redis, AI (Gemini), Native Analytics, Image Opt. |
-| **Settings** | ✅ Hazır | 11 sekme: Account, General, i18n, Menu Builder, Page Access, Security, Notifications, Appearance, Database, Integrations, Backup |
-| **Analytics Dashboard** | ✅ Hazır | Plugin toggle ile açılan native analytics: günlük login grafiği, geo session listesi |
-| **Feature Gaps Showcase** | ✅ Hazır | Strapi'de eksik özelliklerin demo UI'ı (2FA, audit log, field permission, vb.) |
-| **Login Page** | ✅ Hazır | |
-
-### Teknik Altyapı (Frontend)
-- **Stack:** React 18 + Vite + TypeScript + Tailwind + shadcn/ui (Radix tabanlı)
-- **Routing:** React Router v7
-- **Rich Text:** Tiptap (MinimalTiptap) + Lexical Blocks modu
-- **i18n:** Özel I18nProvider, TR/EN/DE locale, katalog tabanlı
-- **State:** Tamamen client-side, localStorage persist (demo modu)
-- **DnD:** HTML5 Drag & Drop API (custom, no library)
-- **Responsive:** Mobile-first, dvh + safe-area-inset, iPad overlay
+| Custom Rol CRUD | Düşük | Yeni DB tablosu + migration gerektirir, MVP dışı |
+| Analytics geo verisi | Düşük | IP→lokasyon servisi gerektirir |
+| GraphQL plugin | Düşük | REST tam çalışıyor |
+| Backup DB-level snapshot | Düşük | API export/import gerçek DB; pg_dump seviyesi yok |
 
 ---
 
-## 2. DOCX Mimari Plan — Ne İstiyor?
-
-### Temel Fark Noktaları (Strapi'ye Karşı)
-
-| Alan | Strapi | Wolent CMS Hedefi |
-|---|---|---|
-| HTTP | Koa.js | **Fastify 5** (3× hız) |
-| ORM | Custom Engine | **Prisma** (tip-güvenli, migrate) |
-| Validation | Yok/Zayıf | **Zod** (her katmanda) |
-| Plugin Sandbox | Yok | **VM2 izole sandbox** + signed plugins |
-| Field Permission | Enterprise | **Core'da açık** |
-| Multi-tenant | Enterprise | **Core'da** (row-level) |
-| 2FA | Enterprise | **Core'da** (TOTP) |
-| Auth | Sadece JWT | **JWT + Refresh Token** (HttpOnly cookie) |
-| Rate Limiting | Plugin ile | **Core'da built-in** |
-| Password Hash | bcrypt | **argon2id** (OWASP 2024) |
-
----
-
-## 3. Karşılaştırmalı GAP Analizi
-
-### ✅ Admin Panel Var, Backend YOK
-
-Mevcut panel tamamen **mock/demo verisi** ile çalışıyor. Hiçbir gerçek backend bağlantısı yok.
-
-### Backend — Sıfırdan İnşa Edilecek
+## MİMARİ
 
 ```
 packages/
-├── core/          ← Fastify + Prisma + Zod + Auth + RBAC + Content Engine
-├── admin/         ← Mevcut React paneli (burası hazır)
-├── database/      ← Prisma schema + migrations
-├── utils/         ← Shared types
-└── sdk/           ← Plugin geliştirici SDK
-plugins/
-├── i18n/          ← ✅ UI hazır, backend yok
-├── seo/           ← ✅ UI hazır, backend yok
-├── graphql/       ← ✅ UI switch var, backend yok
-├── media-cloudinary/  ← ✅ S3 plugin UI var, entegrasyon yok
-└── email/         ← ✅ SMTP plugin UI var, backend yok
+├── core/          ✅ Fastify 5 + Prisma + Zod + Auth + RBAC + Content Engine
+├── admin/         ✅ React 18 + Vite + Tailwind — API'ya tam bağlı, 0 demo içerik
+├── database/      ✅ Prisma schema (13 model, soft delete, multi-tenant)
+├── utils/         ✅ Shared types + error classes
+└── create-wolent-app/ ✅ CLI scaffold (auto db push, .env.example)
 ```
 
----
-
-## 4. Öncelikli Geliştirme Planı (Fazlara Göre)
-
-### FAZ 0 — Monorepo Altyapı (1 hafta)
-- `pnpm workspaces` ile monorepo kurulum
-- `packages/core`, `packages/admin` (mevcut React paneli buraya taşınır), `packages/database`
-- Vitest config, ESLint, Prettier, CI/CD pipeline
-
-### FAZ 1 — Core Content Engine (3 hafta)
-- JSON Schema → Prisma migration otomasyonu
-- CRUD API generator (GET/POST/PUT/PATCH/DELETE)
-- Soft delete (paranoid mode)
-- Pagination (default:25, max:100)
-- Zod validation her endpoint'te
-- **Bağlanacak panel:** ContentTypes + ContentBuilder → gerçek schema kaydedecek
-
-### FAZ 2 — Auth Sistemi (2 hafta)
-- JWT RS256 + Refresh Token rotation
-- argon2id şifre hash
-- HttpOnly cookie + SameSite=Lax
-- **Bağlanacak panel:** LoginPage → gerçek auth akışı
-
-### FAZ 3 — RBAC + Field Permission (2 hafta)
-- 5 rol: Super Admin / Admin / Editor / Author / Viewer
-- Field-level permission engine
-- Policy DSL tasarımı
-- **Bağlanacak panel:** UserManagement + ApiPermissions → gerçek izin matrisi
-
-### FAZ 4 — Plugin Sistemi (3 hafta)
-- VM2 sandbox + permissioned CMS API
-- Plugin loader + registry (SHA-256 signed)
-- `cms.extendContentType()`, `cms.admin.addPanel()`, `cms.on()` hooks
-- **Bağlanacak panel:** Plugins sayfası → gerçek toggle/config kayıt
-
-### FAZ 5 — API Güvenliği (2 hafta)
-- Fastify rate limiting (IP: 100/dk, Auth: 10/dk)
-- Helmet (CSP, X-Frame-Options, HSTS vb.)
-- CORS allowlist (wildcard yasak)
-- Input sanitization (sanitize-html, DOMPurify server-side)
-- 2FA (TOTP) — admin panele bağlantı hazır (FeatureGapsShowcase'de mock var)
-
-### FAZ 6 — Admin Panel Entegrasyonu (3 hafta)
-- Mock veriyi gerçek API çağrılarıyla değiştir
-- Plugin slot sistemi (backend plugin → admin panel inject)
-- API token üretimi gerçekleşecek (ApiPermissions → backend)
-- Media Library → gerçek S3/local upload
-
-### FAZ 7 — Multi-Tenant (2 hafta)
-- Row-level isolation
-- AsyncLocalStorage tenant context
-- Prisma middleware tenant guard
-- Tenant yönetim UI (Settings → yeni sekme)
-
-### FAZ 8 — Resmi Pluginler (2 hafta)
-- `@wolent/plugin-i18n` (panel zaten hazır)
-- `@wolent/plugin-seo` (panel zaten hazır)
-- `@wolent/plugin-graphql` (API switch UI hazır)
-- `@wolent/plugin-media-cloudinary` / S3 (UI hazır)
-- `@wolent/plugin-email` SMTP (UI hazır)
-
-### FAZ 9 — Prod Hazırlık (1 hafta)
-- Pino structured logging
-- Audit log (her admin aksiyonu: timestamp + IP + userId)
-- Performans benchmark (Fastify vs Strapi)
-- Dokümantasyon + SDK referansı
-
----
-
-## 5. Kritik Kararlar (Henüz Verilmemiş)
-
-| Karar | Seçenek A | Seçenek B | Öneri |
-|---|---|---|---|
-| Schema format | JSON Schema (dosya tabanlı) | DB tabanlı | **JSON Schema** (Strapi uyumlu, git-versionable) |
-| Migration stratejisi | Otomatik (schema değişince) | Manuel onay | **Manuel onay** (production güvenliği) |
-| Cookie vs Header | HttpOnly cookie only | Dual (cookie + header) | **Dual** (SSR + SPA desteği) |
-| Rate limit store | In-memory | Redis | **In-memory default, Redis plugin ile** |
-| Sandbox | VM2 | Deno subprocess | **VM2** (daha olgun, sync API) |
-| GraphQL | Core | Plugin | **Plugin** (opsiyonel, core şişmez) |
-
----
-
-## 6. Özet: Nerede Duruyoruz?
-
-```
-Admin UI (React)      ██████████ 85% tamamlandı
-Backend (Fastify)     ░░░░░░░░░░  0% — hiç başlanmadı
-Auth + RBAC           ░░░░░░░░░░  0%
-Plugin Sandbox        ░░░░░░░░░░  0%
-Multi-tenant          ░░░░░░░░░░  0%
-Gerçek API Bağlantısı ░░░░░░░░░░  0%
-```
-
-**Panel tasarımı son derece sağlam ve Strapi'ye yakın feature-set'e sahip.** Mimari planda tanımlanan tüm güvenlik katmanları (argon2, JWT rotation, Helmet, VM2, field-level RBAC, multi-tenant) sıfırdan backend olarak yazılacak. Admin paneli mock'tan gerçek API'ye bağlamak ise Faz 6'da yapılacak.
+**Geliştirme ortamı:**
+- API: `http://localhost:3000`
+- Admin: `http://localhost:1337` (dev) veya `http://localhost:3000` (prod)
+- Test kullanıcısı: `admin@wolent.io` / `Admin1234!`

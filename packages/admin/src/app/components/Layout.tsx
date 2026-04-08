@@ -10,9 +10,12 @@ import {
   Menu,
   X,
   Puzzle,
-  Palette,
   BarChart3,
   LogOut,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  ClipboardList,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
@@ -21,11 +24,15 @@ import {
   readNativeAnalyticsPluginEnabled,
 } from "../lib/cmsPluginsEvents";
 import { useAuth } from "../api/AuthContext";
+import { fetchContentTypes, getAllCachedTypes, CONTENT_TYPES_CHANGED_EVENT } from "../lib/contentTypeCache";
+import type { DemoContentType } from "../data/demoContentTypes";
 
 export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsNav, setAnalyticsNav] = useState(() => readNativeAnalyticsPluginEnabled());
+  const [contentTypes, setContentTypes] = useState<DemoContentType[]>(() => getAllCachedTypes());
+  const [contentNavOpen, setContentNavOpen] = useState(true);
   const { user, loading, logout } = useAuth();
   const { t } = useI18n();
 
@@ -40,24 +47,38 @@ export function Layout() {
     };
   }, []);
 
+  useEffect(() => {
+    fetchContentTypes().then(types => setContentTypes(types)).catch(() => {});
+    const onChanged = () => {
+      fetchContentTypes().then(types => setContentTypes(types)).catch(() => {});
+    };
+    window.addEventListener(CONTENT_TYPES_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(CONTENT_TYPES_CHANGED_EVENT, onChanged);
+  }, []);
+
   const navigation = useMemo(() => {
-    const base = [
+    const isAdmin = Boolean(user && ["super_admin", "admin"].includes(user.role));
+    const base: { labelKey: string; href: string; icon: typeof LayoutDashboard }[] = [
       { labelKey: "layout.nav.dashboard", href: "/", icon: LayoutDashboard },
       { labelKey: "layout.nav.contentTypes", href: "/content-types", icon: Database },
       { labelKey: "layout.nav.mediaLibrary", href: "/media", icon: Image },
-      { labelKey: "layout.nav.users", href: "/users", icon: Users },
-      { labelKey: "layout.nav.apiPermissions", href: "/api-permissions", icon: Key },
-      { labelKey: "layout.nav.plugins", href: "/plugins", icon: Puzzle },
     ];
+    if (isAdmin) {
+      base.push(
+        { labelKey: "layout.nav.users", href: "/users", icon: Users },
+        { labelKey: "layout.nav.apiPermissions", href: "/api-permissions", icon: Key },
+        { labelKey: "layout.nav.plugins", href: "/plugins", icon: Puzzle },
+      );
+    }
     if (analyticsNav) {
       base.push({ labelKey: "layout.nav.analytics", href: "/analytics", icon: BarChart3 });
     }
-    base.push(
-      { labelKey: "layout.nav.settings", href: "/settings", icon: Settings },
-      { labelKey: "layout.nav.featureGaps", href: "/feature-gaps", icon: Palette }
-    );
+    if (isAdmin) {
+      base.push({ labelKey: "layout.nav.auditLogs", href: "/audit-logs", icon: ClipboardList });
+    }
+    base.push({ labelKey: "layout.nav.settings", href: "/settings", icon: Settings });
     return base;
-  }, [analyticsNav]);
+  }, [analyticsNav, user]);
 
   // Auth guard — redirect to /login if not authenticated (after all hooks)
   if (!loading && !user) {
@@ -129,24 +150,60 @@ export function Layout() {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href || 
+            const isContentTypes = item.href === "/content-types";
+            const isActive = location.pathname === item.href ||
                            (item.href !== "/" && location.pathname.startsWith(item.href));
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  isActive
-                    ? "bg-zinc-800/70 backdrop-blur-sm text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 backdrop-blur-sm"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {t(item.labelKey)}
-              </Link>
+              <div key={item.href}>
+                <Link
+                  to={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                    isActive
+                      ? "bg-zinc-800/70 backdrop-blur-sm text-zinc-100"
+                      : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 backdrop-blur-sm"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  <span className="flex-1">{t(item.labelKey)}</span>
+                  {isContentTypes && contentTypes.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setContentNavOpen(o => !o); }}
+                      className="p-0.5 rounded hover:bg-zinc-700/50"
+                    >
+                      {contentNavOpen
+                        ? <ChevronDown className="w-3.5 h-3.5" />
+                        : <ChevronRight className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </Link>
+                {isContentTypes && contentNavOpen && contentTypes.length > 0 && (
+                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-zinc-800 pl-3">
+                    {contentTypes.map(ct => {
+                      const ctPath = `/content/${ct.apiId}`;
+                      const ctActive = location.pathname.startsWith(ctPath);
+                      return (
+                        <Link
+                          key={ct.id}
+                          to={ctPath}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                            ctActive
+                              ? "bg-zinc-800/70 text-zinc-100"
+                              : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40"
+                          }`}
+                        >
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{ct.pluralName || ct.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

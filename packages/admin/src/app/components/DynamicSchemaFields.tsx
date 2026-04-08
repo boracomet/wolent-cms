@@ -261,15 +261,12 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
                   {field.label}
                   {req}
                 </div>
-                <p className="text-xs text-zinc-500">
-                  Demo: gerçek CMS’te alt alanlar (title, description, image…) burada iç içe form olarak açılır.
-                </p>
                 <input
                   type="text"
                   value={v}
                   onChange={(e) => onChange(field.apiName, e.target.value)}
                   className={inputClass}
-                  placeholder="Örn. SEO title (tek alanlı demo)"
+                  placeholder={`${field.label}...`}
                 />
               </div>
             );
@@ -283,7 +280,7 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
                   {req}
                 </div>
                 <p className="text-xs text-zinc-500">
-                  Demo: Strapi’de burada Hero, Quote, CTA gibi bloklar sürüklenerek eklenir.
+                  Add dynamic blocks to this zone.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button

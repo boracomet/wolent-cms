@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
-  Filter,
   Edit,
   Trash2,
   MoreVertical,
@@ -56,7 +55,11 @@ export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [form, setForm] = useState<UserForm>(emptyForm());
   const [formSaving, setFormSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [filterRole, setFilterRole] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   useEffect(() => {
     api.users.list()
@@ -75,6 +78,7 @@ export function UserManagement() {
   function openCreate() {
     setSelectedUser(null);
     setForm(emptyForm());
+    setFormError(null);
     setShowPassword(false);
     setShowCreateModal(true);
   }
@@ -82,6 +86,7 @@ export function UserManagement() {
   function openEdit(user: User) {
     setSelectedUser(user);
     setForm(emptyForm(user));
+    setFormError(null);
     setShowPassword(false);
     setShowCreateModal(true);
   }
@@ -89,10 +94,12 @@ export function UserManagement() {
   function closeModal() {
     setShowCreateModal(false);
     setSelectedUser(null);
+    setFormError(null);
   }
 
   async function handleSave() {
     setFormSaving(true);
+    setFormError(null);
     try {
       if (selectedUser) {
         const res = await api.users.update(selectedUser.id, {
@@ -117,8 +124,8 @@ export function UserManagement() {
         setUsers(prev => [...prev, res.data as User]);
       }
       closeModal();
-    } catch {
-      alert("Failed to save user");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to save user.");
     } finally {
       setFormSaving(false);
     }
@@ -126,11 +133,12 @@ export function UserManagement() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this user?")) return;
+    setDeleteError(null);
     try {
       await api.users.delete(id);
       setUsers(prev => prev.filter(u => u.id !== id));
-    } catch {
-      alert("Failed to delete user");
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete user.");
     }
   }
 
@@ -142,9 +150,12 @@ export function UserManagement() {
     );
   }
 
-  const filteredUsers = users.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = !filterRole || u.role === filterRole;
+    const matchesStatus = !filterStatus || (filterStatus === "active" ? u.isActive : !u.isActive);
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -165,6 +176,8 @@ export function UserManagement() {
           </button>
         </div>
 
+        {deleteError && <p className="mb-4 text-sm text-red-400">{deleteError}</p>}
+
         {/* Filters */}
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-4">
@@ -178,10 +191,30 @@ export function UserManagement() {
                 className="w-full pl-10 pr-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
               />
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-md hover:bg-zinc-700/70 transition-colors">
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
+          </div>
+          <div className="flex items-center gap-3 mt-3">
+            <select
+              value={filterRole}
+              onChange={e => setFilterRole(e.target.value)}
+              className="px-3 py-1.5 text-sm bg-zinc-950/50 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700 text-zinc-300"
+            >
+              <option value="">All Roles</option>
+              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="px-3 py-1.5 text-sm bg-zinc-950/50 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700 text-zinc-300"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            {(filterRole || filterStatus) && (
+              <button onClick={() => { setFilterRole(""); setFilterStatus(""); }} className="text-xs text-zinc-400 hover:text-zinc-100 flex items-center gap-1">
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
           </div>
         </div>
 
@@ -199,6 +232,13 @@ export function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-zinc-500 text-sm">
+                    {error ? error : users.length === 0 ? "No users yet." : "No users match the current filters."}
+                  </td>
+                </tr>
+              )}
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-zinc-800/30 backdrop-blur-sm transition-colors">
                   <td className="px-6 py-4">
@@ -247,7 +287,11 @@ export function UserManagement() {
                       >
                         <Trash2 className="w-4 h-4 text-zinc-400" />
                       </button>
-                      <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
+                      <button
+                        onClick={() => openEdit(user)}
+                        title="Edit user"
+                        className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                      >
                         <MoreVertical className="w-4 h-4 text-zinc-400" />
                       </button>
                     </div>
@@ -362,6 +406,7 @@ export function UserManagement() {
               </div>
 
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800/50">
+                {formError && <span className="text-sm text-red-400 mr-auto">{formError}</span>}
                 <button onClick={closeModal} className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors">
                   Cancel
                 </button>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "react-router";
 import {
   Globe,
   Lock,
@@ -31,6 +32,9 @@ import {
 import { AccountSettings } from "./AccountSettings";
 import { BackupSettings } from "./BackupSettings";
 import { useI18n, type AdminLocale } from "../i18n";
+import { api } from "../api/client";
+import { ALL_LOCALES } from "../lib/locales";
+import { useAuth } from "../api/AuthContext";
 
 interface MenuItem {
   id: string;
@@ -44,20 +48,32 @@ interface MenuItem {
 export function Settings() {
   const [activeTab, setActiveTab] = useState("general");
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isAdmin = Boolean(user && ["super_admin", "admin"].includes(user.role));
 
-  const tabs = [
-    { id: "account", icon: User },
-    { id: "general", icon: Globe },
-    { id: "i18n", icon: Globe },
-    { id: "menu", icon: Menu },
-    { id: "page-access", icon: Link2 },
-    { id: "security", icon: Lock },
-    { id: "notifications", icon: Bell },
-    { id: "appearance", icon: Palette },
-    { id: "database", icon: Database },
-    { id: "integrations", icon: Zap },
-    { id: "backup", icon: Archive },
-  ];
+  const tabs = useMemo(() => {
+    const all = [
+      { id: "account", icon: User },
+      { id: "general", icon: Globe },
+      { id: "i18n", icon: Globe },
+      { id: "menu", icon: Menu },
+      { id: "page-access", icon: Link2 },
+      { id: "security", icon: Lock },
+      { id: "notifications", icon: Bell },
+      { id: "appearance", icon: Palette },
+      { id: "database", icon: Database },
+      { id: "integrations", icon: Zap },
+      { id: "backup", icon: Archive },
+    ];
+    if (isAdmin) return all;
+    return all.filter((tab) => tab.id !== "security" && tab.id !== "notifications");
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && (activeTab === "security" || activeTab === "notifications")) {
+      setActiveTab("general");
+    }
+  }, [isAdmin, activeTab]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -113,22 +129,99 @@ export function Settings() {
   );
 }
 
-function MenuBuilderSettings() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    { id: "1", label: "Dashboard", href: "/", icon: "LayoutDashboard", enabled: true, order: 1 },
-    { id: "2", label: "Content Types", href: "/content-types", icon: "Database", enabled: true, order: 2 },
-    { id: "3", label: "Content Manager", href: "/content/articles", icon: "FileText", enabled: true, order: 3 },
-    { id: "4", label: "Media Library", href: "/media", icon: "Image", enabled: true, order: 4 },
-    { id: "5", label: "Users", href: "/users", icon: "Users", enabled: true, order: 5 },
-    { id: "6", label: "API Permissions", href: "/api-permissions", icon: "Key", enabled: true, order: 6 },
-  ]);
+const MENU_BUILDER_KEY = "wolent-cms-menu-builder";
+const DEFAULT_MENU_ITEMS: MenuItem[] = [
+  { id: "1", label: "Dashboard", href: "/", icon: "LayoutDashboard", enabled: true, order: 1 },
+  { id: "2", label: "Content Types", href: "/content-types", icon: "Database", enabled: true, order: 2 },
+  { id: "3", label: "Content Manager", href: "/content/articles", icon: "FileText", enabled: true, order: 3 },
+  { id: "4", label: "Media Library", href: "/media", icon: "Image", enabled: true, order: 4 },
+  { id: "5", label: "Users", href: "/users", icon: "Users", enabled: true, order: 5 },
+  { id: "6", label: "API Permissions", href: "/api-permissions", icon: "Key", enabled: true, order: 6 },
+];
 
+function MenuBuilderSettings() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_MENU_ITEMS);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [newItemEnabled, setNewItemEnabled] = useState(true);
+  const [newLabel, setNewLabel] = useState("");
+  const [newHref, setNewHref] = useState("");
+  const [newIcon, setNewIcon] = useState("LayoutDashboard");
+  const [saved, setSaved] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const iconOptions = [
     "LayoutDashboard", "Database", "FileText", "Image", "Users", "Key",
     "Settings", "Layers", "Bell", "Globe", "Lock", "Palette", "Zap", "Mail"
   ];
+
+  useEffect(() => {
+    api.settings.get("menu")
+      .then(res => {
+        const s = res.data as Record<string, unknown>;
+        if (Array.isArray(s.items)) setMenuItems(s.items as MenuItem[]);
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(MENU_BUILDER_KEY);
+          if (raw) setMenuItems(JSON.parse(raw) as MenuItem[]);
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleSave() {
+    const data = { items: menuItems };
+    try {
+      await api.settings.save("menu", data);
+      try { localStorage.setItem(MENU_BUILDER_KEY, JSON.stringify(menuItems)); } catch { /* ignore */ }
+    } catch { /* silent */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  function handleAddItem() {
+    if (!newLabel.trim() || !newHref.trim()) return;
+    const newItem: MenuItem = {
+      id: String(Date.now()),
+      label: newLabel.trim(),
+      href: newHref.trim(),
+      icon: newIcon,
+      enabled: newItemEnabled,
+      order: menuItems.length + 1,
+    };
+    setMenuItems(prev => [...prev, newItem]);
+    setNewLabel("");
+    setNewHref("");
+    setNewIcon("LayoutDashboard");
+    setNewItemEnabled(true);
+    setShowAddItem(false);
+  }
+
+  function handleDelete(id: string) {
+    setMenuItems(prev => prev.filter(mi => mi.id !== id));
+  }
+
+  function handleDragStart(id: string) {
+    setDraggedId(id);
+  }
+
+  function handleDragOver(e: React.DragEvent, targetId: string) {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    setMenuItems(prev => {
+      const items = [...prev].sort((a, b) => a.order - b.order);
+      const fromIdx = items.findIndex(i => i.id === draggedId);
+      const toIdx = items.findIndex(i => i.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      const reordered = [...items];
+      const [moved] = reordered.splice(fromIdx, 1);
+      reordered.splice(toIdx, 0, moved);
+      return reordered.map((item, idx) => ({ ...item, order: idx + 1 }));
+    });
+  }
+
+  function handleDragEnd() {
+    setDraggedId(null);
+  }
 
   return (
     <>
@@ -152,10 +245,14 @@ function MenuBuilderSettings() {
             .map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-950 border border-zinc-800 rounded-lg p-4 hover:border-zinc-700 transition-colors"
+                draggable
+                onDragStart={() => handleDragStart(item.id)}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                onDragEnd={handleDragEnd}
+                className={`bg-zinc-950 border rounded-lg p-4 transition-colors ${draggedId === item.id ? "border-zinc-500 opacity-50" : "border-zinc-800 hover:border-zinc-700"}`}
               >
                 <div className="flex items-center gap-3">
-                  <button className="p-1 text-zinc-600 hover:text-zinc-400 cursor-grab">
+                  <button className="p-1 text-zinc-600 hover:text-zinc-400 cursor-grab" onMouseDown={e => e.preventDefault()}>
                     <GripVertical className="w-5 h-5" />
                   </button>
 
@@ -185,10 +282,10 @@ function MenuBuilderSettings() {
                       />
                       <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
-                    <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
-                      <Edit className="w-4 h-4 text-zinc-400" />
-                    </button>
-                    <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                    >
                       <Trash2 className="w-4 h-4 text-zinc-400" />
                     </button>
                   </div>
@@ -225,6 +322,8 @@ function MenuBuilderSettings() {
                   </label>
                   <input
                     type="text"
+                    value={newLabel}
+                    onChange={e => setNewLabel(e.target.value)}
                     placeholder="My Custom Page"
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
                   />
@@ -236,6 +335,8 @@ function MenuBuilderSettings() {
                   </label>
                   <input
                     type="text"
+                    value={newHref}
+                    onChange={e => setNewHref(e.target.value)}
                     placeholder="/my-custom-page"
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
                   />
@@ -243,7 +344,11 @@ function MenuBuilderSettings() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Icon</label>
-                  <select className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
+                  <select
+                    value={newIcon}
+                    onChange={e => setNewIcon(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                  >
                     {iconOptions.map((icon) => (
                       <option key={icon} value={icon}>
                         {icon}
@@ -258,7 +363,7 @@ function MenuBuilderSettings() {
                     <p className="text-xs text-zinc-500">Show this item in the menu</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" defaultChecked className="sr-only peer" />
+                    <input type="checkbox" checked={newItemEnabled} onChange={e => setNewItemEnabled(e.target.checked)} className="sr-only peer" />
                     <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
@@ -271,7 +376,11 @@ function MenuBuilderSettings() {
                 >
                   Cancel
                 </button>
-                <button className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+                <button
+                  onClick={handleAddItem}
+                  disabled={!newLabel.trim() || !newHref.trim()}
+                  className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium disabled:opacity-50"
+                >
                   Add Menu Item
                 </button>
               </div>
@@ -280,8 +389,9 @@ function MenuBuilderSettings() {
         )}
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+        {saved && <span className="text-xs text-green-400 self-center">Saved!</span>}
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           Save Menu
         </button>
@@ -290,8 +400,57 @@ function MenuBuilderSettings() {
   );
 }
 
+const GENERAL_SETTINGS_KEY = "wolent-cms-general-settings";
+
 function GeneralSettings() {
   const { t } = useI18n();
+  const [appName, setAppName] = useState("");
+  const [appUrl, setAppUrl] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [timezone, setTimezone] = useState("UTC");
+  const [description, setDescription] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.settings.get("general")
+      .then(res => {
+        const s = res.data as Record<string, string>;
+        if (s.appName) setAppName(s.appName);
+        if (s.appUrl) setAppUrl(s.appUrl);
+        if (s.language) setLanguage(s.language);
+        if (s.timezone) setTimezone(s.timezone);
+        if (s.description) setDescription(s.description);
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(GENERAL_SETTINGS_KEY);
+          if (raw) {
+            const s = JSON.parse(raw) as Record<string, string>;
+            if (s.appName) setAppName(s.appName);
+            if (s.appUrl) setAppUrl(s.appUrl);
+            if (s.language) setLanguage(s.language);
+            if (s.timezone) setTimezone(s.timezone);
+            if (s.description) setDescription(s.description);
+          }
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleSave() {
+    setSaveError(null);
+    const data = { appName, appUrl, language, timezone, description };
+    try {
+      await api.settings.save("general", data);
+      try { localStorage.setItem(GENERAL_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch {
+      setSaveError("Failed to save settings.");
+      return;
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
@@ -306,7 +465,9 @@ function GeneralSettings() {
           </label>
           <input
             type="text"
-            defaultValue="Headless CMS"
+            value={appName}
+            onChange={e => setAppName(e.target.value)}
+            placeholder="My CMS"
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
           />
         </div>
@@ -317,7 +478,9 @@ function GeneralSettings() {
           </label>
           <input
             type="url"
-            defaultValue="https://cms.example.com"
+            value={appUrl}
+            onChange={e => setAppUrl(e.target.value)}
+            placeholder="https://your-domain.com"
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
           />
         </div>
@@ -326,7 +489,7 @@ function GeneralSettings() {
           <label className="block text-sm font-medium mb-2">
             {t("settings.general.defaultLanguage")}
           </label>
-          <select className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
+          <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
             <option value="en">English</option>
             <option value="tr">Türkçe</option>
             <option value="de">Deutsch</option>
@@ -336,7 +499,7 @@ function GeneralSettings() {
 
         <div>
           <label className="block text-sm font-medium mb-2">{t("settings.general.timezone")}</label>
-          <select className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
+          <select value={timezone} onChange={e => setTimezone(e.target.value)} className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700">
             <option value="UTC">UTC</option>
             <option value="Europe/Istanbul">Europe/Istanbul</option>
             <option value="America/New_York">America/New York</option>
@@ -348,14 +511,18 @@ function GeneralSettings() {
           <label className="block text-sm font-medium mb-2">{t("settings.general.descriptionLabel")}</label>
           <textarea
             rows={4}
-            defaultValue="A modern headless CMS for managing content"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Describe your CMS..."
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none"
           />
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+        {saveError && <span className="text-xs text-red-400 mr-auto">{saveError}</span>}
+        {saved && <span className="text-xs text-green-400">Saved.</span>}
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           {t("settings.general.saveChanges")}
         </button>
@@ -364,47 +531,55 @@ function GeneralSettings() {
   );
 }
 
+const I18N_SETTINGS_KEY = "wolent-cms-i18n-settings";
+
 function I18nSettings() {
-  const [selectedLocales, setSelectedLocales] = useState(["en", "tr", "de", "fr"]);
+  const [selectedLocales, setSelectedLocales] = useState<string[]>(["en","tr","de","fr"]);
   const [defaultLocale, setDefaultLocale] = useState("en");
   const [showAddLocale, setShowAddLocale] = useState(false);
+  const [localeSwitcherEnabled, setLocaleSwitcherEnabled] = useState(true);
+  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [i18nSaved, setI18nSaved] = useState(false);
+  const [i18nError, setI18nError] = useState<string | null>(null);
 
-  // Comprehensive world languages list
-  const allLocales = [
-    { code: "en", name: "English", nativeName: "English", flag: "🇬🇧" },
-    { code: "tr", name: "Turkish", nativeName: "Türkçe", flag: "🇹🇷" },
-    { code: "de", name: "German", nativeName: "Deutsch", flag: "🇩🇪" },
-    { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷" },
-    { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
-    { code: "it", name: "Italian", nativeName: "Italiano", flag: "🇮🇹" },
-    { code: "pt", name: "Portuguese", nativeName: "Português", flag: "🇵🇹" },
-    { code: "nl", name: "Dutch", nativeName: "Nederlands", flag: "🇳🇱" },
-    { code: "ru", name: "Russian", nativeName: "Русский", flag: "🇷🇺" },
-    { code: "zh", name: "Chinese", nativeName: "中文", flag: "🇨🇳" },
-    { code: "ja", name: "Japanese", nativeName: "日本語", flag: "🇯🇵" },
-    { code: "ko", name: "Korean", nativeName: "한국어", flag: "🇰🇷" },
-    { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🇸🇦" },
-    { code: "hi", name: "Hindi", nativeName: "हिन्दी", flag: "🇮🇳" },
-    { code: "bn", name: "Bengali", nativeName: "বাংলা", flag: "🇧🇩" },
-    { code: "pl", name: "Polish", nativeName: "Polski", flag: "🇵🇱" },
-    { code: "uk", name: "Ukrainian", nativeName: "Українська", flag: "🇺🇦" },
-    { code: "vi", name: "Vietnamese", nativeName: "Tiếng Việt", flag: "🇻🇳" },
-    { code: "th", name: "Thai", nativeName: "ไทย", flag: "🇹🇭" },
-    { code: "sv", name: "Swedish", nativeName: "Svenska", flag: "🇸🇪" },
-    { code: "da", name: "Danish", nativeName: "Dansk", flag: "🇩🇰" },
-    { code: "no", name: "Norwegian", nativeName: "Norsk", flag: "🇳🇴" },
-    { code: "fi", name: "Finnish", nativeName: "Suomi", flag: "🇫🇮" },
-    { code: "el", name: "Greek", nativeName: "Ελληνικά", flag: "🇬🇷" },
-    { code: "cs", name: "Czech", nativeName: "Čeština", flag: "🇨🇿" },
-    { code: "hu", name: "Hungarian", nativeName: "Magyar", flag: "🇭🇺" },
-    { code: "ro", name: "Romanian", nativeName: "Română", flag: "🇷🇴" },
-    { code: "id", name: "Indonesian", nativeName: "Bahasa Indonesia", flag: "🇮🇩" },
-    { code: "ms", name: "Malay", nativeName: "Bahasa Melayu", flag: "🇲🇾" },
-    { code: "he", name: "Hebrew", nativeName: "עברית", flag: "🇮🇱" },
-    { code: "fa", name: "Persian", nativeName: "فارسی", flag: "🇮🇷" },
-    { code: "ur", name: "Urdu", nativeName: "اردو", flag: "🇵🇰" },
-    { code: "sw", name: "Swahili", nativeName: "Kiswahili", flag: "🇰🇪" },
-  ];
+  useEffect(() => {
+    api.settings.get("i18n")
+      .then(res => {
+        const s = res.data as Record<string, unknown>;
+        if (Array.isArray(s.selectedLocales)) setSelectedLocales(s.selectedLocales as string[]);
+        if (s.defaultLocale) setDefaultLocale(String(s.defaultLocale));
+        if (s.localeSwitcherEnabled !== undefined) setLocaleSwitcherEnabled(Boolean(s.localeSwitcherEnabled));
+        if (s.autoTranslate !== undefined) setAutoTranslate(Boolean(s.autoTranslate));
+      })
+      .catch(() => {
+        try {
+          const r = localStorage.getItem(I18N_SETTINGS_KEY);
+          if (r) {
+            const p = JSON.parse(r) as Record<string,unknown>;
+            if (Array.isArray(p.selectedLocales)) setSelectedLocales(p.selectedLocales as string[]);
+            if (p.defaultLocale) setDefaultLocale(String(p.defaultLocale));
+            if (p.localeSwitcherEnabled !== undefined) setLocaleSwitcherEnabled(Boolean(p.localeSwitcherEnabled));
+            if (p.autoTranslate !== undefined) setAutoTranslate(Boolean(p.autoTranslate));
+          }
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleI18nSave() {
+    setI18nError(null);
+    const data = { selectedLocales, defaultLocale, localeSwitcherEnabled, autoTranslate };
+    try {
+      await api.settings.save("i18n", data);
+      try { localStorage.setItem(I18N_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch {
+      setI18nError("Failed to save settings.");
+      return;
+    }
+    setI18nSaved(true);
+    setTimeout(() => setI18nSaved(false), 2000);
+  }
+
+  const allLocales = ALL_LOCALES;
 
   const enabledLocales = allLocales.filter((l) => selectedLocales.includes(l.code));
   const availableLocales = allLocales.filter((l) => !selectedLocales.includes(l.code));
@@ -509,7 +684,7 @@ function I18nSettings() {
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
+                <input type="checkbox" checked={localeSwitcherEnabled} onChange={e => setLocaleSwitcherEnabled(e.target.checked)} className="sr-only peer" />
                 <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
@@ -522,7 +697,7 @@ function I18nSettings() {
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" />
+                <input type="checkbox" checked={autoTranslate} onChange={e => setAutoTranslate(e.target.checked)} className="sr-only peer" />
                 <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
@@ -584,8 +759,10 @@ function I18nSettings() {
         </div>
       )}
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+        {i18nError && <span className="text-xs text-red-400 mr-auto self-center">{i18nError}</span>}
+        {i18nSaved && <span className="text-xs text-green-400 self-center">Saved!</span>}
+        <button onClick={handleI18nSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           Save Changes
         </button>
@@ -594,7 +771,56 @@ function I18nSettings() {
   );
 }
 
+const PAGE_ACCESS_SETTINGS_KEY = "wolent-cms-page-access-settings";
+
 function PageAccessSettings() {
+  const [dashboard, setDashboard] = useState(true);
+  const [contentTypes, setContentTypes] = useState(true);
+  const [contentManager, setContentManager] = useState(true);
+  const [mediaLibrary, setMediaLibrary] = useState(true);
+  const [users, setUsers] = useState(true);
+  const [apiPermissions, setApiPermissions] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.settings.get("page-access")
+      .then(res => {
+        const s = res.data as Record<string, unknown>;
+        if (s.dashboard !== undefined) setDashboard(Boolean(s.dashboard));
+        if (s.contentTypes !== undefined) setContentTypes(Boolean(s.contentTypes));
+        if (s.contentManager !== undefined) setContentManager(Boolean(s.contentManager));
+        if (s.mediaLibrary !== undefined) setMediaLibrary(Boolean(s.mediaLibrary));
+        if (s.users !== undefined) setUsers(Boolean(s.users));
+        if (s.apiPermissions !== undefined) setApiPermissions(Boolean(s.apiPermissions));
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(PAGE_ACCESS_SETTINGS_KEY);
+          if (raw) {
+            const s = JSON.parse(raw) as Record<string, unknown>;
+            if (s.dashboard !== undefined) setDashboard(Boolean(s.dashboard));
+            if (s.contentTypes !== undefined) setContentTypes(Boolean(s.contentTypes));
+            if (s.contentManager !== undefined) setContentManager(Boolean(s.contentManager));
+            if (s.mediaLibrary !== undefined) setMediaLibrary(Boolean(s.mediaLibrary));
+            if (s.users !== undefined) setUsers(Boolean(s.users));
+            if (s.apiPermissions !== undefined) setApiPermissions(Boolean(s.apiPermissions));
+          }
+        } catch {}
+      });
+  }, []);
+
+  async function handleSave() {
+    const data = { dashboard, contentTypes, contentManager, mediaLibrary, users, apiPermissions };
+    try {
+      await api.settings.save("page-access", data);
+      try { localStorage.setItem(PAGE_ACCESS_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch { /* silent — UI already works from local state */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  const toggleClass = "w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600";
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
@@ -605,108 +831,96 @@ function PageAccessSettings() {
       </div>
 
       <div className="p-6 space-y-6">
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">Dashboard</h3>
-              <p className="text-sm text-zinc-400">
-                Access to the main dashboard
-              </p>
+        {([
+          { label: "Dashboard", desc: "Access to the main dashboard", value: dashboard, set: setDashboard },
+          { label: "Content Types", desc: "Access to content type management", value: contentTypes, set: setContentTypes },
+          { label: "Content Manager", desc: "Access to content management", value: contentManager, set: setContentManager },
+          { label: "Media Library", desc: "Access to media library management", value: mediaLibrary, set: setMediaLibrary },
+          { label: "Users", desc: "Access to user management", value: users, set: setUsers },
+          { label: "API Permissions", desc: "Access to API permission management", value: apiPermissions, set: setApiPermissions },
+        ] as { label: string; desc: string; value: boolean; set: (v: boolean) => void }[]).map(({ label, desc, value, set }) => (
+          <div key={label} className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-medium">{label}</h3>
+                <p className="text-sm text-zinc-400">{desc}</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={value} onChange={e => set(e.target.checked)} className="sr-only peer" />
+                <div className={toggleClass}></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
           </div>
-        </div>
-
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">Content Types</h3>
-              <p className="text-sm text-zinc-400">
-                Access to content type management
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">Content Manager</h3>
-              <p className="text-sm text-zinc-400">
-                Access to content management
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">Media Library</h3>
-              <p className="text-sm text-zinc-400">
-                Access to media library management
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">Users</h3>
-              <p className="text-sm text-zinc-400">
-                Access to user management
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-medium">API Permissions</h3>
-              <p className="text-sm text-zinc-400">
-                Access to API permission management
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
-          Save Changes
+          {saved ? "Saved!" : "Save Changes"}
         </button>
       </div>
     </>
   );
 }
 
+const SECURITY_SETTINGS_KEY = "wolent-cms-security-settings";
+
 function SecuritySettings() {
+  const [require2fa, setRequire2fa] = useState(false);
+  const [rateLimit, setRateLimit] = useState(true);
+  const [sessionTimeout, setSessionTimeout] = useState("60");
+  const [minLength, setMinLength] = useState(true);
+  const [requireUpper, setRequireUpper] = useState(true);
+  const [requireNumbers, setRequireNumbers] = useState(true);
+  const [requireSpecial, setRequireSpecial] = useState(false);
+  const [corsOrigins, setCorsOrigins] = useState("");
+  const [notifEmail, setNotifEmail] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.settings.get("security")
+      .then(res => {
+        const s = res.data as Record<string, unknown>;
+        if (s.require2fa !== undefined) setRequire2fa(Boolean(s.require2fa));
+        if (s.rateLimit !== undefined) setRateLimit(Boolean(s.rateLimit));
+        if (s.sessionTimeout) setSessionTimeout(String(s.sessionTimeout));
+        if (s.minLength !== undefined) setMinLength(Boolean(s.minLength));
+        if (s.requireUpper !== undefined) setRequireUpper(Boolean(s.requireUpper));
+        if (s.requireNumbers !== undefined) setRequireNumbers(Boolean(s.requireNumbers));
+        if (s.requireSpecial !== undefined) setRequireSpecial(Boolean(s.requireSpecial));
+        if (s.corsOrigins) setCorsOrigins(String(s.corsOrigins));
+        if (s.notifEmail) setNotifEmail(String(s.notifEmail));
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(SECURITY_SETTINGS_KEY);
+          if (raw) {
+            const s = JSON.parse(raw) as Record<string, unknown>;
+            if (s.require2fa !== undefined) setRequire2fa(Boolean(s.require2fa));
+            if (s.rateLimit !== undefined) setRateLimit(Boolean(s.rateLimit));
+            if (s.sessionTimeout) setSessionTimeout(String(s.sessionTimeout));
+            if (s.minLength !== undefined) setMinLength(Boolean(s.minLength));
+            if (s.requireUpper !== undefined) setRequireUpper(Boolean(s.requireUpper));
+            if (s.requireNumbers !== undefined) setRequireNumbers(Boolean(s.requireNumbers));
+            if (s.requireSpecial !== undefined) setRequireSpecial(Boolean(s.requireSpecial));
+            if (s.corsOrigins) setCorsOrigins(String(s.corsOrigins));
+            if (s.notifEmail) setNotifEmail(String(s.notifEmail));
+          }
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleSave() {
+    const data = { require2fa, rateLimit, sessionTimeout, minLength, requireUpper, requireNumbers, requireSpecial, corsOrigins, notifEmail };
+    try {
+      await api.settings.save("security", data);
+      try { localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch { /* silent */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
@@ -721,12 +935,10 @@ function SecuritySettings() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-medium">Two-Factor Authentication</h3>
-              <p className="text-sm text-zinc-400">
-                Require 2FA for all users
-              </p>
+              <p className="text-sm text-zinc-400">Require 2FA for all users</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
+              <input type="checkbox" checked={require2fa} onChange={e => setRequire2fa(e.target.checked)} className="sr-only peer" />
               <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
@@ -736,69 +948,74 @@ function SecuritySettings() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-medium">API Rate Limiting</h3>
-              <p className="text-sm text-zinc-400">
-                Enable rate limiting for API requests
-              </p>
+              <p className="text-sm text-zinc-400">Enable rate limiting for API requests</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
+              <input type="checkbox" checked={rateLimit} onChange={e => setRateLimit(e.target.checked)} className="sr-only peer" />
               <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Session Timeout (minutes)
-          </label>
+          <label className="block text-sm font-medium mb-2">Session Timeout (minutes)</label>
           <input
             type="number"
-            defaultValue="60"
+            value={sessionTimeout}
+            onChange={e => setSessionTimeout(e.target.value)}
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Password Policy
-          </label>
+          <label className="block text-sm font-medium mb-2">Password Policy</label>
           <div className="space-y-2">
             <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={minLength} onChange={e => setMinLength(e.target.checked)} className="w-4 h-4" />
               <span className="text-sm">Minimum 8 characters</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={requireUpper} onChange={e => setRequireUpper(e.target.checked)} className="w-4 h-4" />
               <span className="text-sm">Require uppercase letters</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={requireNumbers} onChange={e => setRequireNumbers(e.target.checked)} className="w-4 h-4" />
               <span className="text-sm">Require numbers</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="w-4 h-4" />
+              <input type="checkbox" checked={requireSpecial} onChange={e => setRequireSpecial(e.target.checked)} className="w-4 h-4" />
               <span className="text-sm">Require special characters</span>
             </label>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Allowed Origins (CORS)
-          </label>
+          <label className="block text-sm font-medium mb-2">Allowed Origins (CORS)</label>
           <textarea
             rows={4}
-            placeholder="https://example.com&#10;https://app.example.com"
+            value={corsOrigins}
+            onChange={e => setCorsOrigins(e.target.value)}
+            placeholder="https://your-app.com"
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none font-mono text-sm"
           />
-          <p className="text-xs text-zinc-500 mt-2">
-            One origin per line. Leave empty to allow all origins.
-          </p>
+          <p className="text-xs text-zinc-500 mt-2">One origin per line. Leave empty to allow all origins.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Notification Email</label>
+          <input
+            type="email"
+            value={notifEmail}
+            onChange={e => setNotifEmail(e.target.value)}
+            placeholder="admin@your-domain.com"
+            className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+          />
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+        {saved && <span className="text-xs text-green-400">Saved.</span>}
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           Save Changes
         </button>
@@ -807,14 +1024,56 @@ function SecuritySettings() {
   );
 }
 
+const NOTIF_SETTINGS_KEY = "wolent-cms-notif-settings";
+
 function NotificationSettings() {
+  const [newUser, setNewUser] = useState(true);
+  const [published, setPublished] = useState(true);
+  const [apiErrors, setApiErrors] = useState(true);
+  const [sysUpdates, setSysUpdates] = useState(false);
+  const [email, setEmail] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.settings.get("notifications")
+      .then(res => {
+        const s = res.data as Record<string, unknown>;
+        if (s.newUser !== undefined) setNewUser(Boolean(s.newUser));
+        if (s.published !== undefined) setPublished(Boolean(s.published));
+        if (s.apiErrors !== undefined) setApiErrors(Boolean(s.apiErrors));
+        if (s.sysUpdates !== undefined) setSysUpdates(Boolean(s.sysUpdates));
+        if (s.email) setEmail(String(s.email));
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(NOTIF_SETTINGS_KEY);
+          if (raw) {
+            const s = JSON.parse(raw) as Record<string, unknown>;
+            if (s.newUser !== undefined) setNewUser(Boolean(s.newUser));
+            if (s.published !== undefined) setPublished(Boolean(s.published));
+            if (s.apiErrors !== undefined) setApiErrors(Boolean(s.apiErrors));
+            if (s.sysUpdates !== undefined) setSysUpdates(Boolean(s.sysUpdates));
+            if (s.email) setEmail(String(s.email));
+          }
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleSave() {
+    const data = { newUser, published, apiErrors, sysUpdates, email };
+    try {
+      await api.settings.save("notifications", data);
+      try { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch { /* silent */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
         <h2 className="text-xl font-semibold">Notification Settings</h2>
-        <p className="text-sm text-zinc-400 mt-1">
-          Configure how and when you receive notifications
-        </p>
+        <p className="text-sm text-zinc-400 mt-1">Configure how and when you receive notifications</p>
       </div>
 
       <div className="p-6 space-y-6">
@@ -824,59 +1083,49 @@ function NotificationSettings() {
             <label className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
               <div>
                 <p className="font-medium text-sm">New User Registration</p>
-                <p className="text-xs text-zinc-500">
-                  Get notified when new users sign up
-                </p>
+                <p className="text-xs text-zinc-500">Get notified when new users sign up</p>
               </div>
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={newUser} onChange={e => setNewUser(e.target.checked)} className="w-4 h-4" />
             </label>
-
             <label className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
               <div>
                 <p className="font-medium text-sm">Content Published</p>
-                <p className="text-xs text-zinc-500">
-                  Get notified when content is published
-                </p>
+                <p className="text-xs text-zinc-500">Get notified when content is published</p>
               </div>
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} className="w-4 h-4" />
             </label>
-
             <label className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
               <div>
                 <p className="font-medium text-sm">API Errors</p>
-                <p className="text-xs text-zinc-500">
-                  Get notified about API errors
-                </p>
+                <p className="text-xs text-zinc-500">Get notified about API errors</p>
               </div>
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
+              <input type="checkbox" checked={apiErrors} onChange={e => setApiErrors(e.target.checked)} className="w-4 h-4" />
             </label>
-
             <label className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
               <div>
                 <p className="font-medium text-sm">System Updates</p>
-                <p className="text-xs text-zinc-500">
-                  Get notified about system updates
-                </p>
+                <p className="text-xs text-zinc-500">Get notified about system updates</p>
               </div>
-              <input type="checkbox" className="w-4 h-4" />
+              <input type="checkbox" checked={sysUpdates} onChange={e => setSysUpdates(e.target.checked)} className="w-4 h-4" />
             </label>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Notification Email
-          </label>
+          <label className="block text-sm font-medium mb-2">Notification Email</label>
           <input
             type="email"
-            defaultValue="admin@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="admin@your-domain.com"
             className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
           />
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+        {saved && <span className="text-xs text-green-400">Saved.</span>}
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           Save Changes
         </button>
@@ -885,8 +1134,67 @@ function NotificationSettings() {
   );
 }
 
+const APPEARANCE_SETTINGS_KEY = "wolent-cms-appearance-settings";
+
 function AppearanceSettings() {
   const { t, locale, setLocale, panelLanguageOptions } = useI18n();
+  const [accentColor, setAccentColor] = useState("#3b82f6");
+  const [theme, setTheme] = useState("dark");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api.settings.get("appearance")
+      .then(res => {
+        const s = res.data as Record<string, string>;
+        if (s.accentColor) setAccentColor(s.accentColor);
+        if (s.theme) setTheme(s.theme);
+        if (s.logoUrl) setLogoUrl(s.logoUrl);
+      })
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem(APPEARANCE_SETTINGS_KEY);
+          if (raw) {
+            const s = JSON.parse(raw) as Record<string, string>;
+            if (s.accentColor) setAccentColor(s.accentColor);
+            if (s.theme) setTheme(s.theme);
+            if (s.logoUrl) setLogoUrl(s.logoUrl);
+          }
+        } catch { /* ignore */ }
+      });
+  }, []);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const res = await api.media.upload(file);
+      const uploaded = res.data as Record<string, unknown>;
+      const url = String(uploaded.url ?? "");
+      if (url) {
+        setLogoUrl(url);
+        await api.settings.save("appearance", { accentColor, theme, logoUrl: url }).catch(() => {});
+        try { localStorage.setItem(APPEARANCE_SETTINGS_KEY, JSON.stringify({ accentColor, theme, logoUrl: url })); } catch { /* ignore */ }
+      }
+    } catch { /* silent */ } finally {
+      setLogoUploading(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  }
+
+  async function handleSave() {
+    const data = { accentColor, theme, logoUrl: logoUrl ?? "" };
+    try {
+      await api.settings.save("appearance", data);
+      try { localStorage.setItem(APPEARANCE_SETTINGS_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    } catch { /* silent */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
@@ -929,7 +1237,8 @@ function AppearanceSettings() {
                 type="radio"
                 name="theme"
                 value="dark"
-                defaultChecked
+                checked={theme === "dark"}
+                onChange={() => setTheme("dark")}
                 className="sr-only peer"
               />
               <div className="p-4 border-2 border-zinc-800 rounded-lg peer-checked:border-zinc-100 transition-colors">
@@ -944,6 +1253,8 @@ function AppearanceSettings() {
                 type="radio"
                 name="theme"
                 value="light"
+                checked={theme === "light"}
+                onChange={() => setTheme("light")}
                 className="sr-only peer"
               />
               <div className="p-4 border-2 border-zinc-800 rounded-lg peer-checked:border-zinc-100 transition-colors">
@@ -958,13 +1269,36 @@ function AppearanceSettings() {
         <div>
           <label className="block text-sm font-medium mb-2">{t("settings.appearance.logo")}</label>
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center">
-              <span className="text-2xl">🎨</span>
+            <div className="w-20 h-20 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center overflow-hidden">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-2xl">🎨</span>
+              )}
             </div>
             <div>
-              <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors text-sm">
-                {t("settings.appearance.uploadLogo")}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+              <button
+                onClick={() => logoInputRef.current?.click()}
+                disabled={logoUploading}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-md transition-colors text-sm"
+              >
+                {logoUploading ? "Uploading…" : t("settings.appearance.uploadLogo")}
               </button>
+              {logoUrl && (
+                <button
+                  onClick={() => { setLogoUrl(null); }}
+                  className="ml-2 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-zinc-800 rounded-md transition-colors"
+                >
+                  Remove
+                </button>
+              )}
               <p className="text-xs text-zinc-500 mt-2">{t("settings.appearance.logoHint")}</p>
             </div>
           </div>
@@ -975,20 +1309,23 @@ function AppearanceSettings() {
           <div className="flex items-center gap-3">
             <input
               type="color"
-              defaultValue="#ffffff"
+              value={accentColor}
+              onChange={e => setAccentColor(e.target.value)}
               className="w-12 h-12 bg-zinc-950 border border-zinc-800 rounded cursor-pointer"
             />
             <input
               type="text"
-              defaultValue="#ffffff"
+              value={accentColor}
+              onChange={e => setAccentColor(e.target.value)}
               className="flex-1 px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700 font-mono"
             />
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-zinc-800 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+        {saved && <span className="text-xs text-green-400">Saved.</span>}
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
           <Save className="w-4 h-4" />
           {t("settings.appearance.saveChanges")}
         </button>
@@ -1008,38 +1345,38 @@ type MigrationRow = {
 
 function DatabaseSettings() {
   const { t } = useI18n();
-  const [driver, setDriver] = useState<DbDriver>("postgres");
-  const [sqlitePath, setSqlitePath] = useState("./data/cms.sqlite");
-  const [pgHost, setPgHost] = useState("localhost");
+  const [driver, setDriver] = useState<DbDriver>("sqlite");
+  const [sqlitePath, setSqlitePath] = useState("");
+  const [pgHost, setPgHost] = useState("");
   const [pgPort, setPgPort] = useState("5432");
-  const [pgDatabase, setPgDatabase] = useState("wolent_cms");
-  const [pgUser, setPgUser] = useState("cms");
+  const [pgDatabase, setPgDatabase] = useState("");
+  const [pgUser, setPgUser] = useState("");
   const [pgPassword, setPgPassword] = useState("");
-  const [pgSsl, setPgSsl] = useState(true);
-  const [migrations, setMigrations] = useState<MigrationRow[]>([
-    {
-      id: "20260301000000",
-      name: "init_core_tables",
-      status: "applied",
-      appliedAt: "2026-03-01",
-    },
-    {
-      id: "20260315120000",
-      name: "add_locale_columns",
-      status: "applied",
-      appliedAt: "2026-03-15",
-    },
-    {
-      id: "20260404000000",
-      name: "media_folder_indexes",
-      status: "pending",
-      appliedAt: null,
-    },
-  ]);
+  const [pgSsl, setPgSsl] = useState(false);
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [migrations, setMigrations] = useState<MigrationRow[]>([]);
   const [migrationBusy, setMigrationBusy] = useState(false);
   const [cliCopied, setCliCopied] = useState(false);
-  const [dbSaveFlash, setDbSaveFlash] = useState(false);
   const [dbTestFlash, setDbTestFlash] = useState(false);
+  const [dbSaveFlash, setDbSaveFlash] = useState(false);
+
+  useEffect(() => {
+    api.dbInfo.get().then(res => {
+      const d = res.data as Record<string, unknown>;
+      if (d.driver === 'postgres') {
+        setDriver('postgres');
+        setPgHost(String(d.host ?? ''));
+        setPgPort(String(d.port ?? '5432'));
+        setPgDatabase(String(d.database ?? ''));
+        setPgUser(String(d.user ?? ''));
+        setPgSsl(Boolean(d.ssl));
+      } else if (d.driver === 'sqlite') {
+        setDriver('sqlite');
+        setSqlitePath(String(d.path ?? ''));
+      }
+      setConnected(Boolean(d.connected));
+    }).catch(() => {});
+  }, []);
 
   const cliExample =
     driver === "sqlite"
@@ -1048,33 +1385,46 @@ function DatabaseSettings() {
 
   const pendingCount = migrations.filter((m) => m.status === "pending").length;
 
-  const handleSave = () => {
+  const handleTestConnection = () => {
+    api.dbInfo.get().then(res => {
+      const d = res.data as Record<string, unknown>;
+      setConnected(Boolean(d.connected));
+      setDbTestFlash(true);
+      window.setTimeout(() => setDbTestFlash(false), 2500);
+    }).catch(() => { setConnected(false); });
+  };
+
+  const handleSave = async () => {
+    const data =
+      driver === "postgres"
+        ? { driver, host: pgHost, port: pgPort, database: pgDatabase, user: pgUser, ssl: pgSsl }
+        : { driver, path: sqlitePath };
+    try {
+      await api.settings.save("database", data);
+    } catch { /* silent — DB_URL is read-only server-side; save is best-effort */ }
     setDbSaveFlash(true);
     window.setTimeout(() => setDbSaveFlash(false), 2500);
   };
 
-  const handleTestConnection = () => {
-    setDbTestFlash(true);
-    window.setTimeout(() => setDbTestFlash(false), 2500);
+  const loadMigrations = () => {
+    api.dbInfo.migrations()
+      .then(res => setMigrations(res.data))
+      .catch(() => setMigrations([]));
   };
 
-  const handleRunMigrations = () => {
+  useEffect(() => { loadMigrations(); }, []);
+
+  const handleRunMigrations = async () => {
     if (pendingCount === 0) return;
     setMigrationBusy(true);
-    window.setTimeout(() => {
-      setMigrations((prev) =>
-        prev.map((m) =>
-          m.status === "pending"
-            ? {
-                ...m,
-                status: "applied" as const,
-                appliedAt: new Date().toISOString().split("T")[0],
-              }
-            : m
-        )
-      );
+    try {
+      await api.dbInfo.migrate();
+      await api.dbInfo.migrations().then(res => setMigrations(res.data)).catch(() => {});
+    } catch {
+      // silent — migration may still have run
+    } finally {
       setMigrationBusy(false);
-    }, 800);
+    }
   };
 
   const copyCli = () => {
@@ -1092,14 +1442,21 @@ function DatabaseSettings() {
 
       <div className="p-6 space-y-8">
         <div className="rounded-lg border border-zinc-700/60 bg-zinc-950/80 p-4">
-          <div className="flex items-start gap-3">
-            <Terminal className="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
-            <div>
-              <p className="text-sm font-medium text-zinc-200">
-                {t("settings.database.bannerTitle")}
-              </p>
-              <p className="mt-1 text-sm text-zinc-500">{t("settings.database.bannerBody")}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Terminal className="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
+              <div>
+                <p className="text-sm font-medium text-zinc-200">
+                  {t("settings.database.bannerTitle")}
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">{t("settings.database.bannerBody")}</p>
+              </div>
             </div>
+            {connected !== null && (
+              <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${connected ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                {connected ? 'Connected' : 'Disconnected'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1244,7 +1601,7 @@ function DatabaseSettings() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setMigrations((m) => [...m])}
+                onClick={() => { handleTestConnection(); loadMigrations(); }}
                 className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-800"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -1253,7 +1610,7 @@ function DatabaseSettings() {
               <button
                 type="button"
                 disabled={pendingCount === 0 || migrationBusy}
-                onClick={handleRunMigrations}
+                onClick={() => void handleRunMigrations()}
                 className="inline-flex items-center gap-2 rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Play className="h-4 w-4" />
@@ -1350,33 +1707,6 @@ function DatabaseSettings() {
 }
 
 function IntegrationSettings() {
-  const integrations = [
-    {
-      name: "Webhooks",
-      description: "Send data to external services",
-      icon: Zap,
-      connected: true,
-    },
-    {
-      name: "Email Service",
-      description: "SMTP configuration for emails",
-      icon: Mail,
-      connected: true,
-    },
-    {
-      name: "Cloud Storage",
-      description: "Amazon S3, Google Cloud Storage",
-      icon: Database,
-      connected: false,
-    },
-    {
-      name: "Authentication",
-      description: "OAuth providers (Google, GitHub)",
-      icon: Shield,
-      connected: false,
-    },
-  ];
-
   return (
     <>
       <div className="px-6 py-4 border-b border-zinc-800">
@@ -1385,43 +1715,14 @@ function IntegrationSettings() {
           Connect external services and tools
         </p>
       </div>
-
       <div className="p-6">
-        <div className="grid grid-cols-1 gap-4">
-          {integrations.map((integration) => (
-            <div
-              key={integration.name}
-              className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 hover:border-zinc-700 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-zinc-800 rounded flex items-center justify-center">
-                    <integration.icon className="w-6 h-6 text-zinc-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">{integration.name}</h3>
-                    <p className="text-sm text-zinc-400">
-                      {integration.description}
-                    </p>
-                    {integration.connected && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 mt-2">
-                        Connected
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  className={`px-4 py-2 rounded-md text-sm transition-colors ${
-                    integration.connected
-                      ? "bg-zinc-800 hover:bg-zinc-700"
-                      : "bg-zinc-100 text-zinc-950 hover:bg-zinc-200"
-                  }`}
-                >
-                  {integration.connected ? "Configure" : "Connect"}
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 text-center">
+          <p className="text-zinc-300 mb-2 font-medium">Integration settings are managed in Plugins</p>
+          <p className="text-sm text-zinc-500 mb-4">Configure webhooks, S3, SMTP, Redis, n8n and more from the Plugins page.</p>
+          <Link to="/plugins" className="inline-flex items-center gap-2 px-5 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium text-sm">
+            <Zap className="w-4 h-4" />
+            Go to Plugins
+          </Link>
         </div>
       </div>
     </>

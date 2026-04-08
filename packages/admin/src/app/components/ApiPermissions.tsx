@@ -85,12 +85,7 @@ interface Role {
   };
 }
 
-const contentTypesData = [
-  { id: "articles", name: "Article", pluralName: "Articles", icon: FileText, color: "blue" },
-  { id: "pages", name: "Page", pluralName: "Pages", icon: Database, color: "green" },
-  { id: "products", name: "Product", pluralName: "Products", icon: Settings, color: "purple" },
-  { id: "team", name: "Team Member", pluralName: "Team Members", icon: Users, color: "orange" },
-];
+type ContentTypeItem = { id: string; name: string; pluralName: string; icon: typeof FileText; color: string };
 
 
 function CreateTokenModal({ onClose, onCreate }: {
@@ -163,6 +158,42 @@ export function ApiPermissions() {
   const [apiSettingsSavedFlash, setApiSettingsSavedFlash] = useState(false);
   const [tokens, setTokens] = useState<ApiToken[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [contentTypesData, setContentTypesData] = useState<ContentTypeItem[]>([]);
+
+  useEffect(() => {
+    api.contentTypes.list()
+      .then(res => {
+        const icons = [FileText, Database, Settings, Users, Share2, Globe];
+        const colors = ["blue", "green", "purple", "orange", "cyan", "pink"];
+        const items = (res.data as Record<string, unknown>[]).map((t, i) => ({
+          id: (t['singularName'] as string) ?? (t['uid'] as string),
+          name: (t['displayName'] as string) ?? (t['uid'] as string),
+          pluralName: (t['pluralName'] as string) ?? (t['displayName'] as string) ?? '',
+          icon: icons[i % icons.length],
+          color: colors[i % colors.length],
+        }));
+        setContentTypesData(items);
+      })
+      .catch(() => setContentTypesData([]));
+  }, []);
+
+  useEffect(() => {
+    setRolesLoading(true);
+    api.roles.list()
+      .then(res => {
+        const apiRoles = (res.data as Record<string, unknown>[]).map(r => ({
+          id: r['id'] as string,
+          name: r['name'] as string,
+          description: r['description'] as string,
+          usersCount: r['usersCount'] as number ?? 0,
+          permissions: r['permissions'] as Role['permissions'],
+        }));
+        setRoles(apiRoles);
+      })
+      .catch(() => setRoles([]))
+      .finally(() => setRolesLoading(false));
+  }, []);
 
   useEffect(() => {
     api.apiTokens.list()
@@ -190,6 +221,8 @@ export function ApiPermissions() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedToken, setSelectedToken] = useState<ApiToken | null>(null);
   const [visibleTokens, setVisibleTokens] = useState<Set<string>>(new Set());
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const toggleTokenVisibility = (id: string) => {
     const newVisible = new Set(visibleTokens);
@@ -215,12 +248,13 @@ export function ApiPermissions() {
     }
   };
 
-  const handleSaveApiSettings = () => {
+  const handleSaveApiSettings = async () => {
     try {
-      localStorage.setItem(API_METHOD_STORAGE_KEY, apiMethod);
+      await api.settings.save("general", { apiMethod });
     } catch {
-      /* ignore */
+      /* Non-critical — keep going */
     }
+    try { localStorage.setItem(API_METHOD_STORAGE_KEY, apiMethod); } catch { /* ignore */ }
     setApiSettingsSavedFlash(true);
     window.setTimeout(() => setApiSettingsSavedFlash(false), 2000);
   };
@@ -309,6 +343,8 @@ export function ApiPermissions() {
         {/* API Tokens Tab */}
         {activeTab === "tokens" && (
           <div className="space-y-4">
+            {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
+            {tokenError && <p className="text-sm text-red-400">{tokenError}</p>}
             {tokens.map((token) => (
               <div
                 key={token.id}
@@ -347,10 +383,13 @@ export function ApiPermissions() {
                         className="p-2 hover:bg-zinc-800 rounded transition-colors"
                         onClick={async () => {
                           if (!confirm(`Delete "${token.name}"?`)) return;
+                          setDeleteError(null);
                           try {
                             await api.apiTokens.delete(token.id);
                             setTokens(prev => prev.filter(t => t.id !== token.id));
-                          } catch { alert('Failed to delete token'); }
+                          } catch (err: unknown) {
+                            setDeleteError(err instanceof Error ? err.message : "Failed to delete token.");
+                          }
                         }}
                       >
                         <Trash2 className="w-4 h-4 text-zinc-400" />
@@ -531,6 +570,12 @@ export function ApiPermissions() {
         {/* Roles Tab */}
         {activeTab === "roles" && (
           <div className="space-y-4">
+            {rolesLoading && (
+              <div className="flex items-center justify-center h-32 text-zinc-500 text-sm">Loading roles...</div>
+            )}
+            {!rolesLoading && roles.length === 0 && (
+              <div className="flex items-center justify-center h-32 text-zinc-500 text-sm">No roles found.</div>
+            )}
             {roles.map((role) => (
               <div
                 key={role.id}
@@ -605,60 +650,58 @@ export function ApiPermissions() {
               // Show the token (user needs to copy it once)
               setVisibleTokens(prev => new Set([...prev, newToken.id]));
               setShowTokenModal(false);
-            } catch {
-              alert('Failed to create token');
+            } catch (err: unknown) {
+              setTokenError(err instanceof Error ? err.message : "Failed to create token.");
             }
           }}
         />}
 
-        {/* Edit Role Permissions Modal */}
-        {selectedRole && (
+        {/* Create Role — Coming Soon Modal */}
+        {showRoleModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg w-full max-w-md">
               <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-                <div>
-                  <h2 className="text-xl font-semibold">{selectedRole.name} Permissions</h2>
-                  <p className="text-sm text-zinc-400 mt-1">{selectedRole.description}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedRole(null)}
-                  className="p-2 hover:bg-zinc-800 rounded transition-colors"
-                >
+                <h2 className="text-lg font-semibold">Create Role</h2>
+                <button onClick={() => setShowRoleModal(false)} className="p-2 hover:bg-zinc-800 rounded transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
-              <div className="p-6 space-y-6">
-                <PermissionSection
-                  icon={FileText}
-                  title="Content Types"
-                  permissions={selectedRole.permissions.contentTypes}
-                />
-                <PermissionSection
-                  icon={Image}
-                  title="Media Library"
-                  permissions={selectedRole.permissions.media}
-                />
-                <PermissionSection
-                  icon={Users}
-                  title="User Management"
-                  permissions={selectedRole.permissions.users}
-                />
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <Shield className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-300 mb-1">Role management coming soon</p>
+                    <p className="text-sm text-zinc-400">
+                      Custom role creation is not yet available. Currently 5 built-in roles are available: <span className="text-zinc-300">super_admin, admin, editor, author, viewer</span>.
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-zinc-500">
+                  Roles can be assigned to users in the <span className="text-zinc-300">User Management</span> section. Custom role CRUD with granular permissions will be added in a future update.
+                </p>
               </div>
-
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800">
+              <div className="flex justify-end px-6 py-4 border-t border-zinc-800">
                 <button
-                  onClick={() => setSelectedRole(null)}
-                  className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors"
+                  onClick={() => setShowRoleModal(false)}
+                  className="px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium text-sm"
                 >
-                  Cancel
-                </button>
-                <button className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium">
-                  Save Changes
+                  Got it
                 </button>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Role Permissions Modal */}
+        {selectedRole && (
+          <EditRoleModal
+            role={selectedRole}
+            onClose={() => setSelectedRole(null)}
+            onSave={(updatedRole) => {
+              setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
+              setSelectedRole(null);
+            }}
+          />
         )}
       </div>
     </div>
@@ -672,7 +715,7 @@ function ApiTokenPermissionsModal({
 }: {
   token: ApiToken;
   onClose: () => void;
-  contentTypes: typeof contentTypesData;
+  contentTypes: ContentTypeItem[];
 }) {
   const [permissions, setPermissions] = useState(token.permissions || {
     contentTypes: {},
@@ -1002,7 +1045,7 @@ function PermissionSection({
 
       <div className="grid grid-cols-2 gap-4">
         <label className="flex items-center gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors">
-          <input type="checkbox" defaultChecked={permissions.read} className="w-4 h-4" />
+          <input type="checkbox" checked={permissions.read} readOnly className="w-4 h-4" />
           <div>
             <p className="font-medium text-sm">Read</p>
             <p className="text-xs text-zinc-400">View {title.toLowerCase()}</p>
@@ -1010,7 +1053,7 @@ function PermissionSection({
         </label>
 
         <label className="flex items-center gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors">
-          <input type="checkbox" defaultChecked={permissions.create} className="w-4 h-4" />
+          <input type="checkbox" checked={permissions.create} readOnly className="w-4 h-4" />
           <div>
             <p className="font-medium text-sm">Create</p>
             <p className="text-xs text-zinc-400">Add new items</p>
@@ -1018,7 +1061,7 @@ function PermissionSection({
         </label>
 
         <label className="flex items-center gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors">
-          <input type="checkbox" defaultChecked={permissions.update} className="w-4 h-4" />
+          <input type="checkbox" checked={permissions.update} readOnly className="w-4 h-4" />
           <div>
             <p className="font-medium text-sm">Update</p>
             <p className="text-xs text-zinc-400">Edit existing items</p>
@@ -1026,12 +1069,116 @@ function PermissionSection({
         </label>
 
         <label className="flex items-center gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors">
-          <input type="checkbox" defaultChecked={permissions.delete} className="w-4 h-4" />
+          <input type="checkbox" checked={permissions.delete} readOnly className="w-4 h-4" />
           <div>
             <p className="font-medium text-sm">Delete</p>
             <p className="text-xs text-zinc-400">Remove items</p>
           </div>
         </label>
+      </div>
+    </div>
+  );
+}
+
+function EditRoleModal({
+  role,
+  onClose,
+  onSave,
+}: {
+  role: Role;
+  onClose: () => void;
+  onSave: (updated: Role) => void;
+}) {
+  const [perms, setPerms] = useState(() => ({
+    contentTypes: { ...role.permissions.contentTypes },
+    media: { ...role.permissions.media },
+    users: { ...role.permissions.users },
+  }));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = (section: 'contentTypes' | 'media' | 'users', key: string) => {
+    setPerms(prev => ({
+      ...prev,
+      [section]: { ...prev[section], [key]: !(prev[section] as Record<string, boolean>)[key] },
+    }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.roles.updatePermissions(role.id, perms);
+      onSave({ ...role, permissions: perms });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sections: { key: 'contentTypes' | 'media' | 'users'; title: string; icon: any }[] = [
+    { key: 'contentTypes', title: 'Content Types', icon: FileText },
+    { key: 'media', title: 'Media Library', icon: Image },
+    { key: 'users', title: 'User Management', icon: Users },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-auto">
+        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+          <div>
+            <h2 className="text-xl font-semibold">{role.name} Permissions</h2>
+            <p className="text-sm text-zinc-400 mt-1">{role.description}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          {sections.map(({ key, title, icon: Icon }) => (
+            <div key={key} className="bg-zinc-950 border border-zinc-800 rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 bg-zinc-800 rounded flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-zinc-400" />
+                </div>
+                <h3 className="font-semibold">{title}</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {Object.entries(perms[key]).map(([perm, val]) => (
+                  <label
+                    key={perm}
+                    className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={val as boolean}
+                      onChange={() => toggle(key, perm)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm capitalize">{perm}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800">
+          <button onClick={onClose} className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors text-sm">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium text-sm disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Saving...' : 'Save Permissions'}
+          </button>
+        </div>
       </div>
     </div>
   );

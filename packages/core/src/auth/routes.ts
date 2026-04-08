@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { authService } from './service.js'
-import { LoginSchema, RegisterSchema, ChangePasswordSchema } from '@wolent/utils'
+import { LoginSchema, ChangePasswordSchema } from '@wolent/utils'
 import { requireAuth } from '../middleware/auth.js'
 import { generateTotpSecret, generateQrCode, generateBackupCodes } from './totp.js'
 import { hashPassword, verifyPassword, validatePasswordStrength } from './password.js'

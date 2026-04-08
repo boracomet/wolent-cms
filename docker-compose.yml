@@ -1,7 +1,5 @@
-version: '3.9'
-
 # Wolent CMS — Development Docker Compose
-# Usage: docker-compose up
+# Usage: docker compose up
 
 services:
   # ─── Backend API ──────────────────────────────────────────────────────────────
@@ -15,7 +13,7 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - HOST=0.0.0.0
-      - DATABASE_URL=${DATABASE_URL:-postgresql://wolent:wolent@postgres:5432/wolent_cms}
+      - DATABASE_URL=file:/app/data/wolent.db
       - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
       - COOKIE_SECRET=${COOKIE_SECRET:-change_me_in_production_minimum_32_chars_long}
@@ -25,12 +23,9 @@ services:
       - UPLOAD_DIR=/app/public/uploads
     env_file:
       - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - uploads:/app/public/uploads
-      - ./packages/core/src:/app/src:ro
+      - db_data:/app/data
     restart: unless-stopped
     networks:
       - wolent
@@ -47,7 +42,7 @@ services:
     networks:
       - wolent
 
-  # ─── PostgreSQL ───────────────────────────────────────────────────────────────
+  # ─── PostgreSQL (optional — for production) ─────────────────────────────────
   postgres:
     image: postgres:16-alpine
     ports:
@@ -66,6 +61,8 @@ services:
       start_period: 10s
     networks:
       - wolent
+    profiles:
+      - postgres
 
   # ─── Redis (optional — for rate limiting & caching) ───────────────────────────
   redis:
@@ -86,6 +83,8 @@ volumes:
   redis_data:
     driver: local
   uploads:
+    driver: local
+  db_data:
     driver: local
 
 networks:

@@ -28,6 +28,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { CmsColorName } from "../lib/cmsColors";
 import { fieldTileColors, getCmsColorClasses } from "../lib/cmsColors";
+import { api } from "../api/client";
 
 interface Field {
   id: string;
@@ -108,39 +109,56 @@ export function ContentBuilder() {
         singularId?: string;
         pluralId?: string;
         color?: string;
+        icon?: string;
       }
     | undefined;
 
   const kindParam = searchParams.get("kind");
-  const isSingleType =
-    kindParam === "single" || id === "5" || id === "6";
+  const [isSingleType, setIsSingleType] = useState(kindParam === "single");
 
   const [activeTab, setActiveTab] = useState<"basic" | "advanced">("basic");
 
-  const [displayName, setDisplayName] = useState("Article");
-  const [singularId, setSingularId] = useState("article");
-  const [pluralId, setPluralId] = useState("articles");
+  const [displayName, setDisplayName] = useState("");
+  const [singularId, setSingularId] = useState("");
+  const [pluralId, setPluralId] = useState("");
+
+  // For create mode: prefill from navigation state
   useEffect(() => {
-    if (id === "create" && createState?.displayName) {
-      setDisplayName(createState.displayName);
-      if (createState.singularId) setSingularId(createState.singularId);
-      if (createState.pluralId) setPluralId(createState.pluralId);
+    if (id === "create") {
+      if (createState?.displayName) setDisplayName(createState.displayName);
+      if (createState?.singularId) setSingularId(createState.singularId);
+      if (createState?.pluralId) setPluralId(createState.pluralId);
     }
   }, [id, createState]);
 
-  const [fields, setFields] = useState<Field[]>([
-    { id: "1", name: "Title", type: "text", required: true },
-    { id: "2", name: "Date", type: "date", required: true },
-    {
-      id: "3",
-      name: "Author",
-      type: "relation",
-      required: false,
-      description: "Relation (manyToOne) with User",
-    },
-    { id: "4", name: "Content", type: "blocks", required: true },
-    { id: "5", name: "Cover", type: "media", required: false },
-  ]);
+  // For edit mode: load from API
+  useEffect(() => {
+    if (!id || id === "create") return;
+    api.contentTypes.get(id).then(res => {
+      const t = res.data as Record<string, unknown>;
+      const schema = (t['schema'] as Record<string, unknown> | undefined) ?? t;
+      const attrs = (schema['attributes'] ?? {}) as Record<string, unknown>;
+      setDisplayName((t['displayName'] as string) ?? '');
+      setSingularId((t['singularName'] as string) ?? '');
+      setPluralId((t['pluralName'] as string) ?? '');
+      setIsSingleType(t['kind'] === 'singleType');
+      setDraftAndPublish(Boolean((schema['options'] as Record<string, unknown> | undefined)?.['draftAndPublish'] ?? true));
+      const loadedFields: Field[] = Object.entries(attrs).map(([name, def], i) => {
+        const d = def as Record<string, unknown>;
+        return {
+          id: String(i + 1),
+          name,
+          type: (d['type'] as string) ?? 'text',
+          required: Boolean(d['required']),
+          description: (d['description'] as string) ?? undefined,
+          enumerationValues: Array.isArray(d['enum']) ? (d['enum'] as string[]).join('\n') : undefined,
+        };
+      });
+      if (loadedFields.length > 0) setFields(loadedFields);
+    }).catch(() => {});
+  }, [id]);
+
+  const [fields, setFields] = useState<Field[]>([]);
 
   const [draftAndPublish, setDraftAndPublish] = useState(true);
   const [reviewWorkflow, setReviewWorkflow] = useState(false);
@@ -160,16 +178,57 @@ export function ContentBuilder() {
   const [fieldDragOverId, setFieldDragOverId] = useState<string | null>(null);
   const [fieldDraggingId, setFieldDraggingId] = useState<string | null>(null);
 
-  const availableCollections = [
-    { id: "categories", name: "Categories", plural: "categories" },
-    { id: "users", name: "Users", plural: "users" },
-    { id: "tags", name: "Tags", plural: "tags" },
-    { id: "articles", name: "Articles", plural: "articles" },
-  ];
+  const [availableCollections, setAvailableCollections] = useState<{ id: string; name: string; plural: string }[]>([]);
+  useEffect(() => {
+    api.contentTypes.list().then(res => {
+      const types = (res.data as { uid: string; displayName?: string; pluralApiId?: string }[]).map(t => ({
+        id: t.uid,
+        name: t.displayName ?? t.uid,
+        plural: t.pluralApiId ?? t.uid,
+      }));
+      setAvailableCollections(types);
+    }).catch(() => {});
+  }, []);
 
-  const handleSave = () => {
-    alert("Content type saved!");
-    navigate("/content-types");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const attributes: Record<string, unknown> = {};
+      for (const f of fields) {
+        const attr: Record<string, unknown> = { type: f.type, required: f.required };
+        if (f.description) attr['description'] = f.description;
+        if (f.type === 'enumeration' && f.enumerationValues) {
+          attr['enum'] = f.enumerationValues.split('\n').map(v => v.trim()).filter(Boolean);
+        }
+        attributes[f.name] = attr;
+      }
+      const payload = {
+        displayName,
+        singularApiId: singularId,
+        pluralApiId: pluralId,
+        kind: isSingleType ? "singleType" : "collectionType",
+        draftAndPublish,
+        i18n,
+        reviewWorkflow,
+        attributes,
+        ...(createState?.color ? { color: createState.color } : {}),
+        ...(createState?.icon ? { icon: createState.icon } : {}),
+      };
+      if (id && id !== "create") {
+        await api.contentTypes.update(id, payload);
+      } else {
+        await api.contentTypes.create(payload);
+      }
+      navigate("/content-types");
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Kaydetme başarısız.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const closeModal = () => {
@@ -242,12 +301,14 @@ export function ContentBuilder() {
                 >
                   Cancel
                 </Link>
+                {saveError && <span className="text-xs text-red-400">{saveError}</span>}
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+                  disabled={saving}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium disabled:opacity-50"
                 >
-                  Save
+                  {saving ? "Saving…" : "Save"}
                 </button>
               </div>
             </div>
@@ -322,7 +383,7 @@ export function ContentBuilder() {
                     />
                     {isSingleType && (
                       <p className="text-xs text-zinc-500 mt-1.5">
-                        Single types use one entry; plural API id matches singular (Strapi-style demo).
+                        Single types use one entry; plural API id matches singular.
                       </p>
                     )}
                   </div>
@@ -420,6 +481,7 @@ export function ContentBuilder() {
                         <button
                           type="button"
                           draggable={false}
+                          onClick={() => setFields((prev) => prev.filter((f) => f.id !== field.id))}
                           className="self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-zinc-800/50 rounded transition-all"
                           aria-label="Remove field"
                         >

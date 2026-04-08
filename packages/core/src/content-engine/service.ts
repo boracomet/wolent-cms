@@ -28,17 +28,23 @@ export class ContentTypeService {
 
   async findByUid(uid: string, tenantId: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await (prisma as any).contentType.findFirst({
+        where: uid.includes('::') ? { uid } : { OR: [{ uid }, { singularName: uid }, { id: uid }] }
+      })
       if (!type) throw new NotFoundError('ContentType', uid)
       return { ...type, schema: JSON.parse(type.schema) as ContentTypeDefinition }
     })
   }
 
   async create(
-    data: ContentTypeDefinition & { color?: string; icon?: string },
+    data: ContentTypeDefinition & { color?: string; icon?: string; singularApiId?: string; pluralApiId?: string },
     tenantId: string
   ) {
     return runInTenantContext({ tenantId }, async () => {
+      // Accept both singularName (canonical) and singularApiId (frontend alias)
+      if (!data.singularName && (data as any).singularApiId) {
+        data = { ...data, singularName: (data as any).singularApiId, pluralName: (data as any).pluralApiId ?? (data as any).singularApiId + 's' }
+      }
       const uid = buildContentTypeUid(data.singularName)
 
       const existing = await (prisma as any).contentType.findFirst({ where: { uid } })
@@ -68,11 +74,17 @@ export class ContentTypeService {
 
   async update(
     uid: string,
-    data: Partial<ContentTypeDefinition> & { color?: string; icon?: string },
+    data: Partial<ContentTypeDefinition> & { color?: string; icon?: string; singularApiId?: string; pluralApiId?: string },
     tenantId: string
   ) {
     return runInTenantContext({ tenantId }, async () => {
-      const existing = await (prisma as any).contentType.findFirst({ where: { uid } })
+      // Normalize singularApiId → singularName (frontend alias)
+      if ((data as any).singularApiId && !data.singularName) {
+        data = { ...data, singularName: (data as any).singularApiId, pluralName: (data as any).pluralApiId ?? (data as any).singularApiId + 's' }
+      }
+      const existing = await (prisma as any).contentType.findFirst({
+        where: uid.includes('::') ? { uid } : { OR: [{ uid }, { singularName: uid }, { id: uid }] }
+      })
       if (!existing) throw new NotFoundError('ContentType', uid)
 
       const currentSchema = JSON.parse(existing.schema) as ContentTypeDefinition
@@ -97,7 +109,9 @@ export class ContentTypeService {
 
   async delete(uid: string, tenantId: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await (prisma as any).contentType.findFirst({
+        where: uid.includes('::') ? { uid } : { OR: [{ uid }, { singularName: uid }, { id: uid }] }
+      })
       if (!type) throw new NotFoundError('ContentType', uid)
 
       // Soft-delete all entries
@@ -112,6 +126,26 @@ export class ContentTypeService {
   }
 }
 
+/** Resolve a content type by uid (full "api::x.x") OR singularName (short "x") */
+async function resolveContentType(uid: string, tenantId: string) {
+  const type = await (prisma as any).contentType.findFirst({
+    where: uid.includes('::') ? { uid } : { OR: [{ uid }, { singularName: uid }] }
+  })
+  return type
+}
+
+/** Yazar rolü yalnızca kendi oluşturduğu kayıtlara erişebilir (IDOR önleme). */
+function assertAuthorOwnsEntry(
+  entry: { createdById: string | null; id: string },
+  userRole: string | undefined,
+  userId: string | undefined
+): void {
+  if (userRole !== 'author' || !userId) return
+  if (entry.createdById !== userId) {
+    throw new NotFoundError('Entry', entry.id)
+  }
+}
+
 export class EntryService {
   async list(
     uid: string,
@@ -121,10 +155,15 @@ export class EntryService {
     userRole?: string
   ): Promise<PaginatedResponse<BaseEntry & Record<string, unknown>>> {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       const { page, pageSize, status, search, locale, sort, order } = query
+      const sortField = sort ?? 'createdAt'
+      const ALLOWED_SORT = new Set(['createdAt', 'updatedAt', 'publishedAt', 'locale', 'status'])
+      if (!ALLOWED_SORT.has(sortField)) {
+        throw new BadRequestError(`Invalid sort field: ${sortField}`)
+      }
 
       const where: Record<string, unknown> = {
         contentTypeId: type.id,
@@ -153,7 +192,7 @@ export class EntryService {
           where,
           skip: (page - 1) * pageSize,
           take: pageSize,
-          orderBy: { [sort ?? 'createdAt']: order ?? 'desc' },
+          orderBy: { [sortField]: order ?? 'desc' },
         } as any),
       ]) as [number, any[]]
 
@@ -182,15 +221,16 @@ export class EntryService {
     })
   }
 
-  async findOne(uid: string, id: string, tenantId: string) {
+  async findOne(uid: string, id: string, tenantId: string, userRole?: string, userId?: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       const entry = await (prisma as any).entry.findFirst({
         where: { id, contentTypeId: type.id, deletedAt: null },
       })
       if (!entry) throw new NotFoundError(type.displayName, id)
+      assertAuthorOwnsEntry(entry, userRole, userId)
 
       return {
         ...this.parseEntryData(entry),
@@ -213,7 +253,7 @@ export class EntryService {
     locale = 'en'
   ) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       const rawSchema = JSON.parse(type.schema) as ContentTypeDefinition & { schema?: ContentTypeDefinition }
@@ -253,16 +293,18 @@ export class EntryService {
     id: string,
     data: Record<string, unknown>,
     tenantId: string,
-    userId?: string
+    userId?: string,
+    userRole?: string
   ) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       const existing = await (prisma as any).entry.findFirst({
         where: { id, contentTypeId: type.id, deletedAt: null },
       })
       if (!existing) throw new NotFoundError(type.displayName, id)
+      assertAuthorOwnsEntry(existing, userRole, userId)
 
       const schema = JSON.parse(type.schema) as ContentTypeDefinition
       const currentData = this.parseEntryData(existing)
@@ -274,7 +316,7 @@ export class EntryService {
       const cleanData = sanitizeEntryData(merged, schema)
 
       const updated = await (prisma as any).entry.update({
-        where: { id },
+        where: { id, contentTypeId: type.id },
         data: {
           data: JSON.stringify(cleanData),
           updatedById: userId ?? null,
@@ -285,18 +327,19 @@ export class EntryService {
     })
   }
 
-  async publish(uid: string, id: string, tenantId: string, userId?: string) {
+  async publish(uid: string, id: string, tenantId: string, userId?: string, userRole?: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       const entry = await (prisma as any).entry.findFirst({
         where: { id, contentTypeId: type.id, deletedAt: null },
       })
       if (!entry) throw new NotFoundError(type.displayName, id)
+      assertAuthorOwnsEntry(entry, userRole, userId)
 
       const updated = await (prisma as any).entry.update({
-        where: { id },
+        where: { id, contentTypeId: type.id },
         data: {
           status: 'published',
           publishedAt: new Date(),
@@ -308,13 +351,19 @@ export class EntryService {
     })
   }
 
-  async unpublish(uid: string, id: string, tenantId: string, userId?: string) {
+  async unpublish(uid: string, id: string, tenantId: string, userId?: string, userRole?: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
+      const entry = await (prisma as any).entry.findFirst({
+        where: { id, contentTypeId: type.id, deletedAt: null },
+      })
+      if (!entry) throw new NotFoundError(type.displayName, id)
+      assertAuthorOwnsEntry(entry, userRole, userId)
+
       const updated = await (prisma as any).entry.update({
-        where: { id },
+        where: { id, contentTypeId: type.id },
         data: {
           status: 'draft',
           publishedAt: null,
@@ -326,14 +375,19 @@ export class EntryService {
     })
   }
 
-  async delete(uid: string, id: string, tenantId: string, userId?: string) {
+  async delete(uid: string, id: string, tenantId: string, userId?: string, userRole?: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
-      // Soft delete
+      const entry = await (prisma as any).entry.findFirst({
+        where: { id, contentTypeId: type.id, deletedAt: null },
+      })
+      if (!entry) throw new NotFoundError(type.displayName, id)
+      assertAuthorOwnsEntry(entry, userRole, userId)
+
       await (prisma as any).entry.update({
-        where: { id },
+        where: { id, contentTypeId: type.id },
         data: { deletedAt: new Date(), updatedById: userId ?? null },
       })
 
@@ -343,7 +397,7 @@ export class EntryService {
 
   async hardDelete(uid: string, id: string, tenantId: string) {
     return runInTenantContext({ tenantId }, async () => {
-      const type = await (prisma as any).contentType.findFirst({ where: { uid } })
+      const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
       await (prisma as any).entry.delete({ where: { id } })

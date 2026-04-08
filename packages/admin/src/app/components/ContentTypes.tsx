@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { api } from "../api/client";
+import { apiTypeToDemoType as apiToType, invalidateContentTypeCache, setCachedTypes } from "../lib/contentTypeCache";
 import { Link, useNavigate } from "react-router";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -17,12 +18,36 @@ import {
   List,
   Copy,
   Trash2,
+  Loader2,
+  FileText,
+  ShoppingBag,
+  Users,
+  Tag,
+  Calendar,
+  Video,
+  Music,
+  Map,
+  Star,
+  MessageSquare,
+  Bell,
+  Globe,
+  Briefcase,
+  Award,
+  Package,
+  BarChart2,
+  Newspaper,
+  Folder,
+  Link as LinkIcon,
+  Settings,
+  Zap,
+  Heart,
+  Film,
+  Type,
+  Home,
+  Box,
 } from "lucide-react";
 import { cmsColorSwatches as availableColors } from "../lib/cmsColors";
-import {
-  CONTENT_TYPES_STORAGE_KEY,
-  getAllContentTypesForApp,
-} from "../data/demoContentTypes";
+import { CONTENT_TYPES_STORAGE_KEY } from "../data/demoContentTypes";
 import type { DemoContentType } from "../data/demoContentTypes";
 import { duplicateContentTypeSchema, nextDuplicateDisplayName } from "../lib/cmsDuplicate";
 import {
@@ -52,62 +77,42 @@ const PRESET_ICONS: Record<PresetIconKey, LucideIcon> = {
   testimonial: Quote,
 };
 
-function apiTypeToDemoType(t: Record<string, unknown>): DemoContentType {
-  const schema = t['schema'] as Record<string, unknown> | undefined;
-  const attributes = (schema?.['attributes'] ?? schema?.['schema']?.['attributes'] ?? {}) as Record<string, unknown>;
-  const fields: import("../data/demoContentTypes").DemoField[] = Object.entries(attributes).map(([apiName, def], i) => {
-    const d = def as Record<string, unknown>;
-    return {
-      id: `f${i + 1}`,
-      apiName,
-      label: apiName.charAt(0).toUpperCase() + apiName.slice(1),
-      type: (d['type'] as string) ?? 'text',
-      required: Boolean(d['required']),
-    };
-  });
-  return {
-    id: t['id'] as string,
-    name: (t['displayName'] as string) ?? (t['uid'] as string),
-    singularName: (t['singularName'] as string) ?? '',
-    pluralName: (t['pluralName'] as string) ?? '',
-    apiId: (t['singularName'] as string) ?? (t['uid'] as string),
-    description: (t['description'] as string) ?? '',
-    fields,
-    createdAt: t['createdAt'] ? new Date(t['createdAt'] as string).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    color: (t['color'] as string) ?? 'blue',
-    isSingleType: t['kind'] === 'singleType',
-    useDynamicEditor: true,
-  };
-}
 
 export function ContentTypes() {
-  const [contentTypes, setContentTypes] = useState<DemoContentType[]>(() => getAllContentTypesForApp());
+  const [contentTypes, setContentTypes] = useState<DemoContentType[]>([]);
+  const [ctLoading, setCtLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetMessage, setPresetMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => readContentTypesView());
   const [duplicateTarget, setDuplicateTarget] = useState<DemoContentType | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = useCallback(async (ct: DemoContentType) => {
     if (!confirm(`"${ct.name}" content type'ını silmek istediğine emin misin? Tüm içerikler de silinir.`)) return;
+    setDeleteError(null);
     try {
       await api.contentTypes.delete(ct.id);
       setContentTypes(prev => prev.filter(c => c.id !== ct.id));
-    } catch {
-      alert('Silme işlemi başarısız oldu.');
+      invalidateContentTypeCache();
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Silme işlemi başarısız oldu.');
     }
   }, []);
 
   const syncFromApi = useCallback(() => {
+    setCtLoading(true);
     api.contentTypes.list()
       .then(res => {
-        const types = (res.data as unknown[]).map(t => apiTypeToDemoType(t as Record<string, unknown>));
+        const types = (res.data as unknown[]).map(t => apiToType(t as Record<string, unknown>));
         setContentTypes(types);
+        setCachedTypes(types);
         try {
           localStorage.setItem(CONTENT_TYPES_STORAGE_KEY, JSON.stringify(types));
         } catch { /* ignore */ }
       })
-      .catch(() => { /* keep local state */ });
+      .catch(() => { setContentTypes([]); })
+      .finally(() => setCtLoading(false));
   }, []);
 
   useEffect(() => {
@@ -122,29 +127,61 @@ export function ContentTypes() {
     }
   }, [viewMode]);
 
-  const applyPreset = (preset: ContentPresetDefinition) => {
+  const applyPreset = async (preset: ContentPresetDefinition) => {
     const key = `${Date.now()}`;
     const built = preset.build(key);
-    setContentTypes((prev) => {
-      const existing = new Set(prev.map((c) => c.apiId));
-      const toAdd = built.filter((t) => !existing.has(t.apiId));
-      queueMicrotask(() => {
-        if (toAdd.length === 0) {
-          setPresetMessage(
-            "Bu şablondaki tüm içerik tipleri zaten mevcut (aynı API ID)."
-          );
-        } else if (toAdd.length < built.length) {
-          setPresetMessage(
-            `${toAdd.length} tip eklendi. ${built.length - toAdd.length} tip atlandı (çakışan API ID).`
-          );
-        } else {
-          setPresetMessage(`${toAdd.length} içerik tipi eklendi.`);
-        }
-        window.setTimeout(() => setPresetMessage(null), 5200);
-      });
-      return [...prev, ...toAdd];
-    });
+    const existing = new Set(contentTypes.map((c) => c.apiId));
+    const toAdd = built.filter((t) => !existing.has(t.apiId));
     setShowPresetsModal(false);
+
+    if (toAdd.length === 0) {
+      setPresetMessage("Bu şablondaki tüm içerik tipleri zaten mevcut (aynı API ID).");
+      window.setTimeout(() => setPresetMessage(null), 5200);
+      return;
+    }
+
+    let created = 0;
+    let skipped = 0;
+    for (const t of toAdd) {
+      const attributes: Record<string, unknown> = {};
+      for (const f of t.fields) {
+        const attr: Record<string, unknown> = { type: f.type, required: f.required };
+        if (f.description) attr['description'] = f.description;
+        if (f.type === 'enumeration' && f.enumOptions?.length) {
+          attr['enum'] = f.enumOptions;
+        }
+        attributes[f.apiName] = attr;
+      }
+      try {
+        await api.contentTypes.create({
+          displayName: t.name,
+          singularApiId: t.apiId,
+          pluralApiId: t.apiId.endsWith('s') ? t.apiId : `${t.apiId}s`,
+          kind: t.isSingleType ? 'singleType' : 'collectionType',
+          draftAndPublish: true,
+          i18n: false,
+          reviewWorkflow: false,
+          attributes,
+        });
+        created++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    if (created > 0) {
+      syncFromApi();
+      invalidateContentTypeCache();
+    }
+
+    if (skipped > 0) {
+      setPresetMessage(`${created} tip oluşturuldu. ${skipped} tip oluşturulamadı.`);
+    } else if (created < built.length) {
+      setPresetMessage(`${created} tip oluşturuldu. ${built.length - created} tip atlandı (çakışan API ID).`);
+    } else {
+      setPresetMessage(`${created} içerik tipi oluşturuldu.`);
+    }
+    window.setTimeout(() => setPresetMessage(null), 5200);
   };
 
   return (
@@ -218,7 +255,17 @@ export function ContentTypes() {
           </div>
         )}
 
-        {viewMode === "grid" ? (
+        {deleteError && (
+          <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300" role="alert">
+            {deleteError}
+          </div>
+        )}
+
+        {ctLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {contentTypes.map((ct) => {
               const colorClasses = availableColors.find((c) => c.name === ct.color);
@@ -414,9 +461,31 @@ export function ContentTypes() {
             source={duplicateTarget}
             contentTypes={contentTypes}
             onClose={() => setDuplicateTarget(null)}
-            onConfirm={(displayName) => {
+            onConfirm={async (displayName) => {
               const next = duplicateContentTypeSchema(duplicateTarget, displayName, contentTypes);
-              setContentTypes((prev) => [...prev, next]);
+              const attributes: Record<string, unknown> = {};
+              for (const f of next.fields) {
+                const attr: Record<string, unknown> = { type: f.type, required: f.required };
+                if (f.description) attr['description'] = f.description;
+                if (f.type === 'enumeration' && f.enumOptions?.length) attr['enum'] = f.enumOptions;
+                attributes[f.apiName] = attr;
+              }
+              try {
+                await api.contentTypes.create({
+                  displayName: next.name,
+                  singularApiId: next.apiId,
+                  pluralApiId: next.apiId.endsWith('s') ? next.apiId : `${next.apiId}s`,
+                  kind: next.isSingleType ? 'singleType' : 'collectionType',
+                  draftAndPublish: true,
+                  i18n: false,
+                  reviewWorkflow: false,
+                  attributes,
+                });
+                syncFromApi();
+                invalidateContentTypeCache();
+              } catch {
+                setContentTypes((prev) => [...prev, next]);
+              }
               setDuplicateTarget(null);
             }}
           />
@@ -620,10 +689,44 @@ function PresetsModal({
   );
 }
 
+const CT_ICON_OPTIONS: { id: string; icon: LucideIcon; label: string }[] = [
+  { id: 'database', icon: Database, label: 'Database' },
+  { id: 'file-text', icon: FileText, label: 'Article' },
+  { id: 'book-open', icon: BookOpen, label: 'Blog' },
+  { id: 'newspaper', icon: Newspaper, label: 'News' },
+  { id: 'shopping-bag', icon: ShoppingBag, label: 'Products' },
+  { id: 'package', icon: Package, label: 'Package' },
+  { id: 'users', icon: Users, label: 'Users' },
+  { id: 'image', icon: ImageIcon, label: 'Gallery' },
+  { id: 'video', icon: Video, label: 'Video' },
+  { id: 'music', icon: Music, label: 'Music' },
+  { id: 'film', icon: Film, label: 'Film' },
+  { id: 'tag', icon: Tag, label: 'Tag' },
+  { id: 'calendar', icon: Calendar, label: 'Events' },
+  { id: 'map', icon: Map, label: 'Location' },
+  { id: 'star', icon: Star, label: 'Review' },
+  { id: 'message-square', icon: MessageSquare, label: 'Comment' },
+  { id: 'bell', icon: Bell, label: 'Notification' },
+  { id: 'globe', icon: Globe, label: 'Page' },
+  { id: 'briefcase', icon: Briefcase, label: 'Job' },
+  { id: 'award', icon: Award, label: 'Award' },
+  { id: 'bar-chart', icon: BarChart2, label: 'Analytics' },
+  { id: 'folder', icon: Folder, label: 'Category' },
+  { id: 'link', icon: LinkIcon, label: 'Link' },
+  { id: 'settings', icon: Settings, label: 'Config' },
+  { id: 'zap', icon: Zap, label: 'Action' },
+  { id: 'heart', icon: Heart, label: 'Favorite' },
+  { id: 'home', icon: Home, label: 'Page' },
+  { id: 'box', icon: Box, label: 'Item' },
+  { id: 'type', icon: Type, label: 'Text' },
+  { id: 'layers', icon: Layers, label: 'Section' },
+];
+
 function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [selectedType, setSelectedType] = useState<"collection" | "single">("collection");
+  const [selectedIcon, setSelectedIcon] = useState("database");
   const [selectedColor, setSelectedColor] = useState("blue");
 
   return (
@@ -632,9 +735,15 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-zinc-100 rounded flex items-center justify-center">
-              <span className="font-bold text-zinc-950">CT</span>
-            </div>
+            {(() => {
+              const HeaderIconCmp = CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.icon ?? Database;
+              const colorMeta = availableColors.find(c => c.name === selectedColor);
+              return (
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMeta?.bg ?? 'bg-zinc-800'}`}>
+                  <HeaderIconCmp className={`w-5 h-5 ${colorMeta?.icon ?? 'text-zinc-100'}`} />
+                </div>
+              );
+            })()}
             <h2 className="text-xl font-semibold">Create Content Type</h2>
           </div>
           <button
@@ -706,15 +815,45 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                     }`}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient} to-transparent rounded-lg`} />
-                    {selectedColor === color.name && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center">
-                          <Database className="w-4 h-4 text-zinc-950" />
+                    {selectedColor === color.name && (() => {
+                      const SelectedIconCmp = CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.icon ?? Database;
+                      return (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center">
+                            <SelectedIconCmp className="w-3.5 h-3.5 text-zinc-950" />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Icon Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-3">Icon</label>
+              <div className="grid grid-cols-10 gap-1.5">
+                {CT_ICON_OPTIONS.map(({ id, icon: IconCmp, label }) => {
+                  const colorMeta = availableColors.find(c => c.name === selectedColor);
+                  const isSelected = selectedIcon === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      title={label}
+                      onClick={() => setSelectedIcon(id)}
+                      className={`group relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
+                        isSelected
+                          ? `${colorMeta?.bg ?? 'bg-zinc-800'} ${colorMeta?.border ?? 'border-zinc-600'} border-2 shadow-sm`
+                          : 'border-zinc-800/50 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/60'
+                      }`}
+                    >
+                      <IconCmp className={`w-5 h-5 ${isSelected ? (colorMeta?.icon ?? 'text-zinc-100') : 'text-zinc-400 group-hover:text-zinc-200'}`} />
+                      <span className="text-[9px] text-zinc-500 group-hover:text-zinc-400 truncate w-full text-center leading-tight">{label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -801,6 +940,7 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                     singularId: slug || "content-type",
                     pluralId: slug ? `${slug}s` : "content-types",
                     color: selectedColor,
+                    icon: selectedIcon,
                   },
                 }
               );

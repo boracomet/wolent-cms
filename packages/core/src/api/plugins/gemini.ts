@@ -33,6 +33,35 @@ const SUPPORTED_LOCALES: Record<string, string> = {
   sv: 'Swedish',
 }
 
+type GoogleModelRow = {
+  name?: string
+  displayName?: string
+  supportedGenerationMethods?: string[]
+}
+
+async function listGeminiModelsFromGoogle(apiKey: string): Promise<{ id: string; name: string }[]> {
+  const url = new URL('https://generativelanguage.googleapis.com/v1beta/models')
+  url.searchParams.set('key', apiKey)
+  url.searchParams.set('pageSize', '100')
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(25000) })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new BadRequestError(`Google modelleri alınamadı (${res.status}): ${err.slice(0, 280)}`)
+  }
+  const data = (await res.json()) as { models?: GoogleModelRow[] }
+  const rows = data.models ?? []
+  return rows
+    .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
+    .map((m) => {
+      const raw = m.name ?? ''
+      const id = raw.replace(/^models\//, '').trim()
+      const name = (m.displayName?.trim() || id) as string
+      return { id, name }
+    })
+    .filter((m) => m.id.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+}
+
 async function callGemini(apiKey: string, model: string, prompt: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
   const res = await fetch(url, {
@@ -169,5 +198,12 @@ ${contentToTranslate}`
         { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (latest)' },
       ],
     })
+  })
+
+  // ─── POST /api/plugins/gemini/models — Google’dan generateContent destekli modeller
+  app.post('/api/plugins/gemini/models', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { apiKey } = z.object({ apiKey: z.string().min(1) }).parse(req.body)
+    const data = await listGeminiModelsFromGoogle(apiKey.trim())
+    return reply.send({ data })
   })
 }

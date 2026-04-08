@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import { verifyAccessToken } from '../auth/jwt.js'
 import { sha256 } from '../utils/crypto.js'
 import { prisma, runInTenantContext } from '@wolent/database'
-import { UnauthorizedError, type JwtPayload } from '@wolent/utils'
+import { BadRequestError, UnauthorizedError, type JwtPayload } from '@wolent/utils'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -49,9 +49,8 @@ export async function requireApiToken(req: FastifyRequest, reply: FastifyReply):
 
   const hash = sha256(rawToken)
 
-  // Tenant discovery — from header or subdomain
-  const tenantId = (req.headers['x-wolent-tenant'] as string | undefined) ?? ''
-  if (!tenantId) throw new UnauthorizedError('Missing X-Wolent-Tenant header')
+  const tenantId = req.tenantId
+  if (!tenantId) throw new UnauthorizedError('Missing tenant context')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const token = await runInTenantContext({ tenantId }, () =>
@@ -80,6 +79,32 @@ export async function requireApiToken(req: FastifyRequest, reply: FastifyReply):
   }
 }
 
+/**
+ * Bearer token: önce JWT, geçersizse API token (hash) dener.
+ * İçerik API’si için headless erişim.
+ */
+export async function requireAuthOrApiToken(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const authHeader = req.headers.authorization
+  const raw = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!raw) {
+    throw new UnauthorizedError('Missing authorization header')
+  }
+
+  const parts = raw.split('.')
+  if (parts.length === 3) {
+    try {
+      const payload = await verifyAccessToken(raw)
+      req.user = payload
+      req.tenantId = payload.tenantId
+      return
+    } catch {
+      // JWT değil veya süresi dolmuş — API token dene
+    }
+  }
+
+  await requireApiToken(req, reply)
+}
+
 // Tenant slug → ID cache (avoids repeated DB hits)
 const tenantIdCache = new Map<string, string>()
 
@@ -88,8 +113,14 @@ const tenantIdCache = new Map<string, string>()
  * Resolves tenantId from X-Wolent-Tenant header (slug) by looking up the DB.
  * Results are cached in-memory.
  */
+function shouldRelaxTenantResolution(url: string): boolean {
+  const path = url.split('?')[0]
+  return path === '/health' || path.startsWith('/api/setup/')
+}
+
 export async function injectTenant(req: FastifyRequest, _reply: FastifyReply): Promise<void> {
   const slug = (req.headers['x-wolent-tenant'] as string | undefined) ?? 'default'
+  const relax = shouldRelaxTenantResolution(req.url)
 
   if (tenantIdCache.has(slug)) {
     req.tenantId = tenantIdCache.get(slug)!
@@ -97,7 +128,6 @@ export async function injectTenant(req: FastifyRequest, _reply: FastifyReply): P
   }
 
   try {
-    // Bypass tenant guard for this bootstrap lookup
     const prevBypass = process.env['WOLENT_BYPASS_TENANT_GUARD']
     process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,10 +137,17 @@ export async function injectTenant(req: FastifyRequest, _reply: FastifyReply): P
     if (tenant?.id) {
       tenantIdCache.set(slug, tenant.id)
       req.tenantId = tenant.id
-    } else {
+    } else if (relax) {
       req.tenantId = slug
+    } else {
+      throw new BadRequestError(`Unknown tenant "${slug}". Check X-Wolent-Tenant header.`)
     }
-  } catch {
-    req.tenantId = slug
+  } catch (err) {
+    if (err instanceof BadRequestError) throw err
+    if (relax) {
+      req.tenantId = slug
+    } else {
+      throw new BadRequestError(`Unknown tenant "${slug}". Check X-Wolent-Tenant header.`)
+    }
   }
 }

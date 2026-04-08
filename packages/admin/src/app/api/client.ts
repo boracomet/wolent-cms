@@ -87,9 +87,8 @@ async function request<T>(endpoint: string, opts: RequestOptions = {}): Promise<
       })
       return handleResponse<T>(retryRes)
     }
-    // Refresh failed — force logout
+    // Refresh failed — clear token, throw so callers can handle gracefully
     setAccessToken(null)
-    window.location.href = '/login'
     throw new ApiClientError('Session expired', 401, 'UnauthorizedError')
   }
 
@@ -256,14 +255,25 @@ export const api = {
       const form = new FormData()
       form.append('file', file)
 
-      const headers: Record<string, string> = {
-        'X-Wolent-Tenant': 'default',
+      const run = () => {
+        const headers: Record<string, string> = {
+          'X-Wolent-Tenant': 'default',
+        }
+        const token = getAccessToken()
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const url = folderId ? `/api/upload?folderId=${encodeURIComponent(folderId)}` : '/api/upload'
+        return fetch(url, { method: 'POST', headers, credentials: 'include', body: form })
       }
-      const token = getAccessToken()
-      if (token) headers['Authorization'] = `Bearer ${token}`
 
-      const url = folderId ? `/api/upload?folderId=${folderId}` : '/api/upload'
-      const res = await fetch(url, { method: 'POST', headers, credentials: 'include', body: form })
+      let res = await run()
+      if (res.status === 401) {
+        const refreshed = await tryRefresh()
+        if (refreshed) res = await run()
+      }
+      if (res.status === 401) {
+        setAccessToken(null)
+        throw new ApiClientError('Session expired', 401, 'UnauthorizedError')
+      }
       return handleResponse<{ data: unknown }>(res)
     },
 
@@ -279,8 +289,29 @@ export const api = {
     createFolder: (data: unknown) =>
       request<{ data: unknown }>('/upload/folders', { method: 'POST', body: data }),
 
+    updateFolder: (id: string, data: unknown) =>
+      request<{ data: unknown }>(`/upload/folders/${id}`, { method: 'PUT', body: data }),
+
     deleteFolder: (id: string) =>
       request<{ data: { ok: boolean } }>(`/upload/folders/${id}`, { method: 'DELETE' }),
+  },
+
+  // Roles
+  roles: {
+    list: () =>
+      request<{ data: unknown[] }>('/admin/roles'),
+    updatePermissions: (id: string, permissions: unknown) =>
+      request<{ data: unknown }>(`/admin/roles/${id}/permissions`, { method: 'PUT', body: permissions }),
+  },
+
+  // DB Info
+  dbInfo: {
+    get: () =>
+      request<{ data: unknown }>('/admin/db-info'),
+    migrations: () =>
+      request<{ data: { id: string; name: string; status: 'applied' | 'pending'; appliedAt: string | null }[] }>('/admin/db-info/migrations'),
+    migrate: () =>
+      request<{ data: { ok: boolean } }>('/admin/db-info/migrate', { method: 'POST' }),
   },
 
   // API Tokens
@@ -299,5 +330,24 @@ export const api = {
   auditLogs: {
     list: (params?: Record<string, string | number | boolean | undefined>) =>
       request<{ data: unknown[]; meta: unknown }>('/admin/audit-logs', { params }),
+  },
+
+  // Backup
+  backup: {
+    export: (included: Record<string, boolean>) =>
+      request<Record<string, unknown>>('/admin/backup/export', { method: 'POST', body: included }),
+    import: (backup: unknown, include?: Record<string, boolean>) =>
+      request<{ data: { ok: boolean; restored: number } }>('/admin/backup/import', {
+        method: 'POST',
+        body: { backup, include },
+      }),
+  },
+
+  // Admin Settings
+  settings: {
+    get: (namespace: string) =>
+      request<{ data: Record<string, unknown> }>(`/admin/settings/${namespace}`),
+    save: (namespace: string, data: Record<string, unknown>) =>
+      request<{ data: Record<string, unknown> }>(`/admin/settings/${namespace}`, { method: 'PUT', body: data }),
   },
 }

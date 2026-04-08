@@ -273,8 +273,11 @@ export function MediaLibrary() {
     setUrlCopied(false);
   }, [selectedFile?.id]);
 
+  const [mediaLoading, setMediaLoading] = useState(true);
+
   // Load real data from API
   useEffect(() => {
+    setMediaLoading(true);
     Promise.allSettled([
       api.media.files({ pageSize: 100 }),
       api.media.folders(),
@@ -297,6 +300,8 @@ export function MediaLibrary() {
           } satisfies MediaFile;
         });
         setMedia(apiFiles);
+      } else {
+        setUploadError('Failed to load files from server.');
       }
       if (foldersResult.status === 'fulfilled') {
         const apiFolders = (foldersResult.value.data as unknown[]).map((f: unknown) => {
@@ -310,10 +315,11 @@ export function MediaLibrary() {
         });
         setFolders(apiFolders);
       }
-    });
+    }).finally(() => setMediaLoading(false));
   }, []);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -360,15 +366,31 @@ export function MediaLibrary() {
     }
   };
 
-  const handleBulkDelete = () => {
-    if (confirm(`Delete ${selectedFiles.size} files?`)) {
-      setMedia(media.filter((f) => !selectedFiles.has(f.id)));
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedFiles.size} files?`)) return;
+    const ids = Array.from(selectedFiles);
+    const results = await Promise.allSettled(ids.map(id => api.media.deleteFile(id)));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    const succeededIds = ids.filter((_, i) => results[i].status === 'fulfilled');
+    if (succeededIds.length > 0) {
+      setMedia(prev => prev.filter(f => !succeededIds.includes(f.id)));
       setSelectedFiles(new Set());
+    }
+    if (failed > 0) {
+      setUploadError(`${failed} of ${ids.length} files could not be deleted.`);
     }
   };
 
   const handleBulkDownload = () => {
-    alert(`Downloading ${selectedFiles.size} files...`);
+    media
+      .filter((f) => selectedFiles.has(f.id))
+      .forEach((f) => {
+        const a = document.createElement("a");
+        a.href = f.url;
+        a.download = f.name;
+        a.target = "_blank";
+        a.click();
+      });
   };
 
   const handleCopyURLs = () => {
@@ -377,7 +399,6 @@ export function MediaLibrary() {
       .map((f) => f.url)
       .join("\n");
     navigator.clipboard.writeText(urls);
-    alert("URLs copied to clipboard!");
   };
 
   const toggleFolderExpansion = (folderId: string) => {
@@ -397,6 +418,7 @@ export function MediaLibrary() {
     setSelectedFile((sf) =>
       sf?.id === fileId ? { ...sf, accentColor: accent } : sf
     );
+    api.media.updateFile(fileId, { accentColor: accent ?? null }).catch(() => {});
   };
 
   const handleDeleteFileFromMenu = async (fileId: string) => {
@@ -423,6 +445,7 @@ export function MediaLibrary() {
       const result = await api.media.createFolder({
         name: newFolderName.trim(),
         parentId: currentFolderId ?? undefined,
+        color: newFolderAccent ?? undefined,
       });
       const created = (result as { data: Record<string, unknown> }).data;
       const newFolder: FolderItem = {
@@ -432,21 +455,13 @@ export function MediaLibrary() {
         createdAt: new Date().toISOString().split("T")[0],
         ...(newFolderAccent ? { accentColor: newFolderAccent } : {}),
       };
-      setFolders([...folders, newFolder]);
-    } catch {
-      // Optimistic fallback
-      const newFolder: FolderItem = {
-        id: `folder-${Date.now()}`,
-        name: newFolderName,
-        parentId: currentFolderId,
-        createdAt: new Date().toISOString().split("T")[0],
-        ...(newFolderAccent ? { accentColor: newFolderAccent } : {}),
-      };
-      setFolders([...folders, newFolder]);
+      setFolders(prev => [...prev, newFolder]);
+      setNewFolderName("");
+      setNewFolderAccent(undefined);
+      setShowCreateFolderModal(false);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to create folder.');
     }
-    setNewFolderName("");
-    setNewFolderAccent(undefined);
-    setShowCreateFolderModal(false);
   };
 
   const handleMoveFiles = (targetFolderId: string | null) => {
@@ -457,6 +472,9 @@ export function MediaLibrary() {
       return file;
     });
     setMedia(updatedMedia);
+    selectedFiles.forEach(id => {
+      api.media.updateFile(id, { folderId: targetFolderId }).catch(() => {});
+    });
     setSelectedFiles(new Set());
     setShowMoveModal(false);
   };
@@ -473,6 +491,7 @@ export function MediaLibrary() {
 
   const moveFileIdsToFolder = (fileIds: string[], targetFolderId: string | null) => {
     if (!fileIds.length) return;
+    // Optimistic UI update
     setMedia((prev) =>
       prev.map((f) => {
         if (!fileIds.includes(f.id)) return f;
@@ -485,6 +504,13 @@ export function MediaLibrary() {
       fileIds.forEach((id) => next.delete(id));
       return next;
     });
+    // Persist to API
+    fileIds.forEach((id) => {
+      api.media.updateFile(id, { folderId: targetFolderId }).catch(() => {
+        // Revert on failure
+        setMedia((prev) => prev.map((f) => f.id === id ? { ...f } : f));
+      });
+    });
   };
 
   const moveFolderToParent = (folderId: string, newParentId: string | null) => {
@@ -495,6 +521,7 @@ export function MediaLibrary() {
     if (newParentId) {
       setExpandedFolders((prev) => new Set(prev).add(newParentId));
     }
+    api.media.updateFolder(folderId, { parentId: newParentId }).catch(() => {});
     setContextMenuFolder(null);
     setContextMenuFile(null);
   };
@@ -525,25 +552,8 @@ export function MediaLibrary() {
           folderId: targetFolderId,
           ...(accentColor ? { accentColor } : {}),
         }]);
-      } catch {
-        // Fallback: show optimistic local preview
-        const isImage = file.type.startsWith('image/');
-        const url = URL.createObjectURL(file);
-        const sizeMb = file.size / (1024 * 1024);
-        const sizeLabel = sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`;
-        setMedia((prev) => [...prev, {
-          id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          name: file.name,
-          type: isImage ? 'image' : 'document',
-          mimeType: file.type || 'application/octet-stream',
-          size: sizeLabel,
-          uploadedAt: new Date().toISOString().split('T')[0],
-          uploadedBy: 'You',
-          url,
-          thumbnail: isImage ? url : undefined,
-          folderId: targetFolderId,
-          ...(accentColor ? { accentColor } : {}),
-        }]);
+      } catch (err) {
+        setUploadError(`Failed to upload "${file.name}": ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
   };
@@ -636,7 +646,7 @@ export function MediaLibrary() {
     };
   };
 
-  const handleDeleteFolder = (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string) => {
     const folderToDelete = folders.find((f) => f.id === folderId);
     if (!folderToDelete) return;
 
@@ -647,27 +657,35 @@ export function MediaLibrary() {
       ? `Delete "${folderToDelete.name}"? This will delete ${filesInFolder} file(s) and ${subFolders} subfolder(s).`
       : `Delete "${folderToDelete.name}"?`;
 
-    if (confirm(message)) {
-      // Delete folder and all its contents recursively
-      const foldersToDelete = new Set([folderId]);
-      const getAllChildFolders = (parentId: string) => {
-        folders
-          .filter((f) => f.parentId === parentId)
-          .forEach((f) => {
-            foldersToDelete.add(f.id);
-            getAllChildFolders(f.id);
-          });
-      };
-      getAllChildFolders(folderId);
+    if (!confirm(message)) return;
 
-      setFolders(folders.filter((f) => !foldersToDelete.has(f.id)));
-      setMedia(media.filter((f) => !foldersToDelete.has(f.folderId || "")));
-      
-      if (currentFolderId === folderId) {
-        setCurrentFolderId(folderToDelete.parentId);
-      }
+    try {
+      await api.media.deleteFolder(folderId);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to delete folder.');
       setContextMenuFolder(null);
+      return;
     }
+
+    // Remove folder and all its contents from local state
+    const foldersToDelete = new Set([folderId]);
+    const getAllChildFolders = (parentId: string) => {
+      folders
+        .filter((f) => f.parentId === parentId)
+        .forEach((f) => {
+          foldersToDelete.add(f.id);
+          getAllChildFolders(f.id);
+        });
+    };
+    getAllChildFolders(folderId);
+
+    setFolders(folders.filter((f) => !foldersToDelete.has(f.id)));
+    setMedia(media.filter((f) => !foldersToDelete.has(f.folderId || "")));
+
+    if (currentFolderId === folderId) {
+      setCurrentFolderId(folderToDelete.parentId);
+    }
+    setContextMenuFolder(null);
   };
 
   const handleRenameFolder = (folderId: string) => {
@@ -684,6 +702,7 @@ export function MediaLibrary() {
           f.id === renamingFolderId ? { ...f, name: renameValue } : f
         )
       );
+      api.media.updateFolder(renamingFolderId, { name: renameValue.trim() }).catch(() => {});
     }
     setRenamingFolderId(null);
     setRenameValue("");
@@ -791,6 +810,13 @@ export function MediaLibrary() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {uploadError && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <span className="flex-1">{uploadError}</span>
+            <button type="button" onClick={() => setUploadError(null)} className="text-red-400/70 hover:text-red-300">✕</button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -1059,6 +1085,13 @@ export function MediaLibrary() {
               </div>
             )}
 
+            {mediaLoading && (
+              <div className="flex items-center justify-center py-12 text-zinc-500 text-sm gap-2">
+                <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                Loading media...
+              </div>
+            )}
+
             {/* Folders in Current Directory */}
             {currentFolders.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
@@ -1285,29 +1318,17 @@ export function MediaLibrary() {
                 })}
               </div>
             ) : (
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
-                <table className="w-full">
+              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="border-b border-zinc-800/50">
                     <tr>
-                      <th className="px-3 py-4 w-12"></th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">
-                        Name
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">
-                        Type
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">
-                        Size
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">
-                        Uploaded By
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-zinc-400">
-                        Date
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-medium text-zinc-400">
-                        Actions
-                      </th>
+                      <th className="px-3 py-3 w-10 shrink-0"></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Name</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-20">Type</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-24">Size</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Uploaded By</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Date</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800">
@@ -1348,9 +1369,9 @@ export function MediaLibrary() {
                             )}
                           </button>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-zinc-800 rounded flex items-center justify-center flex-shrink-0">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 bg-zinc-800 rounded flex items-center justify-center flex-shrink-0">
                               {file.thumbnail ? (
                                 <img
                                   src={file.thumbnail}
@@ -1358,25 +1379,25 @@ export function MediaLibrary() {
                                   className="w-full h-full object-cover rounded"
                                 />
                               ) : (
-                                <FileText className="w-5 h-5 text-zinc-400" />
+                                <FileText className="w-4 h-4 text-zinc-400" />
                               )}
                             </div>
-                            <span className="font-medium truncate">
+                            <span className="font-medium truncate text-sm">
                               {file.name}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-zinc-400 capitalize">
+                        <td className="px-3 py-3 text-sm text-zinc-400 capitalize whitespace-nowrap">
                           {file.type}
                         </td>
-                        <td className="px-6 py-4 text-zinc-400">{file.size}</td>
-                        <td className="px-6 py-4 text-zinc-400">
+                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap">{file.size}</td>
+                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap truncate max-w-[7rem]">
                           {file.uploadedBy}
                         </td>
-                        <td className="px-6 py-4 text-zinc-400">
+                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap">
                           {file.uploadedAt}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-1">
                             <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
                               <Download className="w-4 h-4 text-zinc-400" />
@@ -1468,6 +1489,17 @@ export function MediaLibrary() {
                       <input
                         type="text"
                         value={selectedFile.name}
+                        onChange={(e) => {
+                          const newName = e.target.value;
+                          setSelectedFile(sf => sf ? { ...sf, name: newName } : sf);
+                          setMedia(prev => prev.map(f => f.id === selectedFile.id ? { ...f, name: newName } : f));
+                        }}
+                        onBlur={(e) => {
+                          const name = e.target.value.trim();
+                          if (name && name !== selectedFile.name) {
+                            api.media.updateFile(selectedFile.id, { name }).catch(() => {});
+                          }
+                        }}
                         className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
                       />
                     </div>
@@ -1579,11 +1611,18 @@ export function MediaLibrary() {
                     </div>
 
                     <div className="pt-4 flex items-center gap-3">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md hover:bg-zinc-700 transition-colors">
+                      <a
+                        href={selectedFile.url}
+                        download={selectedFile.name}
+                        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md hover:bg-zinc-700 transition-colors"
+                      >
                         <Download className="w-4 h-4" />
                         Download
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                      </a>
+                      <button
+                        onClick={() => { if (selectedFile) handleDeleteFileFromMenu(selectedFile.id); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                      >
                         <Trash2 className="w-4 h-4" />
                         Delete
                       </button>
@@ -1857,6 +1896,7 @@ export function MediaLibrary() {
                     setFolders((prev) =>
                       prev.map((f) => (f.id === id ? { ...f, accentColor: c } : f))
                     );
+                    api.media.updateFolder(id, { color: c ?? null }).catch(() => {});
                   }}
                 />
               </div>

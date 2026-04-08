@@ -16,18 +16,19 @@ import {
   X,
   Images,
   Languages,
+  Loader2,
+  Sparkles,
+  Send,
 } from "lucide-react";
 import { MinimalTiptap } from "./MinimalTiptap";
 import { DynamicSchemaFields } from "./DynamicSchemaFields";
 import { MediaLibraryPickerModal } from "./MediaLibraryPickerModal";
-import { AiTranslateModal, AiTranslateSidebarButton } from "./AiTranslateModal";
+import { AiTranslateModal } from "./AiTranslateModal";
 import type { DemoField } from "../data/demoContentTypes";
-import {
-  buildEmptyValuesForFields,
-  getDemoContentTypeByApiId,
-  getEditorSeedForType,
-  shouldUseDynamicEditor,
-} from "../data/demoContentTypes";
+import { buildEmptyValuesForFields } from "../data/demoContentTypes";
+import { getCachedTypeByApiId, fetchContentTypes } from "../lib/contentTypeCache";
+import { fetchEnabledLocales } from "../lib/locales";
+import type { LocaleEntry } from "../lib/locales";
 
 function getAiTranslateFieldKeys(
   dynamicEditor: boolean,
@@ -55,34 +56,11 @@ function getAiTranslateFieldKeys(
   };
 }
 
-interface Locale {
-  code: string;
-  name: string;
-  flag: string;
-}
+type Locale = Pick<LocaleEntry, 'code' | 'name' | 'flag'>;
 
-const availableLocales: Locale[] = [
-  { code: "en", name: "English", flag: "🇬🇧" },
-  { code: "tr", name: "Türkçe", flag: "🇹🇷" },
-  { code: "de", name: "Deutsch", flag: "🇩🇪" },
-  { code: "fr", name: "Français", flag: "🇫🇷" },
-  { code: "es", name: "Español", flag: "🇪🇸" },
-];
-
-function buildLegacyInitial(isNewEntry: boolean): Record<string, Record<string, string>> {
-  return {
-    en: {
-      title: isNewEntry ? "" : "Getting Started with Headless CMS",
-      content: isNewEntry ? "" : "This is the English version of the content...",
-    },
-    tr: {
-      title: isNewEntry ? "" : "Headless CMS ile Başlarken",
-      content: isNewEntry ? "" : "İçeriğin Türkçe versiyonu...",
-    },
-    de: { title: "", content: "" },
-    fr: { title: "", content: "" },
-    es: { title: "", content: "" },
-  };
+function buildLegacyInitial(localeCodes?: string[]): Record<string, Record<string, string>> {
+  const codes = localeCodes ?? ["en", "tr", "de", "fr", "es"];
+  return Object.fromEntries(codes.map(c => [c, { title: "", content: "" }]));
 }
 
 export function ContentEditor() {
@@ -90,8 +68,12 @@ export function ContentEditor() {
   const navigate = useNavigate();
   const isNew = id === "create";
 
-  const schemaType = getDemoContentTypeByApiId(type);
-  const dynamicEditor = shouldUseDynamicEditor(type);
+  const [schemaVersion, setSchemaVersion] = useState(0);
+  useEffect(() => {
+    fetchContentTypes().then(() => setSchemaVersion(v => v + 1));
+  }, [type]);
+  const schemaType = useMemo(() => getCachedTypeByApiId(type), [type, schemaVersion]);
+  const dynamicEditor = Boolean(schemaType?.useDynamicEditor);
   const schemaFields = schemaType?.fields ?? [];
   const aiTranslateKeys = useMemo(
     () => getAiTranslateFieldKeys(dynamicEditor, schemaFields),
@@ -99,37 +81,44 @@ export function ContentEditor() {
   );
   const aiTranslateShowSummary = aiTranslateKeys.titleKey !== aiTranslateKeys.summaryKey;
 
+  const [availableLocales, setAvailableLocales] = useState<Locale[]>([
+    { code: "en", name: "English", flag: "🇬🇧" },
+    { code: "tr", name: "Turkish", flag: "🇹🇷" },
+    { code: "de", name: "German", flag: "🇩🇪" },
+    { code: "fr", name: "French", flag: "🇫🇷" },
+    { code: "es", name: "Spanish", flag: "🇪🇸" },
+  ]);
+  useEffect(() => {
+    fetchEnabledLocales(() => api.settings.get("i18n")).then(setAvailableLocales);
+  }, []);
+
   const [currentLocale, setCurrentLocale] = useState<string>("en");
   const [showLocaleMenu, setShowLocaleMenu] = useState(false);
   const [showLocalizationStatusMenu, setShowLocalizationStatusMenu] = useState(false);
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [coverGalleryOpen, setCoverGalleryOpen] = useState(false);
   const [aiTranslateOpen, setAiTranslateOpen] = useState(false);
   const [coverDragOver, setCoverDragOver] = useState(false);
 
   const [contentByLocale, setContentByLocale] = useState<Record<string, Record<string, string>>>(() =>
-    buildLegacyInitial(isNew)
+    buildLegacyInitial()
   );
 
   useEffect(() => {
-    const st = getDemoContentTypeByApiId(type);
-    const fields = st?.fields ?? [];
-    const dyn = shouldUseDynamicEditor(type);
+    const fields = schemaType?.fields ?? [];
+    const dyn = Boolean(schemaType?.useDynamicEditor);
     if (dyn && fields.length > 0) {
       const next: Record<string, Record<string, string>> = {};
       for (const loc of availableLocales) {
-        const base = buildEmptyValuesForFields(fields);
-        if (!isNew && loc.code === "en" && type) {
-          Object.assign(base, getEditorSeedForType(type));
-        }
-        next[loc.code] = base;
+        next[loc.code] = buildEmptyValuesForFields(fields);
       }
       setContentByLocale(next);
-    } else {
-      setContentByLocale(buildLegacyInitial(isNew));
+    } else if (!dyn) {
+      setContentByLocale(buildLegacyInitial());
     }
-  }, [type, id, isNew]);
+  }, [type, id, isNew, schemaType]);
 
   const currentContent = contentByLocale[currentLocale] ?? {};
   const selectedLocale = availableLocales.find((l) => l.code === currentLocale)!;
@@ -163,19 +152,34 @@ export function ContentEditor() {
   };
 
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [entryMeta, setEntryMeta] = useState<{ createdAt?: string; updatedAt?: string } | null>(null);
 
   // Load existing entry data if editing
   useEffect(() => {
     if (!isNew && id && type) {
+      setLoadError(null);
       api.entries.get(type, id)
         .then(res => {
           const entry = res.data as Record<string, unknown>;
-          const data = entry['data'] as Record<string, unknown> ?? {};
-          setContentByLocale(prev => ({
+          // Backend spreads field data directly into the entry object (alongside id, status, createdAt etc.)
+          const systemKeys = new Set(['id', 'documentId', 'contentTypeId', 'tenantId', 'createdById', 'updatedById', 'createdAt', 'updatedAt', 'publishedAt', 'deletedAt', 'locale', 'status', 'version', 'data']);
+          const fieldData = Object.fromEntries(
+            Object.entries(entry)
+              .filter(([k]) => !systemKeys.has(k))
+              .map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])
+          );
+          if (entry['coverImage']) setCoverImage(String(entry['coverImage']));
+          const entryLocale =
+            typeof entry['locale'] === "string" && entry['locale'].length >= 2
+              ? entry['locale']
+              : "en";
+          setCurrentLocale(entryLocale);
+          setContentByLocale((prev) => ({
             ...prev,
-            en: { ...prev['en'], ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v ?? '')])) },
+            [entryLocale]: { ...(prev[entryLocale] ?? {}), ...fieldData },
           }));
           setStatus((entry['status'] as 'draft' | 'published') ?? 'draft');
           setEntryMeta({
@@ -183,15 +187,16 @@ export function ContentEditor() {
             updatedAt: entry['updatedAt'] ? new Date(entry['updatedAt'] as string).toLocaleDateString() : undefined,
           });
         })
-        .catch(() => { /* keep empty state */ });
+        .catch((err) => setLoadError(err instanceof Error ? err.message : 'Failed to load entry.'));
     }
   }, [type, id, isNew]);
 
   const handleSave = useCallback(async () => {
     if (!type) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      const data = contentByLocale[currentLocale] ?? {};
+      const data = { ...(contentByLocale[currentLocale] ?? {}), status, ...(coverImage ? { coverImage } : {}) };
       if (isNew) {
         const res = await api.entries.create(type, data, currentLocale);
         const created = (res as { data: Record<string, unknown> }).data;
@@ -201,12 +206,12 @@ export function ContentEditor() {
         await api.entries.update(type, id, data);
         setSavedAt(new Date().toLocaleTimeString());
       }
-    } catch {
-      alert('Failed to save. Please try again.');
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, [type, id, isNew, contentByLocale, currentLocale, navigate]);
+  }, [type, id, isNew, contentByLocale, currentLocale, navigate, status, coverImage]);
 
   const typeName = type?.charAt(0).toUpperCase() + type?.slice(1) || "";
   const headingLabel = schemaType?.singularName ?? typeName;
@@ -237,8 +242,8 @@ export function ContentEditor() {
                 <h1 className="text-2xl sm:text-3xl font-semibold text-zinc-100 mb-2 truncate">
                   {isNew ? `Create ${headingLabel}` : `Edit ${headingLabel}`}
                 </h1>
-                <p className="text-zinc-400">
-                  {isNew ? "Draft · not saved yet" : savedAt ? `Last saved ${savedAt}` : "Last saved 2 minutes ago"}
+                <p className={`text-sm ${saveError || loadError ? "text-red-400" : "text-zinc-400"}`}>
+                  {saveError ?? loadError ?? (isNew ? "Draft · not saved yet" : savedAt ? `Last saved ${savedAt}` : "")}
                 </p>
               </div>
               <button
@@ -319,7 +324,10 @@ export function ContentEditor() {
 
               <button
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-md border transition-colors bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200 text-sm"
+                onClick={() => { if (id) window.open(`/api/${type}/${id}`, '_blank'); }}
+                disabled={!id}
+                title={id ? "Open entry JSON in new tab" : "Save entry first to preview"}
+                className="flex items-center gap-2 px-4 py-2 rounded-md border transition-colors bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Eye className="w-4 h-4" />
                 Preview
@@ -327,11 +335,33 @@ export function ContentEditor() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setAiTranslateOpen(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-500/35 bg-gradient-to-r from-violet-950/50 to-blue-950/40 hover:from-violet-900/50 hover:to-blue-900/40 text-sm font-medium text-zinc-100 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-violet-400 shrink-0" />
+                  <span className="hidden sm:inline">AI Translate</span>
+                </button>
+
                 <label className="flex items-center gap-2 text-sm text-zinc-300">
                   <span className="text-zinc-500 whitespace-nowrap">Status</span>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as "draft" | "published")}
+                    onChange={async (e) => {
+                      const next = e.target.value as "draft" | "published";
+                      const prev = status;
+                      setStatus(next);
+                      if (!isNew && id && type) {
+                        try {
+                          if (next === "published") await api.entries.publish(type, id);
+                          else await api.entries.unpublish(type, id);
+                        } catch (err) {
+                          setStatus(prev);
+                          setSaveError(err instanceof Error ? err.message : 'Status update failed.');
+                        }
+                      }
+                    }}
                     className="min-w-[8.5rem] px-3 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-100 text-sm"
                   >
                     <option value="draft">Draft</option>
@@ -482,17 +512,19 @@ export function ContentEditor() {
                         setCoverDragOver(true);
                       }}
                       onDragLeave={() => setCoverDragOver(false)}
-                      onDrop={(e) => {
+                      onDrop={async (e) => {
                         e.preventDefault();
                         setCoverDragOver(false);
                         const file = e.dataTransfer.files[0];
                         if (file?.type.startsWith("image/")) {
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            const r = reader.result;
-                            if (typeof r === "string") setCoverImage(r);
-                          };
-                          reader.readAsDataURL(file);
+                          setCoverUploading(true);
+                          try {
+                            const res = await api.media.upload(file);
+                            const uploaded = (res as { data: Record<string, unknown> }).data;
+                            setCoverImage(String(uploaded['url'] ?? ''));
+                          } catch { /* silently fall back to local preview */ } finally {
+                            setCoverUploading(false);
+                          }
                         }
                       }}
                     >
@@ -501,32 +533,43 @@ export function ContentEditor() {
                         type="file"
                         accept="image/*"
                         className="sr-only"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file?.type.startsWith("image/")) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const r = reader.result;
-                              if (typeof r === "string") setCoverImage(r);
-                            };
-                            reader.readAsDataURL(file);
-                          }
                           e.target.value = "";
+                          if (file?.type.startsWith("image/")) {
+                            setCoverUploading(true);
+                            try {
+                              const res = await api.media.upload(file);
+                              const uploaded = (res as { data: Record<string, unknown> }).data;
+                              setCoverImage(String(uploaded['url'] ?? ''));
+                            } catch { /* silently ignore */ } finally {
+                              setCoverUploading(false);
+                            }
+                          }
                         }}
                       />
-                      <Upload className="w-12 h-12 text-zinc-500" />
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-zinc-300 mb-1">
-                          Sürükleyip bırakın veya{" "}
-                          <label
-                            htmlFor="cover-legacy-file"
-                            className="underline underline-offset-2 cursor-pointer hover:text-zinc-100"
-                          >
-                            dosya seçin
-                          </label>
-                        </p>
-                        <p className="text-xs text-zinc-500">PNG, JPG, WebP, GIF</p>
-                      </div>
+                      {coverUploading ? (
+                        <>
+                          <Loader2 className="w-12 h-12 text-zinc-400 animate-spin" />
+                          <p className="text-sm text-zinc-400">Uploading…</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-12 h-12 text-zinc-500" />
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-zinc-300 mb-1">
+                              Sürükleyip bırakın veya{" "}
+                              <label
+                                htmlFor="cover-legacy-file"
+                                className="underline underline-offset-2 cursor-pointer hover:text-zinc-100"
+                              >
+                                dosya seçin
+                              </label>
+                            </p>
+                            <p className="text-xs text-zinc-500">PNG, JPG, WebP, GIF</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -576,6 +619,13 @@ export function ContentEditor() {
                       </label>
                       <input
                         type="date"
+                        value={currentContent["publishDate"] ?? ""}
+                        onChange={(e) =>
+                          setContentByLocale((prev) => ({
+                            ...prev,
+                            [currentLocale]: { ...prev[currentLocale], publishDate: e.target.value },
+                          }))
+                        }
                         className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -590,6 +640,13 @@ export function ContentEditor() {
                       <input
                         type="text"
                         placeholder="Author name"
+                        value={currentContent["author"] ?? ""}
+                        onChange={(e) =>
+                          setContentByLocale((prev) => ({
+                            ...prev,
+                            [currentLocale]: { ...prev[currentLocale], author: e.target.value },
+                          }))
+                        }
                         className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -602,12 +659,18 @@ export function ContentEditor() {
                         Category
                       </div>
                     </label>
-                    <select className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option>Select category...</option>
-                      <option>Technology</option>
-                      <option>Business</option>
-                      <option>Lifestyle</option>
-                    </select>
+                    <input
+                      type="text"
+                      placeholder="e.g. Technology"
+                      value={currentContent["category"] ?? ""}
+                      onChange={(e) =>
+                        setContentByLocale((prev) => ({
+                          ...prev,
+                          [currentLocale]: { ...prev[currentLocale], category: e.target.value },
+                        }))
+                      }
+                      className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                 </>
               )}
@@ -622,6 +685,13 @@ export function ContentEditor() {
                     <input
                       type="number"
                       placeholder="0.00"
+                      value={currentContent["price"] ?? ""}
+                      onChange={(e) =>
+                        setContentByLocale((prev) => ({
+                          ...prev,
+                          [currentLocale]: { ...prev[currentLocale], price: e.target.value },
+                        }))
+                      }
                       className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -632,6 +702,13 @@ export function ContentEditor() {
                     <input
                       type="number"
                       placeholder="0"
+                      value={currentContent["stock"] ?? ""}
+                      onChange={(e) =>
+                        setContentByLocale((prev) => ({
+                          ...prev,
+                          [currentLocale]: { ...prev[currentLocale], stock: e.target.value },
+                        }))
+                      }
                       className="w-full px-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -640,30 +717,64 @@ export function ContentEditor() {
                 </>
               )}
 
-              <div className="border-t border-zinc-800/50 pt-6 space-y-6">
-                <div>
-                  <AiTranslateSidebarButton onClick={() => setAiTranslateOpen(true)} />
-                </div>
-
+              <div className="border-t border-zinc-800/50 pt-6 space-y-4">
                 {entryMeta && (
-                  <div className="pt-2 border-t border-zinc-800/50">
-                    <h3 className="text-sm font-medium mb-3">Information</h3>
-                    <div className="space-y-3 text-sm">
-                      {entryMeta.createdAt && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-zinc-400">Created</span>
-                          <span className="text-zinc-100">{entryMeta.createdAt}</span>
-                        </div>
-                      )}
-                      {entryMeta.updatedAt && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-zinc-400">Updated</span>
-                          <span className="text-zinc-100">{entryMeta.updatedAt}</span>
-                        </div>
-                      )}
-                    </div>
+                  <div className="space-y-3 text-sm">
+                    <h3 className="text-sm font-medium text-zinc-400">Information</h3>
+                    {entryMeta.createdAt && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-500">Created</span>
+                        <span className="text-zinc-300">{entryMeta.createdAt}</span>
+                      </div>
+                    )}
+                    {entryMeta.updatedAt && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-500">Updated</span>
+                        <span className="text-zinc-300">{entryMeta.updatedAt}</span>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {/* Bottom action buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium disabled:opacity-60"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                  {!isNew && id && (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={async () => {
+                        setSaving(true);
+                        setSaveError(null);
+                        try {
+                          const data = { ...(contentByLocale[currentLocale] ?? {}), ...(coverImage ? { coverImage } : {}) };
+                          await api.entries.update(type!, id, data);
+                          if (status !== 'published') {
+                            await api.entries.publish(type!, id);
+                            setStatus('published');
+                          }
+                          setSavedAt(new Date().toLocaleTimeString());
+                        } catch (err) {
+                          setSaveError(err instanceof Error ? err.message : 'Failed to publish.');
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-colors font-medium disabled:opacity-60"
+                    >
+                      <Send className="w-4 h-4" />
+                      {status === 'published' ? 'Save & Re-publish' : 'Save & Publish'}
+                    </button>
+                  )}
+                </div>
               </div>
               </div>
             </div>

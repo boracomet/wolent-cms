@@ -16,21 +16,23 @@
       "apiPermissions": "API-Berechtigungen",
       "plugins": "Plugins",
       "analytics": "Analytics",
-      "featureGaps": "UI-Labor",
+      "auditLogs": "Audit-Protokoll",
       "settings": "Einstellungen",
       "logout": "Abmelden"
     }
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Öffentlicher Traffic und Sitzungen (Demo-Daten — für Live-Metriken Ihre Ingest-API anbinden).",
+    "subtitle": "Öffentlicher Traffic und Sitzungen. Daten kommen von Ihrer Analytics-Ingest-API.",
     "disabledTitle": "Analytics ist aus",
     "disabledBody": "Aktivieren Sie das Plugin „Native analytics“ unter Plugins, um diese Ansicht und den Sidebar-Link anzuzeigen.",
     "goToPlugins": "Zu Plugins",
     "liveUsers": "Live-Besucher",
-    "liveUsersHint": "Geschätzte aktive Sitzungen auf der öffentlichen Site (Mock).",
+    "liveUsersHint": "Geschätzte aktive Sitzungen auf der öffentlichen Site.",
     "dailyLogins": "Anmeldungen",
-    "demoDataBadge": "Demo",
+    "noData": "Noch keine Daten — beginnen Sie mit der Erfassung über den Analytics-Ingest-Endpunkt.",
+    "loading": "Lädt…",
+    "topPagesHeading": "Top-Seiten",
     "range": {
       "week": "7 Tage",
       "1m": "1 Monat",
@@ -43,10 +45,8 @@
     "minutesSuffix": "Min.",
     "tableFootnote": "IP und Zeiten sind Beispiele. Produktionsdaten kommen von Ihrem Analytics-Ingest und serverseitigem Geo-Lookup.",
     "col": {
-      "ip": "IP (maskiert)",
-      "country": "Land",
       "page": "Seite",
-      "duration": "Verweildauer"
+      "views": "Aufrufe"
     },
     "chart": {
       "mon": "Mo",
@@ -56,20 +56,6 @@
       "fri": "Fr",
       "sat": "Sa",
       "sun": "So"
-    },
-    "page": {
-      "home": "/",
-      "pricing": "/preise",
-      "docs": "/docs/api",
-      "blog": "/blog/headless-cms",
-      "contact": "/kontakt"
-    },
-    "geo": {
-      "tr": "Türkei",
-      "de": "Deutschland",
-      "us": "USA",
-      "gb": "Vereinigtes Königreich",
-      "fr": "Frankreich"
     }
   },
   "dashboard": {
@@ -84,7 +70,8 @@
       "users": "Benutzer"
     },
     "viewAll": "Alle anzeigen →",
-    "recentContent": "Neueste Inhalte"
+    "recentContent": "Neueste Inhalte",
+    "noRecentContent": "Noch keine Inhalte. Erstellen Sie den ersten Eintrag."
   },
   "settings": {
     "title": "Einstellungen",
@@ -106,41 +93,46 @@
       "heading": "Backup & Wiederherstellung",
       "description": "JSON-Backup exportieren, selektiv importieren und letzte Snapshots verwalten. Zusätzliche Bestätigung vor diesem Bereich.",
       "mfaTitle": "Zum Fortfahren bestätigen",
-      "mfaHint": "Authenticator-Code eingeben (Demo: jeder nicht leere Code schaltet diese Sitzung frei).",
+      "mfaHint": "Kontopasswort eingeben, um Backup-Operationen für diese Sitzung freizuschalten.",
       "mfaError": "Bitte einen Code eingeben.",
       "mfaVerify": "Prüfen & freischalten",
-      "mfaDemoNote": "Platzhalter für MFA. In Produktion TOTP oder WebAuthn serverseitig prüfen.",
+      "wrongPassword": "Falsches Passwort, bitte erneut versuchen.",
+      "verify": "Bestätigen",
+      "verifying": "Wird geprüft…",
+      "passwordPlaceholder": "Kontopasswort eingeben",
+      "exportError": "Backup konnte nicht erstellt werden.",
+      "restoreError": "Backup konnte nicht wiederhergestellt werden.",
       "lockSection": "Bereich wieder sperren",
       "exportTitle": "Backup erstellen",
-      "exportIntro": "Wählen Sie Bereiche für die JSON-Datei. Plugin- und Panel-Schlüssel stammen aus dem localStorage dieses Browsers.",
+      "exportIntro": "Wählen Sie Bereiche für die JSON-Datei. Daten werden live von API und Datenbank abgerufen.",
       "importTitle": "Aus Datei importieren",
-      "importIntro": "Wählen Sie ein JSON-Backup dieses Panels. Anschließend, welche Schlüssel zurück in den localStorage geschrieben werden.",
+      "importIntro": "Wählen Sie ein JSON-Backup dieses Panels. Wählen Sie Bereiche zur Wiederherstellung, die dann per API in die Datenbank geschrieben werden.",
       "chooseFile": "Backup-Datei wählen",
-      "importApplyLabel": "In Browser-Speicher anwenden",
+      "importApplyLabel": "In Datenbank wiederherstellen",
       "runImport": "Ausgewähltes importieren",
-      "includeContentTypes": "Content-Typen (Metadaten im Export)",
-      "includeMedia": "Medienbibliothek (Zusammenfassung im Export)",
-      "includeUsers": "Benutzer (Zusammenfassung im Export)",
-      "includeMemberships": "Rollen & Mitgliedschaften (Zusammenfassung)",
-      "includePlugins": "Plugin-Einstellungen (localStorage)",
-      "includePanelSettings": "Panel-Einstellungen (Admin-Sprache usw.)",
+      "includeContentTypes": "Content-Typen (Schema & Felddefinitionen)",
+      "includeMedia": "Medienbibliothek (Dateidatensätze)",
+      "includeUsers": "Benutzer (Profildaten)",
+      "includeMemberships": "Rollen & Mitgliedschaften",
+      "includePlugins": "Plugin-Einstellungen",
+      "includePanelSettings": "Panel-Einstellungen (Sprache, Erscheinungsbild usw.)",
       "createDownload": "Backup erstellen & herunterladen",
       "recentTitle": "Letzte Backups",
       "recentEmpty": "Noch keine Backups. Nach dem Erstellen erscheinen sie hier und können erneut heruntergeladen werden.",
       "download": "Download",
       "restore": "Wiederherstellen",
       "delete": "Löschen",
-      "footerNote": "Vollständige CMS-Daten liegen auf API und Datenbank; dieser Screen zeigt Client-seitiges Backup-UX. Für Produktion Backend anbinden.",
+      "footerNote": "Backups exportieren Live-Daten aus API und Datenbank. Importe werden per API in die Datenbank geschrieben.",
       "nothingSelected": "Mindestens einen Bereich auswählen.",
-      "created": "Zur Liste hinzugefügt und Download gestartet.",
-      "deleted": "Backup aus dem Panel entfernt.",
-      "restoreNoSnapshots": "Dieses Backup enthält keine wiederherstellbaren Schlüssel-Snapshots.",
-      "restoreDone": "{n} localStorage-Einträge aus diesem Backup wiederhergestellt.",
+      "created": "Backup erstellt und Download gestartet.",
+      "deleted": "Backup entfernt.",
+      "restoreNoSnapshots": "Dieses Backup enthält keine wiederherstellbaren Daten.",
+      "restoreDone": "{n} Bereiche aus Backup wiederhergestellt.",
       "restoreError": "Backup-Datei konnte nicht gelesen werden.",
       "invalidFile": "Keine gültige CMS-Backup-JSON.",
       "pickFileFirst": "Zuerst eine Backup-Datei wählen.",
-      "importNothingApplied": "Keine passenden Schlüssel mit Ihrer Auswahl importiert.",
-      "importApplied": "{n} Schlüssel in localStorage geschrieben (Demo).",
+      "importNothingApplied": "Keine passenden Bereiche im Backup gefunden.",
+      "importApplied": "{n} Bereiche aus Backup erfolgreich wiederhergestellt.",
       "autoLabel": "Backup"
     },
     "general": {
@@ -198,16 +190,16 @@
       "statusApplied": "Angewendet",
       "statusPending": "Ausstehend",
       "runMigrations": "Ausstehende Migrationen anwenden",
-      "runMigrationsSub": "Führt ausstehende Migrationsdateien aus (Demo: markiert Ausstehende als angewendet).",
+      "runMigrationsSub": "Führt ausstehende Prisma-Migrationsdateien gegen die Datenbank aus.",
       "refreshStatus": "Status aktualisieren",
       "cliHint": "CLI-Beispiel",
       "cliCopy": "Kopieren",
       "cliCopied": "Kopiert",
       "testConnection": "Verbindung testen",
       "saveChanges": "Konfiguration speichern",
-      "savedDemo": "Konfiguration gespeichert (Demo — Persistenz über Ihr Backend).",
-      "migrateDemoDone": "Ausstehende Migrationen angewendet (Demo).",
-      "testDemo": "Verbindungstest simuliert: OK (Demo)."
+      "savedDemo": "Konfiguration von API angezeigt. Verbindungsdetails sind schreibgeschützt (via DATABASE_URL setzen).",
+      "migrateDemoDone": "Ausstehende Migrationen erfolgreich angewendet.",
+      "testDemo": "Verbindungstest: OK."
     }
   },
   "plugins": {
@@ -224,15 +216,23 @@
       "description": "Google Gemini nutzen, um Übersetzungen für Inhalts-Locales vorzuschlagen oder zu befüllen (API-Schlüssel unten eintragen).",
       "apiKeyLabel": "Gemini-API-Schlüssel",
       "apiKeyPlaceholder": "Schlüssel aus Google AI Studio einfügen",
-      "apiKeyHint": "In dieser Demo nur im Browser (localStorage) — in Produktion geheimer Serverschlüssel.",
+      "apiKeyHint": "API-Schlüssel wird per API gespeichert. Für extra Sicherheit Umgebungsvariable auf dem Server verwenden.",
       "modelLabel": "Modell",
+      "fetchModels": "Modelle abrufen",
+      "modelsEmpty": "Für diesen Schlüssel wurden keine passenden Modelle gefunden.",
+      "modelsFetchFailed": "Modelle konnten nicht geladen werden.",
+      "tokensIn": "Eingabe",
+      "tokensOut": "Ausgabe",
+      "estUsdCost": "Geschätzte Kosten (USD)",
+      "longContextTierHint": "Lang-Prompt-Tarif",
+      "tokenCostFootnote": "Token sind Näherungswerte (~4 Zeichen pro Token). USD wird aus den Google-Standardtextpreisen (Paid Tier) für das gewählte Modell geschätzt; kostenloses Kontingent, Priority/Flex und aktuelle Preise können abweichen. Abgerechnete Nutzung siehe Google AI Studio.",
       "saveKey": "Speichern",
       "keyMissing": "API-Schlüssel hinzufügen, um Übersetzungen anzufordern.",
       "keySaved": "Schlüssel lokal im Browser gespeichert."
     },
     "s3": {
       "name": "S3-kompatibler Bucket-Speicher",
-      "description": "Medien- und Asset-Uploads mit einem S3-API-kompatiblen Bucket verbinden. Anbieter wählen, dann Endpoint, Zugangsdaten und Bucket eintragen (Demo: nur lokal im Browser).",
+      "description": "Medien- und Asset-Uploads mit einem S3-API-kompatiblen Bucket verbinden. Anbieter wählen, dann Endpoint, Zugangsdaten und Bucket eintragen. Einstellungen werden per API gespeichert.",
       "providerLabel": "Speicheranbieter",
       "endpointLabel": "Endpoint-URL",
       "regionLabel": "Region",
@@ -242,15 +242,15 @@
       "pathStyleLabel": "Pfad-Stil-Adressierung (path-style)",
       "pathStyleHint": "Oft für MinIO und einige On-Prem-S3-Gateways nötig.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert.",
+      "saved": "Gespeichert.",
       "credentialsMissing": "Bucket-Name und Zugangsschlüssel eintragen, damit Uploads Ihr Storage erreichen.",
       "providerHintTitle": "Hinweis zum Anbieter",
       "endpointHint": "Beispiel für den gewählten Anbieter — Region- oder Konto-Platzhalter durch Ihre Werte ersetzen.",
-      "storageHint": "In dieser Demo nur im Browser (localStorage) — in Produktion serverseitige Konfiguration und IAM-beschränkte Schlüssel verwenden."
+      "storageHint": "Zugangsdaten werden per API gespeichert. In Produktion serverseitige Konfiguration und IAM-beschränkte Schlüssel verwenden."
     },
     "sitemap": {
       "name": "XML-Sitemap",
-      "description": "Legen Sie fest, wie veröffentlichte URLs in sitemap.xml für Crawler bereitstehen. Die Erzeugung erfolgt typischerweise über API oder statischen Build — dieses Panel speichert Vorgaben dafür (Demo: nur localStorage).",
+      "description": "Legen Sie fest, wie veröffentlichte URLs in sitemap.xml für Crawler bereitstehen. Die Erzeugung erfolgt typischerweise über API oder statischen Build — dieses Panel speichert Vorgaben dafür.",
       "baseUrlLabel": "Öffentliche Basis-URL der Site",
       "baseUrlPlaceholder": "https://www.beispiel.de",
       "baseUrlHint": "Ohne abschließenden Schrägstrich. Wird für absolute <loc>-Einträge genutzt.",
@@ -262,20 +262,20 @@
       "includeDraftsHint": "Für Produktions-SEO meist aus; nur für Staging oder Preview aktivieren.",
       "pingLabel": "Suchmaschinen nach Veröffentlichung pingen",
       "pingHint": "Optionale Google/Bing-Ping-URLs — beim Go-Live serverseitig anbinden.",
-      "demoHint": "Dieses Admin-UI erzeugt hier kein XML; verbinden Sie die Einstellungen mit Backend oder Generator.",
+      "demoHint": "Einstellungen werden per API gespeichert. Das Backend stellt die Sitemap unter /sitemap.xml bereit.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert."
+      "saved": "Gespeichert."
     },
     "robots": {
       "name": "robots.txt-Editor",
-      "description": "Crawl-Regeln für /robots.txt bearbeiten. In Produktion an Edge, CDN oder API anbinden — diese Demo speichert nur im Browser.",
+      "description": "Crawl-Regeln für /robots.txt bearbeiten. In Produktion an Edge, CDN oder API anbinden.",
       "editorLabel": "Inhalt von robots.txt",
       "editorPlaceholder": "User-agent: *\nAllow: /",
       "editorHint": "Klartext; Kommentare mit #. Nach dem Deployment mit den Search-Console-Tools prüfen.",
       "contentMissing": "Mindestens eine Regel oder einen Kommentar einfügen, damit Crawler klare Vorgaben erhalten.",
-      "demoHint": "Speichern legt den Text in localStorage; die Live-Site muss diesen Inhalt unter https://ihre-domain/robots.txt als text/plain ausliefern.",
+      "demoHint": "Einstellungen werden per API gespeichert. Das Backend liefert den Inhalt unter /robots.txt als text/plain aus.",
       "save": "Speichern",
-      "saved": "Lokal in diesem Browser gespeichert.",
+      "saved": "Gespeichert.",
       "resetSample": "Auf Beispiel zurücksetzen"
     },
     "redis": {
@@ -293,9 +293,9 @@
       "defaultTtlLabel": "Standard-TTL (Sekunden)",
       "defaultTtlHint": "Ablauf, wenn die API keine TTL setzt.",
       "connectionMissing": "Host, gültigen Port (1–65535) und numerischen DB-Index eintragen.",
-      "demoHint": "Werte nur im Browser (localStorage). Redis-Passwörter in Produktion nicht im Admin-UI ablegen.",
+      "demoHint": "Einstellungen werden per API gespeichert. Redis-Verbindungsdaten werden serverseitig verwaltet.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert."
+      "saved": "Gespeichert."
     },
     "smtp": {
       "name": "SMTP-Mail",
@@ -324,9 +324,9 @@
       "lifecycleHeading": "Wann senden",
       "notifyOnPublishedLabel": "Wenn ein Eintrag veröffentlicht wird",
       "notifyOnDraftSavedLabel": "Wenn ein Entwurf erstmals gespeichert wird (erstellt)",
-      "demoHint": "In dieser Demo nur im Browser gespeichert. Echter Versand erfolgt im Backend mit Umgebungsgeheimnissen.",
+      "demoHint": "Einstellungen werden per API gespeichert. E-Mails werden vom Backend mit den konfigurierten SMTP-Daten versendet.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert."
+      "saved": "Gespeichert."
     },
     "n8n": {
       "name": "n8n-Automatisierung",
@@ -359,12 +359,12 @@
       "payloadIncludeFullEntryLabel": "Vollständiges Eintragsdokument (größere Nutzlasten)",
       "webhookMissing": "Geben Sie eine HTTPS-Webhook-URL ein, damit n8n Ereignisse empfangen kann.",
       "triggersMissing": "Aktivieren Sie mindestens einen Ereignistyp, sonst wird nichts an n8n gesendet.",
-      "demoHint": "Einstellungen nur in diesem Browser (localStorage). In Produktion Geheimnisse in Umgebungsvariablen halten und Webhooks vom Backend senden.",
+      "demoHint": "Einstellungen werden per API gespeichert. Webhooks werden vom Backend gesendet; Geheimnisse in Umgebungsvariablen halten.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert.",
-      "testWebhook": "Test-Ping (Demo)",
-      "testWebhookDemoWithUrl": "Nur Demo — kein HTTP-Request gesendet. Konfigurierter Webhook:",
-      "testWebhookDemoNoUrl": "Nur Demo — zuerst eine gültige https://-Webhook-URL speichern."
+      "saved": "Gespeichert.",
+      "testWebhook": "Test-Ping",
+      "testWebhookDemoWithUrl": "Test gesendet. Konfigurierter Webhook:",
+      "testWebhookDemoNoUrl": "Zuerst eine gültige https://-Webhook-URL speichern."
     },
     "outboundWebhook": {
       "name": "Ausgehender Webhook",
@@ -397,12 +397,12 @@
       "payloadIncludeFullEntryLabel": "Vollständiges Eintragsdokument (größere Nutzlasten)",
       "webhookMissing": "Tragen Sie eine HTTPS-Webhook-URL für diesen Kanal ein.",
       "triggersMissing": "Wählen Sie mindestens ein Ereignis, sonst werden keine Benachrichtigungen gesendet.",
-      "demoHint": "Werte nur in diesem Browser (localStorage). Signaturgeheimnisse in Produktion nicht im UI ablegen; Webhooks und Geheimnisse serverseitig konfigurieren.",
+      "demoHint": "Einstellungen werden per API gespeichert. Webhook-Signaturgeheimnisse niemals im Client ablegen; serverseitig konfigurieren.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert.",
-      "testWebhook": "Test-Ping (Demo)",
-      "testWebhookDemoWithUrl": "Nur Demo — kein HTTP-Request gesendet. Konfigurierte URL:",
-      "testWebhookDemoNoUrl": "Nur Demo — zuerst eine gültige https://-Webhook-URL eintragen."
+      "saved": "Gespeichert.",
+      "testWebhook": "Test-Ping",
+      "testWebhookDemoWithUrl": "Test gesendet. Konfigurierte URL:",
+      "testWebhookDemoNoUrl": "Zuerst eine gültige https://-Webhook-URL eintragen."
     },
     "nativeAnalytics": {
       "name": "Native Analytics",
@@ -419,9 +419,9 @@
       "sdkHeading": "Frontend-SDK (Beispiel)",
       "sdkModuleHint": "Modul in diesem Repo: src/app/analytics/wolentAnalyticsClient.ts — in die öffentliche Site kopieren oder per Monorepo-Alias importieren.",
       "sdkNote": "Payload: { type: \"pageview\" | \"heartbeat\", siteKey, path, title?, referrer?, activeSeconds?, ts }. Validierung und Rate-Limits in Ihrer API implementieren.",
-      "demoHint": "Einstellungen nur in diesem Browser. Die Übersicht zeigt Demo-Zahlen, bis Ihre API echte Daten liefert.",
+      "demoHint": "Einstellungen werden per API gespeichert. Das Analytics-Dashboard zeigt echte Seitenaufruf- und Sitzungsdaten vom Backend.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert."
+      "saved": "Gespeichert."
     },
     "imageOptimization": {
       "name": "Bildoptimierung",
@@ -452,9 +452,9 @@
       "generateSrcsetLabel": "Feste Breitenvarianten für Srcset erzeugen",
       "srcsetWidthsLabel": "Breiten (px, kommagetrennt)",
       "srcsetWidthsHint": "Beispiel: 480,768,1200,1920 — CDN oder Worker erzeugt je Breite eine Datei.",
-      "demoHint": "Werte nur in diesem Browser (localStorage). In Produktion Sharp, imgproxy oder Edge-Worker anbinden.",
+      "demoHint": "Einstellungen werden per API gespeichert. Das Backend wendet Sharp-Bildverarbeitung automatisch bei jedem Upload an.",
       "save": "Konfiguration speichern",
-      "saved": "Lokal in diesem Browser gespeichert.",
+      "saved": "Gespeichert.",
       "resetRecommended": "Auf empfohlene Standardwerte zurücksetzen"
     },
     "active": "Aktiv",
@@ -474,12 +474,6 @@
     "submit": "Anmelden",
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort ausblenden",
-    "demoHint": "Demo: keine echte Authentifizierung.",
     "skipToPanel": "Zum Panel"
-  },
-  "featureGaps": {
-    "badge": "Nur visueller Prototyp",
-    "title": "Geplante Funktionen — Admin-UI-Mockups",
-    "subtitle": "Statische Screens gemäß eksikler.md §19. Kein Backend, keine Live-APIs."
   }
 }

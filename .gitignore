@@ -8,3 +8,15 @@ dist
 .claude/
 packages/database/prisma/*.db
 packages/database/prisma/*.db-journal
+
+# Database files
+packages/database/*.db
+packages/database/*.db-journal
+
+# Uploads
+packages/core/public/uploads/
+
+# Local utility scripts
+packages/core/reset_pass.mjs
+entities.json
+mempalace.yaml

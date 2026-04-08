@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "pnpm --filter @wolent/core dev & pnpm --filter @wolent/admin dev",
-    "build": "pnpm --filter @wolent/utils build && pnpm --filter @wolent/database build && pnpm --filter @wolent/core build && pnpm --filter @wolent/admin build",
+    "build": "pnpm --filter @wolent/utils build && pnpm --filter @wolent/database build && pnpm --filter @wolent/core build && pnpm --filter @wolent/admin build && pnpm --filter @wolent/cli build",
+    "cli": "node packages/cli/dist/index.js",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "setup": "pnpm --filter @wolent/core generate-keys && pnpm --filter @wolent/database db:push && pnpm --filter @wolent/core setup",

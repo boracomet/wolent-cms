@@ -17,7 +17,7 @@ import {
   X,
   Copy,
 } from "lucide-react";
-import { getDemoContentTypeByApiId } from "../data/demoContentTypes";
+import { getCachedTypeByApiId, fetchContentTypes } from "../lib/contentTypeCache";
 import { nextDuplicateDisplayName } from "../lib/cmsDuplicate";
 import { api } from "../api/client";
 
@@ -239,12 +239,20 @@ export function ContentList() {
   const [activeByType, setActiveByType] = useState<Record<string, ContentListRow[]>>({});
   const [trashByType, setTrashByType] = useState<Record<string, TrashedEntry[]>>({});
   const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [rowToDuplicate, setRowToDuplicate] = useState<ContentListRow | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
 
   const filterPopoverRef = useRef<HTMLDivElement>(null);
   const columnsPopoverRef = useRef<HTMLDivElement>(null);
 
-  const schema = useMemo(() => getDemoContentTypeByApiId(type), [type]);
+  const [schemaVersion, setSchemaVersion] = useState(0);
+  useEffect(() => {
+    fetchContentTypes().then(() => setSchemaVersion(v => v + 1));
+  }, [type]);
+  const schema = useMemo(() => getCachedTypeByApiId(type), [type, schemaVersion]);
   const contents = type ? activeByType[type] ?? [] : [];
   const takenEntryTitles = useMemo(() => new Set(contents.map((c) => c.title)), [contents]);
   const trashedForType = type ? trashByType[type] ?? [] : [];
@@ -269,11 +277,16 @@ export function ContentList() {
     setColumnVisibility(defaultColumnVisibility(showDescriptionCol, showGalleryColumns));
   }, [type, showDescriptionCol, showGalleryColumns]);
 
-  // Load real data from API — falls back to mock if API not available
+  useEffect(() => {
+    setPage(1);
+    setTotalCount(0);
+  }, [type]);
+
   useEffect(() => {
     if (!type) return;
     setApiLoading(true);
-    api.entries.list(type, { page: 1, pageSize: 100 })
+    setApiError(null);
+    api.entries.list(type, { page, pageSize: PAGE_SIZE })
       .then((res) => {
         const rows = (res.data as Record<string, unknown>[]).map((entry) => ({
           id: String(entry['id'] ?? ''),
@@ -284,13 +297,13 @@ export function ContentList() {
           updatedBy: String(entry['updatedBy'] ?? ''),
           description: entry['description'] ? String(entry['description']) : undefined,
         }));
+        const total = (res as { meta?: { pagination?: { total?: number } } }).meta?.pagination?.total ?? rows.length;
+        setTotalCount(total);
         setActiveByType(prev => ({ ...prev, [type]: rows }));
       })
-      .catch(() => {
-        // API not reachable — keep mock data
-      })
+      .catch((err) => setApiError(err instanceof Error ? err.message : 'Failed to load entries.'))
       .finally(() => setApiLoading(false));
-  }, [type]);
+  }, [type, page]);
 
   useEffect(() => {
     setTrashOpen(false);
@@ -363,27 +376,47 @@ export function ContentList() {
     }));
   };
 
-  const confirmDuplicateEntry = (row: ContentListRow, inputTitle: string) => {
+  const confirmDuplicateEntry = async (row: ContentListRow, inputTitle: string) => {
     if (!type) return;
     const taken = new Set((activeByType[type] ?? []).map((r) => r.title));
     let title = inputTitle.trim() || nextDuplicateDisplayName(row.title, taken);
     if (taken.has(title)) {
       title = nextDuplicateDisplayName(title, taken);
     }
-    const newId = `dup-${Date.now()}`;
-    const today = new Date().toISOString().slice(0, 10);
-    const copy: ContentListRow = {
-      ...row,
-      id: newId,
-      title,
-      updatedAt: today,
-    };
-    setActiveByType((prev) => ({
-      ...prev,
-      [type]: [...(prev[type] ?? []), copy],
-    }));
     setRowToDuplicate(null);
+    try {
+      // Fetch original entry data then create a copy
+      const orig = await api.entries.get(type, row.id) as Record<string, unknown>;
+      const systemKeys = new Set(['id','documentId','contentTypeId','tenantId','createdById','updatedById','createdAt','updatedAt','publishedAt','deletedAt','locale','status','version','data']);
+      const fieldData = Object.fromEntries(Object.entries(orig).filter(([k]) => !systemKeys.has(k)));
+      const payload = { ...fieldData, title, status: 'draft' };
+      const res = await api.entries.create(type, payload);
+      const created = res as Record<string, unknown>;
+      const today = new Date().toISOString().slice(0, 10);
+      const copy: ContentListRow = {
+        ...row,
+        id: String(created['id'] ?? `dup-${Date.now()}`),
+        title,
+        status: 'draft',
+        updatedAt: today,
+      };
+      setActiveByType((prev) => ({
+        ...prev,
+        [type]: [...(prev[type] ?? []), copy],
+      }));
+    } catch {
+      // Fallback: add locally so user sees it
+      const today = new Date().toISOString().slice(0, 10);
+      const copy: ContentListRow = { ...row, id: `dup-${Date.now()}`, title, status: 'draft', updatedAt: today };
+      setActiveByType((prev) => ({ ...prev, [type]: [...(prev[type] ?? []), copy] }));
+    }
   };
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
+
+  // Reset selection when type changes
+  useEffect(() => { setSelectedIds(new Set()); }, [type]);
 
   const searchedContents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -399,6 +432,65 @@ export function ContentList() {
     if (filterRows.length === 0) return searchedContents;
     return searchedContents.filter((row) => filterRows.every((f) => rowMatchesFilter(row, f)));
   }, [searchedContents, filterRows]);
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev =>
+      prev.size === filteredContents.length && filteredContents.length > 0
+        ? new Set()
+        : new Set(filteredContents.map(r => r.id))
+    );
+  };
+
+  const bulkDelete = async () => {
+    if (!type || selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} entries?`)) return;
+    setBulkWorking(true);
+    setApiError(null);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map(id => api.entries.delete(type, id)));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    const succeeded = ids.filter((_, i) => results[i].status === 'fulfilled');
+    setActiveByType(prev => ({ ...prev, [type]: (prev[type] ?? []).filter(r => !succeeded.includes(r.id)) }));
+    setSelectedIds(new Set());
+    setBulkWorking(false);
+    if (failed > 0) setApiError(`${failed} of ${ids.length} entries could not be deleted.`);
+  };
+
+  const bulkPublish = async () => {
+    if (!type || selectedIds.size === 0) return;
+    setBulkWorking(true);
+    setApiError(null);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map(id => api.entries.publish(type, id)));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    const succeeded = ids.filter((_, i) => results[i].status === 'fulfilled');
+    setActiveByType(prev => ({ ...prev, [type]: (prev[type] ?? []).map(r => succeeded.includes(r.id) ? { ...r, status: 'published' as const } : r) }));
+    setSelectedIds(new Set());
+    setBulkWorking(false);
+    if (failed > 0) setApiError(`${failed} of ${ids.length} entries could not be published.`);
+  };
+
+  const bulkUnpublish = async () => {
+    if (!type || selectedIds.size === 0) return;
+    setBulkWorking(true);
+    setApiError(null);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map(id => api.entries.unpublish(type, id)));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    const succeeded = ids.filter((_, i) => results[i].status === 'fulfilled');
+    setActiveByType(prev => ({ ...prev, [type]: (prev[type] ?? []).map(r => succeeded.includes(r.id) ? { ...r, status: 'draft' as const } : r) }));
+    setSelectedIds(new Set());
+    setBulkWorking(false);
+    if (failed > 0) setApiError(`${failed} of ${ids.length} entries could not be unpublished.`);
+  };
 
   const toggleColumn = (key: ColumnKey) => {
     if (key === "actions") return;
@@ -708,11 +800,38 @@ export function ContentList() {
           </div>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg">
+            <span className="text-sm text-zinc-300">{selectedIds.size} selected</span>
+            <button onClick={bulkPublish} disabled={bulkWorking} className="px-3 py-1 text-xs bg-green-600/20 text-green-400 border border-green-600/30 rounded hover:bg-green-600/30 disabled:opacity-40 transition-colors">Publish</button>
+            <button onClick={bulkUnpublish} disabled={bulkWorking} className="px-3 py-1 text-xs bg-zinc-700/50 text-zinc-300 border border-zinc-600/30 rounded hover:bg-zinc-600/50 disabled:opacity-40 transition-colors">Unpublish</button>
+            <button onClick={bulkDelete} disabled={bulkWorking} className="px-3 py-1 text-xs bg-red-600/20 text-red-400 border border-red-600/30 rounded hover:bg-red-600/30 disabled:opacity-40 transition-colors">Delete</button>
+            <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-zinc-500 hover:text-zinc-300">Clear</button>
+          </div>
+        )}
+
+        {apiError && (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <span className="flex-1">{apiError}</span>
+            <button type="button" onClick={() => setApiError(null)} className="text-red-400/70 hover:text-red-300">✕</button>
+          </div>
+        )}
+
+        {apiLoading && (
+          <div className="flex items-center justify-center py-8 text-zinc-500 text-sm gap-2">
+            <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+            Loading...
+          </div>
+        )}
+
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem]">
               <thead className="border-b border-zinc-800/50">
                 <tr>
+                  <th className="px-3 py-3 sm:px-4 sm:py-4 w-px">
+                    <input type="checkbox" checked={selectedIds.size === filteredContents.length && filteredContents.length > 0} onChange={toggleSelectAll} className="w-4 h-4 rounded accent-zinc-100" />
+                  </th>
                   {v.id && (
                     <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">ID</th>
                   )}
@@ -747,11 +866,21 @@ export function ContentList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
+                {!apiLoading && filteredContents.length === 0 && (
+                  <tr>
+                    <td colSpan={20} className="px-6 py-12 text-center text-zinc-500 text-sm">
+                      {contents.length === 0 ? "No entries yet. Create your first entry." : "No entries match the current filters."}
+                    </td>
+                  </tr>
+                )}
                 {filteredContents.map((content) => (
                   <tr
                     key={`${content.id}-${content.updatedAt}-${content.title}`}
-                    className="hover:bg-zinc-800/30 transition-colors"
+                    className={`hover:bg-zinc-800/30 transition-colors ${selectedIds.has(content.id) ? "bg-zinc-800/50" : ""}`}
                   >
+                    <td className="px-3 py-3 sm:px-4 sm:py-4 w-px">
+                      <input type="checkbox" checked={selectedIds.has(content.id)} onChange={() => toggleSelectRow(content.id)} className="w-4 h-4 rounded accent-zinc-100" />
+                    </td>
                     {v.id && (
                       <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-zinc-400 font-mono">{content.id}</td>
                     )}
@@ -855,6 +984,33 @@ export function ContentList() {
           </div>
         </div>
       </div>
+
+      {totalCount > PAGE_SIZE && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 text-sm text-zinc-400">
+          <span>
+            {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–{Math.min(page * PAGE_SIZE, totalCount)} / {totalCount} kayıt
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Önceki
+            </button>
+            <span className="px-2">{page} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
+            <button
+              type="button"
+              disabled={page >= Math.ceil(totalCount / PAGE_SIZE)}
+              onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Sonraki →
+            </button>
+          </div>
+        </div>
+      )}
 
       {rowToDuplicate && type && (
         <DuplicateEntryModal

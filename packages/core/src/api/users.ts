@@ -7,6 +7,7 @@ import {
   NotFoundError,
   ConflictError,
   BadRequestError,
+  ForbiddenError,
   RoleSchema,
   type Role,
 } from '@wolent/utils'
@@ -58,6 +59,9 @@ export async function userRoutes(app: FastifyInstance) {
     })
 
     const input = schema.parse(req.body)
+    if (input.role === 'super_admin' && req.user.role !== 'super_admin') {
+      throw new ForbiddenError('Only super_admin can assign the super_admin role')
+    }
     const strength = validatePasswordStrength(input.password)
     if (!strength.valid) throw new BadRequestError(strength.reason!)
 
@@ -97,6 +101,10 @@ export async function userRoutes(app: FastifyInstance) {
     })
 
     const input = schema.parse(req.body)
+
+    if (input.role === 'super_admin' && req.user.role !== 'super_admin') {
+      throw new ForbiddenError('Only super_admin can assign the super_admin role')
+    }
 
     const updated = await runInTenantContext({ tenantId: req.tenantId }, async () => {
       const exists = await (prisma as any).user.findFirst({ where: { id } })

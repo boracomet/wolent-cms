@@ -7,9 +7,12 @@ import { prisma, runInTenantContext } from '@wolent/database'
 import { requireAuth } from '../middleware/auth.js'
 import { NotFoundError, BadRequestError } from '@wolent/utils'
 import { getEnv } from '../config/env.js'
+import { writeAuditLog } from './audit.js'
+import { emitWebhookEvent } from './plugins/webhooks.js'
+import { processImageVariants } from './plugins/image-optimization.js'
 
 const ALLOWED_IMAGE_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
 ])
 const ALLOWED_DOC_TYPES = new Set([
   'application/pdf', 'text/plain', 'text/csv',
@@ -134,6 +137,14 @@ export async function mediaRoutes(app: FastifyInstance) {
       })
     )
 
+    void writeAuditLog({ tenantId: req.tenantId, userId: req.user.sub, action: 'media.upload', subject: 'MediaFile', subjectId: (mediaFile as any).id, ipAddress: req.ip })
+    void emitWebhookEvent(req.tenantId, 'onMediaLibraryChange', { action: 'upload', fileId: (mediaFile as any).id, name: filename })
+
+    // Trigger image optimization asynchronously if plugin is enabled
+    if (ALLOWED_IMAGE_TYPES.has(mimetype)) {
+      void processImageVariants((mediaFile as any).id, req.tenantId).catch(() => {})
+    }
+
     return reply.status(201).send({ data: mediaFile })
   })
 
@@ -169,6 +180,9 @@ export async function mediaRoutes(app: FastifyInstance) {
       // Soft delete
       await (prisma as any).mediaFile.update({ where: { id }, data: { deletedAt: new Date() } })
     })
+
+    void writeAuditLog({ tenantId: req.tenantId, userId: req.user.sub, action: 'media.delete', subject: 'MediaFile', subjectId: id, ipAddress: req.ip })
+    void emitWebhookEvent(req.tenantId, 'onMediaLibraryChange', { action: 'delete', fileId: id })
 
     return reply.send({ data: { ok: true } })
   })
@@ -207,6 +221,31 @@ export async function mediaRoutes(app: FastifyInstance) {
     })
 
     return reply.status(201).send({ data: folder })
+  })
+
+  app.put('/api/upload/folders/:id', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const schema = z.object({
+      name: z.string().min(1).max(255).optional(),
+      color: z.string().nullable().optional(),
+      parentId: z.string().nullable().optional(),
+    })
+    const input = schema.parse(req.body)
+
+    const folder = await runInTenantContext({ tenantId: req.tenantId }, async () => {
+      const existing = await (prisma as any).mediaFolder.findFirst({ where: { id } })
+      if (!existing) throw new NotFoundError('MediaFolder', id)
+      return (prisma as any).mediaFolder.update({
+        where: { id },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.color !== undefined ? { color: input.color } : {}),
+          ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
+        },
+      })
+    })
+
+    return reply.send({ data: folder })
   })
 
   app.delete('/api/upload/folders/:id', { preHandler: [requireAuth] }, async (req, reply) => {

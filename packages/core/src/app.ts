@@ -16,6 +16,10 @@ import { userRoutes } from './api/users.js'
 import { mediaRoutes } from './api/media.js'
 import { apiTokenRoutes } from './api/api-tokens.js'
 import { auditRoutes } from './api/audit.js'
+import { roleRoutes } from './api/roles.js'
+import { dbInfoRoutes } from './api/db-info.js'
+import { settingsRoutes } from './api/settings.js'
+import { backupRoutes } from './api/backup.js'
 import { pluginConfigRoutes } from './api/plugins/config.js'
 import { s3PluginRoutes } from './api/plugins/s3.js'
 import { smtpPluginRoutes } from './api/plugins/smtp.js'
@@ -79,9 +83,8 @@ export async function buildApp() {
     global: true,
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
-    keyGenerator: (req) => {
-      return req.ip
-    },
+    keyGenerator: (req) => req.ip,
+    allowList: (req) => req.url.split('?')[0].startsWith('/api/auth'),
     errorResponseBuilder: () => ({
       error: {
         status: 429,
@@ -91,13 +94,21 @@ export async function buildApp() {
     }),
   })
 
-  // ─── Auth endpoints get stricter rate limit ────────────────────────────────
-  app.register(async (authApp) => {
-    await authApp.register(fastifyRateLimit, {
+  // ─── Auth: sıkı rate limit (global /api/auth allowList ile çakışmaz) ───────
+  await app.register(async (authScope) => {
+    await authScope.register(fastifyRateLimit, {
       max: 10,
       timeWindow: '1 minute',
       keyGenerator: (req) => req.ip,
+      errorResponseBuilder: () => ({
+        error: {
+          status: 429,
+          name: 'TooManyRequestsError',
+          message: 'Too many authentication attempts. Please slow down.',
+        },
+      }),
     })
+    await authScope.register(authRoutes)
   })
 
   // ─── Multipart (file uploads) ──────────────────────────────────────────────
@@ -159,13 +170,17 @@ export async function buildApp() {
 
   // ─── Routes ────────────────────────────────────────────────────────────────
   await app.register(setupRoutes)  // Must be first — setup wizard
-  await app.register(authRoutes)
+  // authRoutes: yukarıdaki authScope içinde kayıtlı
   await app.register(contentTypeRoutes)
   await app.register(entryRoutes)
   await app.register(userRoutes)
   await app.register(mediaRoutes)
   await app.register(apiTokenRoutes)
   await app.register(auditRoutes)
+  await app.register(roleRoutes)
+  await app.register(dbInfoRoutes)
+  await app.register(settingsRoutes)
+  await app.register(backupRoutes)
 
   // ─── Plugin Routes ──────────────────────────────────────────────────────────
   await app.register(pluginConfigRoutes)
