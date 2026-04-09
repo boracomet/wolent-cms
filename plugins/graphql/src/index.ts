@@ -17,8 +17,8 @@ export const GraphQLPlugin = (): WolentPlugin => ({
 
     // The actual GraphQL schema is auto-generated from content types at runtime
     // and registered as a Fastify plugin via app.register(mercurius, { schema, resolvers })
-    // This is handled in packages/core/src/api/graphql.ts (loaded when this plugin is active)
-    console.log('🚀 GraphQL plugin registered — endpoint: /graphql')
+    // Çekirdek: packages/core/src/api/graphql-route.ts — POST /api/graphql
+    console.log('🚀 GraphQL plugin registered — endpoint: /api/graphql')
   },
 })
 

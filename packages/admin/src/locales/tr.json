@@ -1,8 +1,27 @@
 {
+  "common": {
+    "appShell": {
+      "loading": "API’ye bağlanılıyor…",
+      "apiDownTitle": "API’ye ulaşılamıyor",
+      "apiDownBody": "Arka ucun çalıştığından emin olun (ör. localhost:3000).",
+      "retry": "Yeniden dene"
+    },
+    "confirm": {
+      "defaultTitle": "Onay",
+      "cancel": "İptal",
+      "confirmDelete": "Sil"
+    },
+    "notFound": {
+      "title": "Sayfa bulunamadı",
+      "description": "Aradığınız sayfa mevcut değil, taşınmış veya silinmiş olabilir.",
+      "back": "Geri dön",
+      "home": "Ana sayfa"
+    }
+  },
   "layout": {
     "brand": {
       "title": "CMS",
-      "subtitle": "Headless CMS"
+      "subtitle": "Başsız içerik yönetimi"
     },
     "a11y": {
       "openMenu": "Menüyü aç",
@@ -19,11 +38,19 @@
       "auditLogs": "Denetim Günlükleri",
       "settings": "Ayarlar",
       "logout": "Çıkış yap"
+    },
+    "theme": {
+      "useAuto": "Otomatik",
+      "useLight": "Açık tema",
+      "useDark": "Koyu tema",
+      "switchToLight": "Açık temaya geç",
+      "switchToDark": "Koyu temaya geç",
+      "cycleA11y": "Tema: otomatik, açık ve koyu arasında geç"
     }
   },
   "analytics": {
     "title": "Analitik",
-    "subtitle": "Genel site trafiği ve oturumlar. Veriler analytics ingest API’nızdan gelir.",
+    "subtitle": "Genel site trafiği ve oturumlar. Veri toplamak için Yerel analitik eklentisini açın; metrikler ingest uç noktanızdan gelir.",
     "disabledTitle": "Analitik kapalı",
     "disabledBody": "Bu ekranı ve sol menüdeki bağlantıyı göstermek için Eklentiler’den Yerel analitik eklentisini açın.",
     "goToPlugins": "Eklentilere git",
@@ -58,6 +85,49 @@
       "sun": "Paz"
     }
   },
+  "audit": {
+    "title": "Denetim günlükleri",
+    "subtitle": "CMS’te yapılan işlemleri buradan izleyin.",
+    "filterPlaceholder": "Eyleme göre filtrele (ör. entry.create)",
+    "search": "Ara",
+    "clear": "Temizle",
+    "loadError": "Denetim günlükleri yüklenemedi.",
+    "empty": "Henüz denetim kaydı yok.",
+    "exportPdf": "PDF al",
+    "exportPdfBusy": "Hazırlanıyor…",
+    "exportPdfError": "Denetim günlüğü dışa aktarılamadı.",
+    "exportPdfEmpty": "Dışa aktarılacak kayıt yok.",
+    "exportPdfFilter": "Filtre: {q}",
+    "exportPdfRecords": "{n} kayıt",
+    "exportPdfGenerated": "Oluşturulma",
+    "exportPdfTruncated": "Dışa aktarım en fazla ilk {n} kayıt ile sınırlı.",
+    "pageOf": "Sayfa {page} / {totalPages} · toplam {total}",
+    "col": {
+      "action": "Eylem",
+      "subject": "Konu",
+      "user": "Kullanıcı",
+      "ip": "IP",
+      "date": "Tarih"
+    },
+    "actions": {
+      "entry": {
+        "create": "Kayıt oluşturuldu",
+        "update": "Kayıt güncellendi",
+        "delete": "Kayıt silindi",
+        "publish": "Kayıt yayınlandı",
+        "unpublish": "Kayıt yayından kaldırıldı"
+      },
+      "media": {
+        "upload": "Medya yüklendi",
+        "delete": "Medya silindi"
+      },
+      "contentType": {
+        "create": "İçerik türü oluşturuldu",
+        "update": "İçerik türü güncellendi",
+        "delete": "İçerik türü silindi"
+      }
+    }
+  },
   "dashboard": {
     "title": "Kontrol paneli",
     "welcome": "CMS’inize tekrar hoş geldiniz",
@@ -89,11 +159,47 @@
       "integrations": "Entegrasyonlar",
       "backup": "Yedekleme ve geri yükleme"
     },
+    "i18nGemini": {
+      "autoTranslateTitle": "Otomatik çeviri",
+      "pluginBadge": "Gemini AI",
+      "pluginTagline": "Gemini AI Çeviri eklentisi",
+      "autoTranslateDescription": "Yeni yerel ayarlar eklerken çeviri önerileri sunar. Eklentiler’de Gemini AI Çeviri açık ve API anahtarı tanımlı olduğunda Google Gemini kullanılır.",
+      "openPlugins": "Eklentiler’de yapılandır"
+    },
+    "menuBuilder": {
+      "title": "Menü Oluşturucu",
+      "subtitle": "Navigasyon menüsünü özelleştirin. İçerik türlerini ayrı ayrı ekleyin ve rollere göre görünürlük ayarlayın.",
+      "hint": "Sürükleyerek sıralayın. Her ögenin ikonunu, etiketini ve hangi rollerin görebileceğini ayarlayabilirsiniz.",
+      "label": "Etiket",
+      "path": "URL yolu",
+      "icon": "İkon",
+      "visibleTo": "Görüntüleyebilen roller",
+      "addContentType": "İçerik türü ekle",
+      "addCustomItem": "Özel bağlantı ekle",
+      "add": "Ekle",
+      "save": "Menüyü kaydet",
+      "saved": "Kaydedildi!",
+      "badgeSystem": "Sistem",
+      "badgeContentType": "İçerik",
+      "badgeCustom": "Özel",
+      "editRolesAria": "Rolleri düzenle"
+    },
+    "integrations": {
+      "heading": "Entegrasyonlar",
+      "description": "Harici servisleri ve araçları bağlayın",
+      "bodyTitle": "Entegrasyon ayarları Eklentiler üzerinden yönetilir",
+      "bodyText": "Web kancaları, S3, SMTP, Redis, n8n ve daha fazlasını Eklentiler sayfasından yapılandırın.",
+      "goToPlugins": "Eklentilere git"
+    },
     "backup": {
       "heading": "Yedekleme ve geri yükleme",
       "description": "JSON yedek indirin, seçmeli içe aktarın ve son anlık görüntüleri yönetin. Bu bölüm için ek doğrulama gerekir.",
       "mfaTitle": "Devam etmek için doğrulayın",
       "mfaHint": "Bu oturum için yedekleme işlemlerinin kilidini açmak üzere hesap şifrenizi girin.",
+      "totpTitle": "İki faktörlü doğrulama",
+      "totpHint": "Kimliğinizi doğrulamak için authenticator uygulamanızdaki 6 haneli kodu girin.",
+      "totpPlaceholder": "000000",
+      "wrongTotp": "Geçersiz kod, tekrar deneyin.",
       "mfaError": "Devam etmek için bir kod girin.",
       "mfaVerify": "Doğrula ve aç",
       "wrongPassword": "Yanlış şifre, tekrar deneyin.",
@@ -101,7 +207,9 @@
       "verifying": "Doğrulanıyor…",
       "passwordPlaceholder": "Hesap şifrenizi girin",
       "exportError": "Yedek oluşturulamadı.",
-      "restoreError": "Yedek geri yüklenemedi.",
+      "restoreError": "Yedekten geri yükleme başarısız oldu.",
+      "exporting": "Dışa aktarılıyor…",
+      "importing": "İçe aktarılıyor…",
       "lockSection": "Bölümü yeniden kilitle",
       "exportTitle": "Yedek oluştur",
       "exportIntro": "İndirilecek JSON’a hangi alanların dahil edileceğini seçin. Veriler API ve veritabanından canlı olarak çekilir.",
@@ -128,7 +236,6 @@
       "deleted": "Yedek kaldırıldı.",
       "restoreNoSnapshots": "Bu yedekte geri yüklenecek veri yok.",
       "restoreDone": "Yedekten {n} bölüm geri yüklendi.",
-      "restoreError": "Yedek dosyası okunamadı.",
       "invalidFile": "Geçerli bir CMS yedek JSON’u değil.",
       "pickFileFirst": "Önce bir yedek dosyası seçin.",
       "importNothingApplied": "Yedekte eşleşen bölüm bulunamadı.",
@@ -148,16 +255,27 @@
     "appearance": {
       "heading": "Görünüm ayarları",
       "description": "CMS’in görünümünü özelleştirin",
+      "brandingSection": "Panel markası",
+      "brandingHint": "Logo, başlık ve alt başlık sol menü ile mobil üst çubukta görünür. Boş bırakırsanız seçilen dildeki varsayılan metin kullanılır.",
+      "panelTitle": "Panel başlığı",
+      "panelSubtitle": "Panel alt başlığı",
+      "panelTitlePlaceholder": "ör. Wolent CMS",
+      "panelSubtitlePlaceholder": "ör. Başsız içerik yönetimi",
+      "saved": "Kaydedildi.",
       "panelLanguage": "Yönetim paneli dili",
-      "panelLanguageHint": "Arayüz metinleri src/locales/ altındaki JSON dosyalarından yüklenir (ör. en.json, tr.json). Metinleri özelleştirmek için bu dosyaları düzenleyin veya yeni bir dil ekleyip src/app/i18n/catalog.ts içinde kaydedin.",
+      "panelLanguageHint": "Arayüz metinleri packages/admin/src/locales/*.json dosyalarından yüklenir. Yeni dil için dosya ekleyip packages/admin/src/app/i18n/catalog.ts içinde kaydedin.",
       "theme": "Tema",
-      "darkMode": "Koyu mod",
-      "darkModeSub": "Varsayılan tema",
-      "lightMode": "Açık mod",
-      "lightModeSub": "Yakında",
+      "autoMode": "Otomatik",
+      "autoModeSub": "Cihaz ayarını kullan",
+      "darkMode": "Koyu",
+      "darkModeSub": "Her zaman koyu",
+      "lightMode": "Açık",
+      "lightModeSub": "Her zaman açık",
       "logo": "Logo",
       "uploadLogo": "Logo yükle",
+      "uploadingLogo": "Yükleniyor…",
       "logoHint": "Önerilen boyut: 200x200 piksel",
+      "removeLogo": "Kaldır",
       "accentColor": "Vurgu rengi",
       "saveChanges": "Değişiklikleri kaydet"
     },
@@ -250,7 +368,7 @@
     },
     "sitemap": {
       "name": "XML Sitemap",
-      "description": "Yayındaki URL’lerin sitemap.xml üzerinden tarayıcılara nasıl sunulacağını yapılandırın. Ayarlar API’ye kaydedilir ve backend /sitemap.xml endpoint’ini otomatik olarak sunar.",
+      "description": "Yayındaki URL’lerin sitemap.xml içinde nasıl listeleneceğini yapılandırın. Ayarlar API üzerinden saklanır; backend /sitemap.xml adresini otomatik sunar.",
       "baseUrlLabel": "Genel site taban URL’si",
       "baseUrlPlaceholder": "https://www.ornek.com",
       "baseUrlHint": "Sonda eğik çizgi yok. Mutlak <loc> adresleri için kullanılır.",
@@ -462,6 +580,145 @@
     "configure": "Yapılandır",
     "footer": "Yeni eklentiler ve bir pazar yeri hazır olduğunda burada görünecek."
   },
+  "contentTypes": {
+    "title": "İçerik Türleri",
+    "typesCount": "{n} tür",
+    "viewMode": "Görünüm modu",
+    "gridView": "Izgara görünümü",
+    "listView": "Liste görünümü",
+    "presets": "Şablonlar",
+    "createContentType": "İçerik Türü Oluştur",
+    "newType": "Yeni Tür",
+    "viewContent": "İçeriği gör →",
+    "view": "Görüntüle →",
+    "fieldsCount": "{n} alan",
+    "singularLabel": "Tekil",
+    "pluralLabel": "Çoğul",
+    "col": {
+      "contentType": "İçerik türü",
+      "apiId": "API Kimliği",
+      "fields": "Alanlar",
+      "actions": "İşlemler"
+    },
+    "duplicateSingle": "Tekil türü kopyala (şema)",
+    "duplicateCollection": "Koleksiyon türünü kopyala",
+    "deleteType": "İçerik türünü sil",
+    "editType": "Türü düzenle",
+    "close": "Kapat",
+    "contentPresets": "İçerik şablonları",
+    "addPreset": "Şablon ekle",
+    "create": {
+      "title": "İçerik Türü Oluştur",
+      "configurations": "Yapılandırmalar",
+      "configurationsDesc": "Veri modellemesi için bir tür",
+      "displayName": "Görünen ad",
+      "displayNamePlaceholder": "Makale",
+      "apiIdSingular": "API Kimliği (Tekil)",
+      "apiIdSingularHint": "Bu kimlik API rotaları ve veritabanı tabloları için kullanılır",
+      "apiIdPlural": "API Kimliği (Çoğul)",
+      "apiIdPluralHint": "Çoğul API kimliği",
+      "color": "Renk",
+      "icon": "İkon",
+      "type": "Tür",
+      "collectionType": "Koleksiyon Türü",
+      "collectionDesc": "Makale, ürün, yorum gibi çoklu kayıtlar için idealdir.",
+      "singleType": "Tekil Tür",
+      "singleDesc": "Hakkımızda, anasayfa gibi tek kayıtlar için idealdir.",
+      "cancel": "İptal",
+      "continue": "Devam et"
+    }
+  },
+  "contentBuilder": {
+    "backToContentTypes": "İçerik Türlerine Dön",
+    "edit": "{name} Düzenle",
+    "fieldsCount": "{n} alan",
+    "fieldsCountPlural": "{n} alan",
+    "collectionType": "Koleksiyon türü",
+    "singleType": "Tekil tür",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor…",
+    "saveFailed": "Kaydetme başarısız.",
+    "tabs": {
+      "basic": "Temel ayarlar",
+      "advanced": "Gelişmiş ayarlar"
+    },
+    "displayName": "Görünen Ad",
+    "apiIdSingular": "API Kimliği (Tekil)",
+    "apiIdPlural": "API Kimliği (Çoğul)",
+    "singleTypePluralHint": "Tekil türler tek kayıt kullanır; çoğul API kimliği tekil ile aynıdır.",
+    "appearance": "Görünüm",
+    "color": "Renk",
+    "icon": "İkon",
+    "fields": "Alanlar",
+    "addField": "Bu {kind} için yeni alan ekle",
+    "dragToReorder": "Sıralamak için sürükle",
+    "removeField": "Alanı kaldır",
+    "advanced": {
+      "title": "Gelişmiş Ayarlar",
+      "draftPublish": "Taslak ve Yayın",
+      "draftPublishDesc": "Yayınlamadan önce her kaydın taslak sürümünü oluşturun",
+      "i18n": "Uluslararasılaştırma",
+      "i18nDesc": "Birden fazla dilde içerik yönetin (i18n)",
+      "reviewWorkflow": "İnceleme Akışı",
+      "reviewWorkflowDesc": "Yayınlamadan önce inceleme aşaması ekleyin",
+      "apiSettings": "API Ayarları",
+      "collectionName": "Koleksiyon Adı",
+      "singleTypeApiKey": "Tekil tür API anahtarı",
+      "singularApiKey": "Tekil API anahtarı"
+    },
+    "addFieldModal": {
+      "title": "Yeni Alan Ekle",
+      "selectType": "Alan Türü Seçin",
+      "fieldName": "Alan Adı",
+      "fieldNamePlaceholder": "ör. Kategori, Yazar, Etiketler",
+      "required": "Zorunlu alan",
+      "requiredHint": "Bu alan doldurulmalıdır",
+      "cancel": "İptal",
+      "addField": "Alan Ekle",
+      "relationTarget": "Hedef Koleksiyon",
+      "relationType": "İlişki Türü",
+      "enumerationValues": "Numaralandırma değerleri",
+      "enumerationPlaceholder": "ör. taslak, yayınlanmış, arşivlenmiş (virgülle ayırın)"
+    },
+    "fieldTypes": {
+      "text": "Metin",
+      "text_long": "Metin (Uzun metin)",
+      "blocks": "Zengin metin (Bloklar)",
+      "json": "JSON",
+      "number_int": "Sayı (tam sayı)",
+      "number_float": "Sayı (ondalık)",
+      "number_big": "Sayı (büyük tam sayı)",
+      "password": "Şifre",
+      "email": "E-posta",
+      "enumeration": "Numaralandırma",
+      "uid": "UID",
+      "date": "Tarih",
+      "time": "Saat",
+      "datetime": "Tarih-saat",
+      "boolean": "Mantıksal",
+      "media": "Medya",
+      "relation": "İlişki",
+      "component": "Bileşen",
+      "dynamiczone": "Dinamik Alan"
+    },
+    "relationTypes": {
+      "manyToOne": "Çoktan Bire",
+      "manyToOneDesc": "Makaleler → Kategori",
+      "oneToMany": "Birden Çoğa",
+      "oneToManyDesc": "Kategori → Makaleler",
+      "oneToOne": "Bire Bir",
+      "oneToOneDesc": "Makale → Yazar",
+      "manyToMany": "Çoktan Çoğa",
+      "manyToManyDesc": "Makaleler ↔ Etiketler"
+    },
+    "fieldDescriptions": {
+      "relation": "İlişki ({type}) — {target}",
+      "enumeration": "Numaralandırma: {values}",
+      "component": "Bileşen (tekrarlanabilir alan grubu)",
+      "dynamiczone": "Dinamik Alan (bileşen karışımı)"
+    }
+  },
   "login": {
     "title": "Giriş yap",
     "subtitle": "Headless CMS yönetim paneli",
@@ -474,6 +731,11 @@
     "submit": "Giriş yap",
     "showPassword": "Şifreyi göster",
     "hidePassword": "Şifreyi gizle",
-    "skipToPanel": "Panele geç"
+    "skipToPanel": "Panele geç",
+    "verifyMfa": "Doğrula",
+    "backToLogin": "← Girişe dön",
+    "totpLabel": "İki faktörlü doğrulama kodu",
+    "totpHint": "Authenticator uygulamanızdaki 6 haneli kodu girin.",
+    "totpPlaceholder": "000000"
   }
 }

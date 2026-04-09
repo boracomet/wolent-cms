@@ -163,7 +163,7 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
               className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors border ${
                 isActive
                   ? `${folderAccent.bg} ${folderAccent.border} ${folderAccent.icon}`
-                  : "border-transparent hover:bg-zinc-800/50 text-zinc-300"
+                  : "border-transparent hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 text-stone-700 dark:text-zinc-300"
               }`}
               style={{ paddingLeft: `${level * 14 + 8}px` }}
             >
@@ -174,7 +174,7 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                     e.stopPropagation();
                     toggleExpand(folder.id);
                   }}
-                  className="p-0.5 hover:bg-zinc-700/50 rounded shrink-0"
+                  className="p-0.5 hover:bg-stone-300/85 active:bg-stone-400/70 dark:hover:bg-zinc-700/55 dark:active:bg-zinc-600/45 rounded shrink-0"
                 >
                   {isExpanded ? (
                     <ChevronDown className="w-4 h-4" />
@@ -196,11 +196,11 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                   <Folder className={`w-4 h-4 shrink-0 ${folderAccent.icon}`} />
                 )}
                 <span
-                  className={`text-sm truncate ${isActive ? "text-zinc-100" : "text-zinc-300"}`}
+                  className={`text-sm truncate ${isActive ? "text-stone-900 dark:text-zinc-100" : "text-stone-700 dark:text-zinc-300"}`}
                 >
                   {folder.name}
                 </span>
-                <span className="text-xs text-zinc-500 shrink-0">{count}</span>
+                <span className="text-xs text-stone-500 dark:text-zinc-500 shrink-0">{count}</span>
               </button>
             </div>
             {hasChildren && isExpanded && renderFolderTree(folder.id, level + 1)}
@@ -227,22 +227,22 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="media-picker-title"
-        className="relative z-10 flex min-h-0 w-full max-w-6xl max-h-[min(90vh,calc(100dvh-2rem))] flex-col overflow-hidden rounded-xl border border-zinc-700/90 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
+        className="relative z-10 flex min-h-0 w-full max-w-6xl max-h-[min(90vh,calc(100dvh-2rem))] flex-col overflow-hidden rounded-xl border border-stone-300/85 dark:border-zinc-700/90 bg-stone-100 dark:bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-zinc-800/80 shrink-0">
+        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-stone-200/90 dark:border-zinc-800/80 shrink-0">
           <div>
-            <h2 id="media-picker-title" className="text-lg font-semibold text-zinc-100">
+            <h2 id="media-picker-title" className="text-lg font-semibold text-stone-900 dark:text-zinc-100">
               Media Library
             </h2>
-            <p className="text-sm text-zinc-500 mt-0.5">
+            <p className="text-sm text-stone-500 dark:text-zinc-500 mt-0.5">
               Choose an image — click a file to set the cover
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-stone-300 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -250,8 +250,8 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-          <aside className="lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800/80 p-3 overflow-y-auto max-h-40 lg:max-h-none">
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide px-2 mb-2">
+          <aside className="lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-stone-200/90 dark:border-zinc-800/80 p-3 overflow-y-auto max-h-40 lg:max-h-none">
+            <p className="text-xs font-medium text-stone-500 dark:text-zinc-500 uppercase tracking-wide px-2 mb-2">
               Folders
             </p>
             <button
@@ -260,19 +260,19 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors mb-1 ${
                 currentFolderId === null
                   ? "bg-blue-500/10 text-blue-400"
-                  : "hover:bg-zinc-800/50 text-zinc-300"
+                  : "hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 text-stone-700 dark:text-zinc-300"
               }`}
             >
               <Home className="w-4 h-4 shrink-0" />
               <span className="flex-1 text-left">All Files</span>
-              <span className="text-xs text-zinc-500">{rootCount}</span>
+              <span className="text-xs text-stone-500 dark:text-zinc-500">{rootCount}</span>
             </button>
             <div className="space-y-0.5">{renderFolderTree(null)}</div>
           </aside>
 
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <div className="p-3 border-b border-zinc-800/80 shrink-0 space-y-2">
-              <div className="flex items-center gap-2 text-xs text-zinc-500 flex-wrap">
+            <div className="p-3 border-b border-stone-200/90 dark:border-zinc-800/80 shrink-0 space-y-2">
+              <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-zinc-500 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setCurrentFolderId(null)}
@@ -282,7 +282,7 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                 </button>
                 {getBreadcrumbs().map((folder) => (
                   <span key={folder.id} className="flex items-center gap-2">
-                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+                    <ChevronRight className="w-3.5 h-3.5 text-stone-600 dark:text-zinc-600" />
                     <button
                       type="button"
                       onClick={() => setCurrentFolderId(folder.id)}
@@ -294,13 +294,13 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                 ))}
               </div>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 dark:text-zinc-500" />
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search files..."
-                  className="w-full pl-10 pr-3 py-2 bg-zinc-900/80 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  className="w-full pl-10 pr-3 py-2 bg-white/90 dark:bg-zinc-900/80 border border-stone-200 dark:border-zinc-800 rounded-lg text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 />
               </div>
             </div>
@@ -315,15 +315,15 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                         key={folder.id}
                         type="button"
                         onClick={() => setCurrentFolderId(folder.id)}
-                        className="text-left bg-zinc-900/60 border border-zinc-800/80 rounded-lg p-3 hover:border-zinc-600 transition-colors"
+                        className="text-left bg-white/82 dark:bg-zinc-900/60 border border-stone-200/90 dark:border-zinc-800/80 rounded-lg p-3 hover:border-stone-400 dark:hover:border-zinc-600 transition-colors"
                       >
                         <Folder
                           className={`w-8 h-8 mb-2 ${resolveFolderAccent(folder).icon}`}
                         />
-                        <p className="font-medium text-sm text-zinc-200 truncate">
+                        <p className="font-medium text-sm text-stone-800 dark:text-zinc-200 truncate">
                           {folder.name}
                         </p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500">
                           {count} item{count !== 1 ? "s" : ""} · {formatBytes(bytes)}
                         </p>
                       </button>
@@ -347,11 +347,11 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                       }}
                       className={`text-left rounded-lg border overflow-hidden transition-colors ${
                         isImage
-                          ? "border-zinc-800/80 bg-zinc-900/40 hover:border-blue-500/50 hover:ring-1 hover:ring-blue-500/20"
-                          : "border-zinc-800/50 opacity-50 cursor-not-allowed"
+                          ? "border-stone-200/90 dark:border-zinc-800/80 bg-stone-50/92 dark:bg-zinc-900/40 hover:border-blue-500/50 hover:ring-1 hover:ring-blue-500/20"
+                          : "border-stone-200/85 dark:border-zinc-800/50 opacity-50 cursor-not-allowed"
                       }`}
                     >
-                      <div className="aspect-square bg-zinc-800 flex items-center justify-center relative">
+                      <div className="aspect-square bg-stone-200 dark:bg-zinc-800 flex items-center justify-center relative">
                         {file.thumbnail ? (
                           <img
                             src={file.thumbnail}
@@ -359,17 +359,17 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <FileText className="w-10 h-10 text-zinc-600" />
+                          <FileText className="w-10 h-10 text-stone-600 dark:text-zinc-600" />
                         )}
                         {!isImage && (
-                          <span className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-zinc-950/90 text-zinc-400">
+                          <span className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-white/92 dark:bg-zinc-950/90 text-stone-600 dark:text-zinc-400">
                             Not an image
                           </span>
                         )}
                       </div>
                       <div className="p-2">
-                        <p className="text-xs font-medium truncate text-zinc-200">{file.name}</p>
-                        <p className="text-[10px] text-zinc-500">{file.size}</p>
+                        <p className="text-xs font-medium truncate text-stone-800 dark:text-zinc-200">{file.name}</p>
+                        <p className="text-[10px] text-stone-500 dark:text-zinc-500">{file.size}</p>
                       </div>
                     </button>
                   );
@@ -377,7 +377,7 @@ export function MediaLibraryPickerModal({ open, onClose, onSelect }: Props) {
               </div>
 
               {filteredMedia.length === 0 && currentFolders.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-zinc-500 text-sm">
+                <div className="flex flex-col items-center justify-center py-16 text-stone-500 dark:text-zinc-500 text-sm">
                   <ImageIcon className="w-10 h-10 mb-2 opacity-40" />
                   No files in this folder
                 </div>

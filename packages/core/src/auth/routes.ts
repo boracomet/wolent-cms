@@ -176,6 +176,27 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.send({ data: { backupCodes: plaintext } })
   })
 
+  // ─── POST /api/auth/2fa/verify ──────────────────────────────────────────────
+  app.post('/api/auth/2fa/verify', { preHandler: [requireAuth] }, async (req, reply) => {
+    const { totpCode } = z.object({ totpCode: z.string().min(6).max(6) }).parse(req.body)
+    const { tenantId, user } = req
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dbUser = await runInTenantContext({ tenantId }, () =>
+      (prisma as any).user.findFirst({ where: { id: user.sub } })
+    ) as any
+    if (!dbUser?.twoFactorEnabled || !dbUser.twoFactorSecret) {
+      throw new BadRequestError('2FA is not enabled')
+    }
+
+    const { verifyTotp: vt } = await import('./totp.js')
+    if (!vt(dbUser.twoFactorSecret, totpCode)) {
+      throw new BadRequestError('Invalid TOTP code')
+    }
+
+    return reply.send({ data: { ok: true } })
+  })
+
   // ─── POST /api/auth/2fa/disable ────────────────────────────────────────────
   app.post('/api/auth/2fa/disable', { preHandler: [requireAuth] }, async (req, reply) => {
     const { password } = z.object({ password: z.string() }).parse(req.body)

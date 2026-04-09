@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { api } from "../api/client";
 import { apiTypeToDemoType as apiToType, invalidateContentTypeCache, setCachedTypes } from "../lib/contentTypeCache";
+import { useConfirm } from "./ConfirmDialog";
 import { Link, useNavigate } from "react-router";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -47,6 +48,7 @@ import {
   Box,
 } from "lucide-react";
 import { cmsColorSwatches as availableColors } from "../lib/cmsColors";
+import { useI18n } from "../i18n";
 import { CONTENT_TYPES_STORAGE_KEY } from "../data/demoContentTypes";
 import type { DemoContentType } from "../data/demoContentTypes";
 import { duplicateContentTypeSchema, nextDuplicateDisplayName } from "../lib/cmsDuplicate";
@@ -81,24 +83,36 @@ const PRESET_ICONS: Record<PresetIconKey, LucideIcon> = {
 export function ContentTypes() {
   const [contentTypes, setContentTypes] = useState<DemoContentType[]>([]);
   const [ctLoading, setCtLoading] = useState(true);
+  const { t } = useI18n();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetMessage, setPresetMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => readContentTypesView());
   const [duplicateTarget, setDuplicateTarget] = useState<DemoContentType | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const handleDelete = useCallback(async (ct: DemoContentType) => {
-    if (!confirm(`"${ct.name}" content type'ını silmek istediğine emin misin? Tüm içerikler de silinir.`)) return;
+    const ok = await confirm({
+      title: "İçerik Türünü Sil",
+      message: `"${ct.name}" içerik türünü silmek istediğine emin misin? Bu türe ait tüm içerikler de kalıcı olarak silinecek.`,
+      confirmLabel: "Evet, Sil",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleteError(null);
+    setDeleteSuccess(null);
     try {
       await api.contentTypes.delete(ct.id);
       setContentTypes(prev => prev.filter(c => c.id !== ct.id));
       invalidateContentTypeCache();
+      setDeleteSuccess(`"${ct.name}" başarıyla silindi.`);
+      window.setTimeout(() => setDeleteSuccess(null), 5200);
     } catch (err: unknown) {
       setDeleteError(err instanceof Error ? err.message : 'Silme işlemi başarısız oldu.');
     }
-  }, []);
+  }, [confirm]);
 
   const syncFromApi = useCallback(() => {
     setCtLoading(true);
@@ -190,24 +204,24 @@ export function ContentTypes() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold mb-2">Content Types</h1>
-            <p className="text-zinc-400">{contentTypes.length} types</p>
+            <h1 className="text-2xl sm:text-3xl font-semibold mb-2">{t("contentTypes.title")}</h1>
+            <p className="text-stone-600 dark:text-zinc-400">{t("contentTypes.typesCount", { n: contentTypes.length })}</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
             <div
-              className="flex items-center rounded-lg border border-zinc-700/80 p-0.5 bg-zinc-900/90 shrink-0"
+              className="flex items-center rounded-lg border border-stone-300/82 dark:border-zinc-700/80 p-0.5 bg-white/94 dark:bg-zinc-900/90 shrink-0"
               role="group"
-              aria-label="View mode"
+              aria-label={t("contentTypes.viewMode")}
             >
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
                 aria-pressed={viewMode === "grid"}
-                title="Grid view"
+                title={t("contentTypes.gridView")}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === "grid"
-                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/80"
+                    ? "bg-stone-300 dark:bg-zinc-700 text-stone-900 dark:text-zinc-100 shadow-sm"
+                    : "text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300 hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90"
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" aria-hidden />
@@ -216,11 +230,11 @@ export function ContentTypes() {
                 type="button"
                 onClick={() => setViewMode("list")}
                 aria-pressed={viewMode === "list"}
-                title="List view"
+                title={t("contentTypes.listView")}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === "list"
-                    ? "bg-zinc-700 text-zinc-100 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/80"
+                    ? "bg-stone-300 dark:bg-zinc-700 text-stone-900 dark:text-zinc-100 shadow-sm"
+                    : "text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300 hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90"
                 }`}
               >
                 <List className="w-4 h-4" aria-hidden />
@@ -229,19 +243,19 @@ export function ContentTypes() {
             <button
               type="button"
               onClick={() => setShowPresetsModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800/90 text-zinc-100 border border-zinc-700/80 rounded-md hover:bg-zinc-800 hover:border-zinc-600 transition-colors font-medium"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-200 dark:bg-zinc-800/90 text-stone-900 dark:text-zinc-100 border border-stone-300/82 dark:border-zinc-700/80 rounded-md hover:bg-stone-300 dark:hover:bg-zinc-800 hover:border-stone-400 dark:hover:border-zinc-600 transition-colors font-medium"
             >
               <Layers className="w-4 h-4 opacity-90" />
-              <span>Presets</span>
+              <span>{t("contentTypes.presets")}</span>
             </button>
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Create Content Type</span>
-              <span className="sm:hidden">New Type</span>
+              <span className="hidden sm:inline">{t("contentTypes.createContentType")}</span>
+              <span className="sm:hidden">{t("contentTypes.newType")}</span>
             </button>
           </div>
         </div>
@@ -255,6 +269,15 @@ export function ContentTypes() {
           </div>
         )}
 
+        {deleteSuccess && (
+          <div
+            className="mb-4 px-4 py-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm text-emerald-200/95"
+            role="status"
+          >
+            {deleteSuccess}
+          </div>
+        )}
+
         {deleteError && (
           <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-300" role="alert">
             {deleteError}
@@ -263,7 +286,7 @@ export function ContentTypes() {
 
         {ctLoading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-stone-500 dark:text-zinc-500" />
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -273,7 +296,7 @@ export function ContentTypes() {
               return (
                 <div
                   key={ct.id}
-                  className={`bg-zinc-900/50 backdrop-blur-xl border ${colorClasses?.border} rounded-lg overflow-hidden hover:scale-[1.02] transition-all group relative`}
+                  className={`bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border ${colorClasses?.border} rounded-lg overflow-hidden hover:scale-[1.02] transition-all group relative`}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${colorClasses?.gradient} to-transparent opacity-50`}
@@ -289,64 +312,64 @@ export function ContentTypes() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-1">{ct.name}</h3>
-                          <p className="text-xs text-zinc-500">{ct.description}</p>
+                          <p className="text-xs text-stone-500 dark:text-zinc-500">{ct.description}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-400">API ID (Singular)</span>
-                        <code className="text-zinc-300 bg-zinc-800/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono">
+                        <span className="text-stone-600 dark:text-zinc-400">API ID (Singular)</span>
+                        <code className="text-stone-700 dark:text-zinc-300 bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono">
                           {ct.apiId}
                         </code>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-400">API ID (Plural)</span>
-                        <code className="text-zinc-300 bg-zinc-800/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono">
+                        <span className="text-stone-600 dark:text-zinc-400">API ID (Plural)</span>
+                        <code className="text-stone-700 dark:text-zinc-300 bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono">
                           {ct.apiId}s
                         </code>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50">
+                    <div className="flex items-center justify-between pt-4 border-t border-stone-200/85 dark:border-zinc-800/50">
                       <div className="text-sm">
-                        <span className="text-zinc-400">{ct.fields.length} fields</span>
+                        <span className="text-stone-600 dark:text-zinc-400">{t("contentTypes.fieldsCount", { n: ct.fields.length })}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/content-types/${ct.id}/builder${ct.isSingleType ? "?kind=single" : ""}`}
-                          className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
+                          className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
                         >
-                          <Edit className="w-4 h-4 text-zinc-400" />
+                          <Edit className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </Link>
                         <button
                           type="button"
                           onClick={() => setDuplicateTarget(ct)}
-                          className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
+                          className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
                           title={
                             ct.isSingleType
-                              ? "Duplicate single type (schema)"
-                              : "Duplicate collection type"
+                              ? t("contentTypes.duplicateSingle")
+                              : t("contentTypes.duplicateCollection")
                           }
                           aria-label={`Duplicate ${ct.name}`}
                         >
-                          <Copy className="w-4 h-4 text-zinc-400" />
+                          <Copy className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(ct)}
-                          className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
-                          title="Delete content type"
+                          className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
+                          title={t("contentTypes.deleteType")}
                           aria-label={`Delete ${ct.name}`}
                         >
-                          <Trash2 className="w-4 h-4 text-zinc-400" />
+                          <Trash2 className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </button>
                         <Link
                           to={`/content/${ct.apiId}`}
                           className={`px-3 py-1.5 ${colorClasses?.bg} ${colorClasses?.icon} rounded-md hover:opacity-80 transition-opacity text-sm font-medium`}
                         >
-                          View Content →
+                          {t("contentTypes.viewContent")}
                         </Link>
                       </div>
                     </div>
@@ -356,21 +379,21 @@ export function ContentTypes() {
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-xl overflow-hidden overflow-x-auto">
+          <div className="rounded-xl border border-stone-200/88 dark:border-zinc-800/60 bg-stone-50/92 dark:bg-zinc-900/40 backdrop-blur-xl overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-zinc-800/80 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  <th className="px-4 py-3 w-[min(40%,280px)]">Content type</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">API ID</th>
-                  <th className="px-4 py-3 whitespace-nowrap">Fields</th>
-                  <th className="px-4 py-3 text-right whitespace-nowrap">Actions</th>
+                <tr className="border-b border-stone-200/90 dark:border-zinc-800/80 text-left text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-zinc-500">
+                  <th className="px-4 py-3 w-[min(40%,280px)]">{t("contentTypes.col.contentType")}</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">{t("contentTypes.col.apiId")}</th>
+                  <th className="px-4 py-3 whitespace-nowrap">{t("contentTypes.col.fields")}</th>
+                  <th className="px-4 py-3 text-right whitespace-nowrap">{t("contentTypes.col.actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60">
+              <tbody className="divide-y divide-stone-200 dark:divide-zinc-800/60">
                 {contentTypes.map((ct) => {
                   const colorClasses = availableColors.find((c) => c.name === ct.color);
                   return (
-                    <tr key={ct.id} className="hover:bg-zinc-800/25 transition-colors">
+                    <tr key={ct.id} className="hover:bg-stone-300 dark:hover:bg-zinc-800/25 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
@@ -379,66 +402,66 @@ export function ContentTypes() {
                             <Database className={`w-5 h-5 ${colorClasses?.icon}`} />
                           </div>
                           <div className="min-w-0">
-                            <div className="font-medium text-zinc-100 truncate">{ct.name}</div>
-                            <p className="text-xs text-zinc-500 line-clamp-2">{ct.description}</p>
+                            <div className="font-medium text-stone-900 dark:text-zinc-100 truncate">{ct.name}</div>
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 line-clamp-2">{ct.description}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell align-middle">
                         <div className="flex flex-col gap-1.5 text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="text-zinc-500 shrink-0">Singular</span>
-                            <code className="text-zinc-300 bg-zinc-950/60 px-2 py-0.5 rounded font-mono truncate">
+                            <span className="text-stone-500 dark:text-zinc-500 shrink-0">{t("contentTypes.singularLabel")}</span>
+                            <code className="text-stone-700 dark:text-zinc-300 bg-white/78 dark:bg-zinc-950/60 px-2 py-0.5 rounded font-mono truncate">
                               {ct.apiId}
                             </code>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-zinc-500 shrink-0">Plural</span>
-                            <code className="text-zinc-300 bg-zinc-950/60 px-2 py-0.5 rounded font-mono truncate">
+                            <span className="text-stone-500 dark:text-zinc-500 shrink-0">{t("contentTypes.pluralLabel")}</span>
+                            <code className="text-stone-700 dark:text-zinc-300 bg-white/78 dark:bg-zinc-950/60 px-2 py-0.5 rounded font-mono truncate">
                               {ct.apiId}s
                             </code>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-zinc-400 whitespace-nowrap">
-                        {ct.fields.length} fields
+                      <td className="px-4 py-3 align-middle text-stone-600 dark:text-zinc-400 whitespace-nowrap">
+                        {t("contentTypes.fieldsCount", { n: ct.fields.length })}
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
                         <div className="inline-flex items-center justify-end gap-1">
                           <Link
                             to={`/content-types/${ct.id}/builder${ct.isSingleType ? "?kind=single" : ""}`}
-                            className="p-2 hover:bg-zinc-800/70 rounded-md transition-colors"
-                            title="Edit type"
+                            className="p-2 hover:bg-stone-300/85 dark:hover:bg-zinc-800/70 rounded-md transition-colors"
+                            title={t("contentTypes.editType")}
                           >
-                            <Edit className="w-4 h-4 text-zinc-400" />
+                            <Edit className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                           </Link>
                           <button
                             type="button"
                             onClick={() => setDuplicateTarget(ct)}
-                            className="p-2 hover:bg-zinc-800/70 rounded-md transition-colors"
+                            className="p-2 hover:bg-stone-300/85 dark:hover:bg-zinc-800/70 rounded-md transition-colors"
                             title={
                               ct.isSingleType
-                                ? "Duplicate single type (schema)"
-                                : "Duplicate collection type"
+                                ? t("contentTypes.duplicateSingle")
+                                : t("contentTypes.duplicateCollection")
                             }
                             aria-label={`Duplicate ${ct.name}`}
                           >
-                            <Copy className="w-4 h-4 text-zinc-400" />
+                            <Copy className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(ct)}
                             className="p-2 hover:bg-red-500/15 rounded-md transition-colors"
-                            title="Delete content type"
+                            title={t("contentTypes.deleteType")}
                             aria-label={`Delete ${ct.name}`}
                           >
-                            <Trash2 className="w-4 h-4 text-zinc-500 hover:text-red-400" />
+                            <Trash2 className="w-4 h-4 text-stone-500 dark:text-zinc-500 hover:text-red-400" />
                           </button>
                           <Link
                             to={`/content/${ct.apiId}`}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium ${colorClasses?.bg} ${colorClasses?.icon} hover:opacity-85 transition-opacity`}
                           >
-                            View →
+                            {t("contentTypes.view")}
                           </Link>
                         </div>
                       </td>
@@ -534,37 +557,37 @@ function DuplicateCollectionModal({
       role="presentation"
     >
       <div
-        className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-xl w-full max-w-md shadow-xl"
+        className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-xl w-full max-w-md shadow-xl"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dup-collection-title"
       >
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800/50">
-          <h2 id="dup-collection-title" className="text-lg font-semibold text-zinc-100">
+        <div className="flex items-center justify-between p-5 border-b border-stone-200/85 dark:border-zinc-800/50">
+          <h2 id="dup-collection-title" className="text-lg font-semibold text-stone-900 dark:text-zinc-100">
             {source.isSingleType ? "Tekil içerik tipini çoğalt" : "Koleksiyon tipini çoğalt"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <Plus className="w-5 h-5 rotate-45 text-zinc-400" />
+            <Plus className="w-5 h-5 rotate-45 text-stone-600 dark:text-zinc-400" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-stone-600 dark:text-zinc-400">
             Kopyalanıyor:{" "}
-            <span className="text-zinc-200 font-medium">{source.name}</span>
+            <span className="text-stone-800 dark:text-zinc-200 font-medium">{source.name}</span>
             . Alanlar ve ayarlar aynı kalır; API ID isimden üretilir.
             {source.isSingleType ? (
               <> Kopya da tekil tip olarak kalır (tek kayıt).</>
             ) : null}
           </p>
           <div>
-            <label htmlFor="dup-collection-name" className="block text-sm font-medium text-zinc-300 mb-2">
+            <label htmlFor="dup-collection-name" className="block text-sm font-medium text-stone-700 dark:text-zinc-300 mb-2">
               Görünen ad
             </label>
             <input
@@ -572,7 +595,7 @@ function DuplicateCollectionModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-600 text-zinc-100"
+              className="w-full px-3 py-2 bg-white/88 dark:bg-zinc-950/80 border border-stone-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-600 text-stone-900 dark:text-zinc-100"
             />
           </div>
           <button
@@ -588,7 +611,7 @@ function DuplicateCollectionModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md border border-zinc-700 text-zinc-300 hover:bg-zinc-800/80 transition-colors"
+              className="px-4 py-2 rounded-md border border-stone-300 dark:border-zinc-700 text-stone-700 dark:text-zinc-300 hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90 transition-colors"
             >
               İptal
             </button>
@@ -596,7 +619,7 @@ function DuplicateCollectionModal({
               type="button"
               onClick={() => onConfirm(name)}
               disabled={!name.trim()}
-              className="px-4 py-2 rounded-md bg-zinc-100 text-zinc-950 font-medium hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="px-4 py-2 rounded-md bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-medium hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               Çoğalt
             </button>
@@ -616,11 +639,11 @@ function PresetsModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-black/40">
-        <div className="flex items-start justify-between gap-4 p-6 border-b border-zinc-800/50 shrink-0">
+      <div className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-black/40">
+        <div className="flex items-start justify-between gap-4 p-6 border-b border-stone-200/85 dark:border-zinc-800/50 shrink-0">
           <div>
-            <h2 className="text-xl font-semibold text-zinc-100">Content presets</h2>
-            <p className="text-sm text-zinc-400 mt-1 max-w-xl">
+            <h2 className="text-xl font-semibold text-stone-900 dark:text-zinc-100">{t("contentTypes.contentPresets")}</h2>
+            <p className="text-sm text-stone-600 dark:text-zinc-400 mt-1 max-w-xl">
               Sık kullanılan site yapıları için hazır içerik tipleri. Her şablon birden fazla
               koleksiyon veya single type ekleyebilir; ilişki alanları birbirine bağlanacak şekilde
               tanımlıdır.
@@ -629,10 +652,10 @@ function PresetsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-zinc-800/80 rounded-lg transition-colors shrink-0"
+            className="p-2 hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90 rounded-lg transition-colors shrink-0"
             aria-label="Close"
           >
-            <Plus className="w-5 h-5 rotate-45 text-zinc-400" />
+            <Plus className="w-5 h-5 rotate-45 text-stone-600 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -644,7 +667,7 @@ function PresetsModal({
               return (
                 <div
                   key={preset.id}
-                  className={`relative rounded-xl border ${colorClasses?.border ?? "border-zinc-800"} bg-zinc-950/40 overflow-hidden flex flex-col`}
+                  className={`relative rounded-xl border ${colorClasses?.border ?? "border-stone-200 dark:border-zinc-800"} bg-stone-100/92 dark:bg-zinc-950/40 overflow-hidden flex flex-col`}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${colorClasses?.gradient ?? "from-zinc-500/10"} to-transparent opacity-60 pointer-events-none`}
@@ -652,21 +675,21 @@ function PresetsModal({
                   <div className="relative p-5 flex flex-col flex-1">
                     <div className="flex items-start gap-3 mb-3">
                       <div
-                        className={`w-11 h-11 rounded-lg ${colorClasses?.bg ?? "bg-zinc-800/80"} flex items-center justify-center shrink-0`}
+                        className={`w-11 h-11 rounded-lg ${colorClasses?.bg ?? "bg-stone-200 dark:bg-zinc-800/80"} flex items-center justify-center shrink-0`}
                       >
-                        <Icon className={`w-5 h-5 ${colorClasses?.icon ?? "text-zinc-300"}`} />
+                        <Icon className={`w-5 h-5 ${colorClasses?.icon ?? "text-stone-700 dark:text-zinc-300"}`} />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-zinc-100 text-lg leading-tight">
+                        <h3 className="font-semibold text-stone-900 dark:text-zinc-100 text-lg leading-tight">
                           {preset.title}
                         </h3>
-                        <p className="text-xs text-zinc-500 mt-1">{preset.description}</p>
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1">{preset.description}</p>
                       </div>
                     </div>
-                    <ul className="text-xs text-zinc-400 space-y-1.5 mb-4 flex-1 border-t border-zinc-800/60 pt-3">
+                    <ul className="text-xs text-stone-600 dark:text-zinc-400 space-y-1.5 mb-4 flex-1 border-t border-stone-200/88 dark:border-zinc-800/60 pt-3">
                       {preset.includes.map((line) => (
                         <li key={line} className="flex gap-2">
-                          <span className={`mt-1.5 h-1 w-1 rounded-full shrink-0 ${colorClasses?.bg ?? "bg-zinc-600"} ring-1 ring-zinc-600/50`} />
+                          <span className={`mt-1.5 h-1 w-1 rounded-full shrink-0 ${colorClasses?.bg ?? "bg-stone-400 dark:bg-zinc-600"} ring-1 ring-stone-400/60 dark:ring-zinc-600/50`} />
                           <span>{line}</span>
                         </li>
                       ))}
@@ -674,9 +697,9 @@ function PresetsModal({
                     <button
                       type="button"
                       onClick={() => onApply(preset)}
-                      className={`w-full py-2.5 rounded-lg font-medium text-sm transition-opacity ${colorClasses?.bg ?? "bg-zinc-800"} ${colorClasses?.icon ?? "text-zinc-200"} hover:opacity-90 border ${colorClasses?.border ?? "border-zinc-700"}`}
+                      className={`w-full py-2.5 rounded-lg font-medium text-sm transition-opacity ${colorClasses?.bg ?? "bg-stone-200 dark:bg-zinc-800"} ${colorClasses?.icon ?? "text-stone-800 dark:text-zinc-200"} hover:opacity-90 border ${colorClasses?.border ?? "border-stone-300 dark:border-zinc-700"}`}
                     >
-                      Add preset
+                      {t("contentTypes.addPreset")}
                     </button>
                   </div>
                 </div>
@@ -689,7 +712,7 @@ function PresetsModal({
   );
 }
 
-const CT_ICON_OPTIONS: { id: string; icon: LucideIcon; label: string }[] = [
+export const CT_ICON_OPTIONS: { id: string; icon: LucideIcon; label: string }[] = [
   { id: 'database', icon: Database, label: 'Database' },
   { id: 'file-text', icon: FileText, label: 'Article' },
   { id: 'book-open', icon: BookOpen, label: 'Blog' },
@@ -728,27 +751,28 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
   const [selectedType, setSelectedType] = useState<"collection" | "single">("collection");
   const [selectedIcon, setSelectedIcon] = useState("database");
   const [selectedColor, setSelectedColor] = useState("blue");
+  const { t } = useI18n();
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+      <div className="bg-white/94 dark:bg-zinc-900/90 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between p-6 border-b border-stone-200/85 dark:border-zinc-800/50">
           <div className="flex items-center gap-3">
             {(() => {
               const HeaderIconCmp = CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.icon ?? Database;
               const colorMeta = availableColors.find(c => c.name === selectedColor);
               return (
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMeta?.bg ?? 'bg-zinc-800'}`}>
-                  <HeaderIconCmp className={`w-5 h-5 ${colorMeta?.icon ?? 'text-zinc-100'}`} />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMeta?.bg ?? 'bg-stone-200 dark:bg-zinc-800'}`}>
+                  <HeaderIconCmp className={`w-5 h-5 ${colorMeta?.icon ?? 'text-stone-900 dark:text-zinc-100'}`} />
                 </div>
               );
             })()}
-            <h2 className="text-xl font-semibold">Create Content Type</h2>
+            <h2 className="text-xl font-semibold">{t("contentTypes.create.title")}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
+            className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
           >
             <Plus className="w-5 h-5 rotate-45" />
           </button>
@@ -757,61 +781,61 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
         {/* Content */}
         <div className="p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-1">Configurations</h3>
-            <p className="text-sm text-zinc-400">A type for modeling data</p>
+            <h3 className="text-lg font-semibold mb-1">{t("contentTypes.create.configurations")}</h3>
+            <p className="text-sm text-stone-600 dark:text-zinc-400">{t("contentTypes.create.configurationsDesc")}</p>
           </div>
 
           <div className="space-y-6">
             {/* Display Name */}
             <div>
-              <label className="block text-sm font-medium mb-2">Display name</label>
+              <label className="block text-sm font-medium mb-2">{t("contentTypes.create.displayName")}</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Article"
-                className="w-full px-3 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                placeholder={t("contentTypes.create.displayNamePlaceholder")}
+                className="w-full px-3 py-2 bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
               {/* API ID Singular */}
               <div>
-                <label className="block text-sm font-medium mb-2">API ID (Singular)</label>
+                <label className="block text-sm font-medium mb-2">{t("contentTypes.create.apiIdSingular")}</label>
                 <input
                   type="text"
                   value={displayName.toLowerCase()}
                   disabled
-                  className="w-full px-3 py-2 bg-zinc-800/50 backdrop-blur-sm border border-zinc-800/50 rounded-md text-zinc-400"
+                  className="w-full px-3 py-2 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md text-stone-600 dark:text-zinc-400"
                 />
-                <p className="text-xs text-zinc-500 mt-2">
-                  The UID is used to generate the API routes and databases tables/collections
+                <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">
+                  {t("contentTypes.create.apiIdSingularHint")}
                 </p>
               </div>
 
               {/* API ID Plural */}
               <div>
-                <label className="block text-sm font-medium mb-2">API ID (Plural)</label>
+                <label className="block text-sm font-medium mb-2">{t("contentTypes.create.apiIdPlural")}</label>
                 <input
                   type="text"
                   value={displayName.toLowerCase() + "s"}
                   disabled
-                  className="w-full px-3 py-2 bg-zinc-800/50 backdrop-blur-sm border border-zinc-800/50 rounded-md text-zinc-400"
+                  className="w-full px-3 py-2 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md text-stone-600 dark:text-zinc-400"
                 />
-                <p className="text-xs text-zinc-500 mt-2">Pluralized API ID</p>
+                <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">{t("contentTypes.create.apiIdPluralHint")}</p>
               </div>
             </div>
 
             {/* Color Selection */}
             <div>
-              <label className="block text-sm font-medium mb-3">Color</label>
+              <label className="block text-sm font-medium mb-3">{t("contentTypes.create.color")}</label>
               <div className="grid grid-cols-6 gap-3">
                 {availableColors.map((color) => (
                   <button
                     key={color.name}
                     onClick={() => setSelectedColor(color.name)}
                     className={`relative h-14 rounded-lg ${color.bg} ${color.border} border-2 transition-all hover:scale-105 ${
-                      selectedColor === color.name ? "ring-2 ring-zinc-100 ring-offset-2 ring-offset-zinc-950" : ""
+                      selectedColor === color.name ? "ring-2 ring-stone-400 ring-offset-2 ring-offset-stone-100 dark:ring-zinc-100 dark:ring-offset-zinc-950" : ""
                     }`}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient} to-transparent rounded-lg`} />
@@ -819,8 +843,8 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                       const SelectedIconCmp = CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.icon ?? Database;
                       return (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center">
-                            <SelectedIconCmp className="w-3.5 h-3.5 text-zinc-950" />
+                          <div className="w-6 h-6 bg-stone-900 dark:bg-zinc-100 rounded-full flex items-center justify-center">
+                            <SelectedIconCmp className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
                           </div>
                         </div>
                       );
@@ -832,7 +856,7 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
 
             {/* Icon Selection */}
             <div>
-              <label className="block text-sm font-medium mb-3">Icon</label>
+              <label className="block text-sm font-medium mb-3">{t("contentTypes.create.icon")}</label>
               <div className="grid grid-cols-10 gap-1.5">
                 {CT_ICON_OPTIONS.map(({ id, icon: IconCmp, label }) => {
                   const colorMeta = availableColors.find(c => c.name === selectedColor);
@@ -845,12 +869,12 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                       onClick={() => setSelectedIcon(id)}
                       className={`group relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
                         isSelected
-                          ? `${colorMeta?.bg ?? 'bg-zinc-800'} ${colorMeta?.border ?? 'border-zinc-600'} border-2 shadow-sm`
-                          : 'border-zinc-800/50 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/60'
+                          ? `${colorMeta?.bg ?? 'bg-stone-200 dark:bg-zinc-800'} ${colorMeta?.border ?? 'border-stone-400 dark:border-zinc-600'} border-2 shadow-sm`
+                          : 'border-stone-200/85 dark:border-zinc-800/50 bg-stone-50/92 dark:bg-zinc-900/40 hover:border-stone-400 dark:hover:border-zinc-700 hover:bg-stone-300 dark:hover:bg-zinc-800/60'
                       }`}
                     >
-                      <IconCmp className={`w-5 h-5 ${isSelected ? (colorMeta?.icon ?? 'text-zinc-100') : 'text-zinc-400 group-hover:text-zinc-200'}`} />
-                      <span className="text-[9px] text-zinc-500 group-hover:text-zinc-400 truncate w-full text-center leading-tight">{label}</span>
+                      <IconCmp className={`w-5 h-5 ${isSelected ? (colorMeta?.icon ?? 'text-stone-900 dark:text-zinc-100') : 'text-stone-600 dark:text-zinc-400 group-hover:text-stone-800 dark:text-zinc-200'}`} />
+                      <span className="text-[9px] text-stone-500 dark:text-zinc-500 group-hover:text-stone-600 dark:text-zinc-400 truncate w-full text-center leading-tight">{label}</span>
                     </button>
                   );
                 })}
@@ -859,28 +883,28 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
 
             {/* Type Selection */}
             <div>
-              <label className="block text-sm font-medium mb-3">Type</label>
+              <label className="block text-sm font-medium mb-3">{t("contentTypes.create.type")}</label>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setSelectedType("collection")}
                   className={`p-4 rounded-lg border-2 text-left transition-colors ${
                     selectedType === "collection"
-                      ? "border-zinc-100 bg-zinc-800/50 backdrop-blur-sm"
-                      : "border-zinc-800/50 hover:border-zinc-700/50 bg-zinc-900/30 backdrop-blur-sm"
+                      ? "border-stone-300 dark:border-zinc-100 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm"
+                      : "border-stone-200/85 dark:border-zinc-800/50 hover:border-stone-400 dark:hover:border-zinc-700/50 bg-stone-50/85 dark:bg-zinc-900/30 backdrop-blur-sm"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                      selectedType === "collection" ? "border-zinc-100" : "border-zinc-600"
+                      selectedType === "collection" ? "border-stone-300 dark:border-zinc-100" : "border-stone-400 dark:border-zinc-600"
                     }`}>
                       {selectedType === "collection" && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-zinc-100" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-stone-900 dark:bg-zinc-100" />
                       )}
                     </div>
                     <div>
-                      <h4 className="font-medium mb-1">Collection Type</h4>
-                      <p className="text-sm text-zinc-400">
-                        Best for multiple instances like articles, products, comments, etc.
+                      <h4 className="font-medium mb-1">{t("contentTypes.create.collectionType")}</h4>
+                      <p className="text-sm text-stone-600 dark:text-zinc-400">
+                        {t("contentTypes.create.collectionDesc")}
                       </p>
                     </div>
                   </div>
@@ -890,22 +914,22 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                   onClick={() => setSelectedType("single")}
                   className={`p-4 rounded-lg border-2 text-left transition-colors ${
                     selectedType === "single"
-                      ? "border-zinc-100 bg-zinc-800/50 backdrop-blur-sm"
-                      : "border-zinc-800/50 hover:border-zinc-700/50 bg-zinc-900/30 backdrop-blur-sm"
+                      ? "border-stone-300 dark:border-zinc-100 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm"
+                      : "border-stone-200/85 dark:border-zinc-800/50 hover:border-stone-400 dark:hover:border-zinc-700/50 bg-stone-50/85 dark:bg-zinc-900/30 backdrop-blur-sm"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                      selectedType === "single" ? "border-zinc-100" : "border-zinc-600"
+                      selectedType === "single" ? "border-stone-300 dark:border-zinc-100" : "border-stone-400 dark:border-zinc-600"
                     }`}>
                       {selectedType === "single" && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-zinc-100" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-stone-900 dark:bg-zinc-100" />
                       )}
                     </div>
                     <div>
-                      <h4 className="font-medium mb-1">Single Type</h4>
-                      <p className="text-sm text-zinc-400">
-                        Best for single instance like about us, homepage, etc.
+                      <h4 className="font-medium mb-1">{t("contentTypes.create.singleType")}</h4>
+                      <p className="text-sm text-stone-600 dark:text-zinc-400">
+                        {t("contentTypes.create.singleDesc")}
                       </p>
                     </div>
                   </div>
@@ -916,12 +940,12 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800/50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors"
+            className="px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
           >
-            Cancel
+            {t("contentTypes.create.cancel")}
           </button>
           <button
             type="button"
@@ -946,9 +970,9 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
               );
               onClose();
             }}
-            className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Continue
+            {t("contentTypes.create.continue")}
           </button>
         </div>
       </div>

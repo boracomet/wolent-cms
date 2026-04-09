@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useConfirm } from "./ConfirmDialog";
 import {
   Upload,
   Search,
@@ -29,7 +30,7 @@ import {
   Settings,
 } from "lucide-react";
 import type { FolderItem, MediaFile } from "../data/mediaLibraryData";
-import { api } from "../api/client";
+import { api, ApiClientError } from "../api/client";
 import {
   accentPickerSolidDots,
   cmsColorSwatches,
@@ -68,16 +69,16 @@ function MediaLibraryAccentPicker({
     <div className={`flex flex-wrap ${gap}`} role="group" aria-label="Accent color">
       <button
         type="button"
-        title="Automatic"
+        title="Automatic (palette by folder)"
         onClick={() => onChange(undefined)}
         className={`flex ${btn} shrink-0 items-center justify-center rounded-full border-2 transition-transform hover:scale-105 ${
           value === undefined
-            ? "border-zinc-100 ring-2 ring-cyan-500/35"
-            : "border-zinc-600 bg-zinc-900/80"
+            ? "border-white ring-2 ring-white/40"
+            : "border-stone-300/82 dark:border-zinc-700/80 bg-white/78 dark:bg-zinc-900/50"
         }`}
       >
         <span
-          className={`${dot} rounded-full bg-gradient-to-br from-zinc-300 via-zinc-500 to-zinc-700 ring-1 ring-inset ring-white/20 shadow-sm shadow-black/50`}
+          className={`${dot} rounded-full bg-stone-400 dark:bg-zinc-500 ring-1 ring-inset ring-white/25 shadow-sm shadow-black/40`}
         />
       </button>
       {cmsColorSwatches.map((s) => (
@@ -87,7 +88,7 @@ function MediaLibraryAccentPicker({
           title={s.name}
           onClick={() => onChange(s.name)}
           className={`flex ${btn} shrink-0 items-center justify-center rounded-full border-2 transition-transform hover:scale-105 ${
-            value === s.name ? "border-white ring-2 ring-white/40" : "border-zinc-700/80 bg-zinc-900/50"
+            value === s.name ? "border-white ring-2 ring-white/40" : "border-stone-300/82 dark:border-zinc-700/80 bg-white/78 dark:bg-zinc-900/50"
           }`}
         >
           <span className={`${dot} rounded-full ${accentPickerSolidDots[s.name]}`} />
@@ -263,6 +264,7 @@ function resolutionLabel(file: MediaFile): string {
 }
 
 export function MediaLibrary() {
+  const confirmDialog = useConfirm();
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -320,6 +322,7 @@ export function MediaLibrary() {
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [createFolderError, setCreateFolderError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -367,7 +370,13 @@ export function MediaLibrary() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selectedFiles.size} files?`)) return;
+    const ok = await confirmDialog({
+      title: "Toplu Dosya Silme",
+      message: `${selectedFiles.size} dosyayı silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+      confirmLabel: "Evet, Sil",
+      variant: "danger",
+    });
+    if (!ok) return;
     const ids = Array.from(selectedFiles);
     const results = await Promise.allSettled(ids.map(id => api.media.deleteFile(id)));
     const failed = results.filter(r => r.status === 'rejected').length;
@@ -424,7 +433,13 @@ export function MediaLibrary() {
   const handleDeleteFileFromMenu = async (fileId: string) => {
     const file = media.find((f) => f.id === fileId);
     if (!file) return;
-    if (confirm(`Delete "${file.name}"?`)) {
+    const ok = await confirmDialog({
+      title: "Dosya Sil",
+      message: `"${file.name}" dosyasını silmek istediğine emin misin?`,
+      confirmLabel: "Evet, Sil",
+      variant: "danger",
+    });
+    if (ok) {
       try {
         await api.media.deleteFile(fileId);
       } catch { /* ignore */ }
@@ -441,6 +456,7 @@ export function MediaLibrary() {
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
+    setCreateFolderError(null);
     try {
       const result = await api.media.createFolder({
         name: newFolderName.trim(),
@@ -458,9 +474,16 @@ export function MediaLibrary() {
       setFolders(prev => [...prev, newFolder]);
       setNewFolderName("");
       setNewFolderAccent(undefined);
+      setCreateFolderError(null);
       setShowCreateFolderModal(false);
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Failed to create folder.');
+      const msg =
+        err instanceof ApiClientError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Failed to create folder.";
+      setCreateFolderError(msg);
     }
   };
 
@@ -653,11 +676,17 @@ export function MediaLibrary() {
     const filesInFolder = media.filter((f) => f.folderId === folderId).length;
     const subFolders = folders.filter((f) => f.parentId === folderId).length;
 
-    const message = filesInFolder > 0 || subFolders > 0
-      ? `Delete "${folderToDelete.name}"? This will delete ${filesInFolder} file(s) and ${subFolders} subfolder(s).`
-      : `Delete "${folderToDelete.name}"?`;
+    const detail = filesInFolder > 0 || subFolders > 0
+      ? `"${folderToDelete.name}" klasörünü silmek istediğine emin misin? İçindeki ${filesInFolder} dosya ve ${subFolders} alt klasör de silinecek.`
+      : `"${folderToDelete.name}" klasörünü silmek istediğine emin misin?`;
 
-    if (!confirm(message)) return;
+    const ok = await confirmDialog({
+      title: "Klasör Sil",
+      message: detail,
+      confirmLabel: "Evet, Sil",
+      variant: "danger",
+    });
+    if (!ok) return;
 
     try {
       await api.media.deleteFolder(folderId);
@@ -734,7 +763,7 @@ export function MediaLibrary() {
             className={`flex items-center gap-1.5 px-3 py-2 rounded-md transition-colors border ${
               isActive
                 ? `${folderAccent.bg} ${folderAccent.border} ${folderAccent.icon}`
-                : "border-transparent hover:bg-zinc-800/50 text-zinc-300"
+                : "border-transparent hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 text-stone-700 dark:text-zinc-300"
             } ${treeFolderRowDropClass(folder.id, dropTargetKey)}`}
             style={{ paddingLeft: `${level * 16 + 12}px` }}
             {...bindFolderDropHandlers(folder.id)}
@@ -747,7 +776,7 @@ export function MediaLibrary() {
                   e.stopPropagation();
                   toggleFolderExpansion(folder.id);
                 }}
-                className="shrink-0 p-0.5 hover:bg-zinc-700/50 rounded"
+                className="shrink-0 p-0.5 hover:bg-stone-300/85 active:bg-stone-400/70 dark:hover:bg-zinc-700/55 dark:active:bg-zinc-600/45 rounded"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4" />
@@ -778,7 +807,7 @@ export function MediaLibrary() {
               }}
               onDragEnd={() => setDropTargetKey(null)}
               onClick={(e) => e.stopPropagation()}
-              className="shrink-0 touch-none cursor-grab rounded p-0.5 text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400 active:cursor-grabbing outline-none focus-visible:ring-1 focus-visible:ring-zinc-500"
+              className="shrink-0 touch-none cursor-grab rounded p-0.5 text-stone-600 dark:text-zinc-600 hover:bg-stone-300 dark:hover:bg-zinc-800/60 hover:text-stone-600 dark:text-zinc-400 active:cursor-grabbing outline-none focus-visible:ring-1 focus-visible:ring-zinc-500"
             >
               <GripVertical className="w-3.5 h-3.5 pointer-events-none" />
             </div>
@@ -794,11 +823,11 @@ export function MediaLibrary() {
                 <Folder className={`h-4 w-4 shrink-0 ${folderAccent.icon}`} />
               )}
               <span
-                className={`flex-1 truncate text-sm ${isActive ? "text-zinc-100" : "text-zinc-300"}`}
+                className={`flex-1 truncate text-sm ${isActive ? "text-stone-900 dark:text-zinc-100" : "text-stone-700 dark:text-zinc-300"}`}
               >
                 {folder.name}
               </span>
-              <span className="shrink-0 text-xs text-zinc-500">{fileCount}</span>
+              <span className="shrink-0 text-xs text-stone-500 dark:text-zinc-500">{fileCount}</span>
             </button>
           </div>
           {isExpanded && renderFolderTree(folder.id, level + 1)}
@@ -821,11 +850,11 @@ export function MediaLibrary() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold mb-2">Media Library</h1>
-            <p className="text-zinc-400">{filteredMedia.length} files in current folder</p>
+            <p className="text-stone-600 dark:text-zinc-400">{filteredMedia.length} files in current folder</p>
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Upload Files</span>
@@ -836,24 +865,22 @@ export function MediaLibrary() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Sidebar - Folder Tree */}
           <div className="lg:col-span-3 min-w-0">
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 lg:sticky lg:top-6">
+            <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-4 lg:sticky lg:top-6">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">
                 <h3 className="font-semibold text-sm">Folders</h3>
-                  <p className="text-[10px] leading-snug text-zinc-500 mt-1">
-                    Klasör sürüklerken: satırın üstü veya altı = sıra · ortası = içine taşı
-                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setNewFolderAccent(undefined);
+                    setCreateFolderError(null);
                     setShowCreateFolderModal(true);
                   }}
-                  className="p-1.5 hover:bg-zinc-800/50 rounded transition-colors shrink-0"
+                  className="p-1.5 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-colors shrink-0"
                   title="Create folder"
                 >
-                  <FolderPlus className="w-4 h-4 text-zinc-400" />
+                  <FolderPlus className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                 </button>
               </div>
 
@@ -866,7 +893,7 @@ export function MediaLibrary() {
                 className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors mb-2 ${
                   currentFolderId === null
                     ? "bg-blue-500/10 text-blue-400"
-                    : "hover:bg-zinc-800/50 text-zinc-300"
+                    : "hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 text-stone-700 dark:text-zinc-300"
                 } ${
                   dropTargetKey === "root"
                     ? "ring-2 ring-blue-500/70 ring-offset-2 ring-offset-zinc-950"
@@ -875,7 +902,7 @@ export function MediaLibrary() {
               >
                 <Home className="w-4 h-4" />
                 <span className="text-sm flex-1">All Files</span>
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-stone-500 dark:text-zinc-500">
                   {media.filter((f) => f.folderId === null).length}
                 </span>
               </div>
@@ -954,7 +981,7 @@ export function MediaLibrary() {
               }}
             >
             {/* Breadcrumb */}
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 mb-6">
+            <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-2 text-sm">
                 <button
                   onClick={() => setCurrentFolderId(null)}
@@ -964,7 +991,7 @@ export function MediaLibrary() {
                 </button>
                 {getBreadcrumbs().map((folder, index) => (
                   <div key={folder.id} className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-zinc-500" />
+                    <ChevronRight className="w-4 h-4 text-stone-500 dark:text-zinc-500" />
                     <button
                       onClick={() => setCurrentFolderId(folder.id)}
                       className="hover:text-blue-400 transition-colors"
@@ -977,43 +1004,43 @@ export function MediaLibrary() {
             </div>
 
             {/* Toolbar */}
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 mb-6">
+            <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-4">
                 {/* Select All Checkbox */}
                 <button
                   onClick={toggleSelectAll}
-                  className="p-2 hover:bg-zinc-800/50 rounded transition-colors"
+                  className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-colors"
                   title="Select all"
                 >
                   {selectedFiles.size === filteredMedia.length &&
                   filteredMedia.length > 0 ? (
                     <CheckSquare className="w-5 h-5 text-blue-400" />
                   ) : (
-                    <Square className="w-5 h-5 text-zinc-400" />
+                    <Square className="w-5 h-5 text-stone-600 dark:text-zinc-400" />
                   )}
                 </button>
 
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-600 dark:text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Search files..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                    className="w-full pl-10 pr-4 py-2 bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
                   />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-md hover:bg-zinc-700/70 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm border border-stone-300/75 dark:border-zinc-700/50 rounded-md hover:bg-stone-300 active:bg-stone-400/85 dark:hover:bg-zinc-700/75 dark:active:bg-zinc-600/65 transition-colors">
                   <Filter className="w-4 h-4" />
                   Filters
                 </button>
-                <div className="flex items-center gap-1 bg-zinc-800/70 backdrop-blur-sm rounded-md p-1">
+                <div className="flex items-center gap-1 bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm rounded-md p-1">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-2 rounded transition-colors ${
                       viewMode === "grid"
-                        ? "bg-zinc-700/70"
-                        : "hover:bg-zinc-700/50"
+                        ? "bg-stone-300 dark:bg-zinc-700/70"
+                        : "hover:bg-stone-300/85 active:bg-stone-400/70 dark:hover:bg-zinc-700/55 dark:active:bg-zinc-600/45"
                     }`}
                   >
                     <Grid3x3 className="w-4 h-4" />
@@ -1022,8 +1049,8 @@ export function MediaLibrary() {
                     onClick={() => setViewMode("list")}
                     className={`p-2 rounded transition-colors ${
                       viewMode === "list"
-                        ? "bg-zinc-700/70"
-                        : "hover:bg-zinc-700/50"
+                        ? "bg-stone-300 dark:bg-zinc-700/70"
+                        : "hover:bg-stone-300/85 active:bg-stone-400/70 dark:hover:bg-zinc-700/55 dark:active:bg-zinc-600/45"
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -1044,26 +1071,26 @@ export function MediaLibrary() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleBulkDownload}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white/20 rounded-md transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     <span className="hidden sm:inline">Download</span>
                   </button>
                   <button
                     onClick={handleCopyURLs}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white/20 rounded-md transition-colors"
                   >
                     <Link className="w-4 h-4" />
                     <span className="hidden sm:inline">Copy URLs</span>
                   </button>
                   <button
                     onClick={() => setShowMoveModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white/20 rounded-md transition-colors"
                   >
                     <Folder className="w-4 h-4" />
                     <span className="hidden sm:inline">Move to</span>
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white/20 rounded-md transition-colors">
                     <Tag className="w-4 h-4" />
                     <span className="hidden sm:inline">Add Tags</span>
                   </button>
@@ -1076,7 +1103,7 @@ export function MediaLibrary() {
                   </button>
                   <button
                     onClick={() => setSelectedFiles(new Set())}
-                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                    className="p-2 hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white/10 rounded transition-colors"
                     title="Clear selection"
                   >
                     <X className="w-4 h-4" />
@@ -1086,7 +1113,7 @@ export function MediaLibrary() {
             )}
 
             {mediaLoading && (
-              <div className="flex items-center justify-center py-12 text-zinc-500 text-sm gap-2">
+              <div className="flex items-center justify-center py-12 text-stone-500 dark:text-zinc-500 text-sm gap-2">
                 <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                 Loading media...
               </div>
@@ -1124,10 +1151,10 @@ export function MediaLibrary() {
                         if (!isRenaming) setCurrentFolderId(folder.id);
                       }}
                       {...bindFolderDropHandlers(folder.id)}
-                      className={`bg-zinc-900/50 backdrop-blur-xl border rounded-lg p-4 transition-colors cursor-pointer group relative ${
+                      className={`bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border rounded-lg p-4 transition-colors cursor-pointer group relative ${
                         dropTargetKey === `folder:${folder.id}`
                           ? "border-blue-500/60 ring-2 ring-blue-500/50"
-                          : "border-zinc-800/50 hover:border-zinc-700/50"
+                          : "border-stone-200/85 dark:border-zinc-800/50 hover:border-stone-400 dark:hover:border-zinc-700/50"
                       } ${!isRenaming ? "active:cursor-grabbing" : ""}`}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -1159,7 +1186,7 @@ export function MediaLibrary() {
                               prev === folder.id ? null : folder.id
                             );
                           }}
-                          className="relative z-10 p-1.5 rounded-md hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 transition-colors"
+                          className="relative z-10 p-1.5 rounded-md hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 text-stone-600 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200 transition-colors"
                           aria-haspopup="menu"
                           aria-expanded={contextMenuFolder === folder.id}
                         >
@@ -1179,15 +1206,15 @@ export function MediaLibrary() {
                               setRenameValue("");
                             }
                           }}
-                          className="w-full px-2 py-1 bg-zinc-950 border border-zinc-700 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1 bg-stone-100 dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoFocus
                         />
                       ) : (
                         <p className="font-medium truncate mb-1">{folder.name}</p>
                       )}
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-stone-500 dark:text-zinc-500">
                         {itemCount} item{itemCount !== 1 ? "s" : ""}
-                        <span className="text-zinc-600"> · </span>
+                        <span className="text-stone-600 dark:text-zinc-600"> · </span>
                         {formatFolderTotalBytes(totalBytes)}
                       </p>
                     </div>
@@ -1204,7 +1231,7 @@ export function MediaLibrary() {
                   return (
                   <div
                     key={file.id}
-                    className={`group relative overflow-hidden rounded-lg border bg-zinc-900/50 backdrop-blur-xl transition-colors ${
+                    className={`group relative overflow-hidden rounded-lg border bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl transition-colors ${
                       selectedFiles.has(file.id)
                         ? "border-blue-500 ring-2 ring-blue-500/20"
                         : `${fileAccent.border} hover:opacity-95`
@@ -1217,12 +1244,12 @@ export function MediaLibrary() {
                           e.stopPropagation();
                           toggleFileSelection(file.id);
                         }}
-                        className="rounded bg-zinc-900/80 p-1 backdrop-blur-sm transition-colors hover:bg-zinc-800"
+                        className="rounded bg-white/90 dark:bg-zinc-900/80 p-1 backdrop-blur-sm transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800"
                       >
                         {selectedFiles.has(file.id) ? (
                           <CheckSquare className="h-5 w-5 text-blue-400" />
                         ) : (
-                          <Square className="h-5 w-5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                          <Square className="h-5 w-5 text-stone-600 dark:text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
                         )}
                       </button>
                     </div>
@@ -1252,7 +1279,7 @@ export function MediaLibrary() {
                             prev === file.id ? null : file.id
                           );
                         }}
-                        className="rounded bg-zinc-900/80 p-1.5 backdrop-blur-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+                        className="rounded bg-white/90 dark:bg-zinc-900/80 p-1.5 backdrop-blur-sm text-stone-600 dark:text-zinc-400 transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800 hover:text-stone-800 dark:hover:text-zinc-200"
                         aria-haspopup="menu"
                         aria-expanded={contextMenuFile === file.id}
                       >
@@ -1279,7 +1306,7 @@ export function MediaLibrary() {
                     >
                     <div
                       onClick={() => setSelectedFile(file)}
-                        className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden bg-zinc-800"
+                        className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden bg-stone-200 dark:bg-zinc-800"
                     >
                       {file.thumbnail ? (
                         <img
@@ -1289,20 +1316,20 @@ export function MediaLibrary() {
                             draggable={false}
                         />
                       ) : (
-                          <FileText className="h-12 w-12 text-zinc-600" />
+                          <FileText className="h-12 w-12 text-stone-600 dark:text-zinc-600" />
                       )}
                         <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
                             type="button"
                           onClick={(e) => e.stopPropagation()}
-                            className="rounded bg-zinc-900 p-2 transition-colors hover:bg-zinc-800"
+                            className="rounded bg-white dark:bg-zinc-900 p-2 transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800"
                         >
                             <Download className="h-4 w-4" />
                         </button>
                         <button
                             type="button"
                           onClick={(e) => e.stopPropagation()}
-                            className="rounded bg-zinc-900 p-2 transition-colors hover:bg-zinc-800"
+                            className="rounded bg-white dark:bg-zinc-900 p-2 transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800"
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>
@@ -1310,7 +1337,7 @@ export function MediaLibrary() {
                     </div>
                       <div onClick={() => setSelectedFile(file)} className="cursor-pointer p-3">
                         <p className="mb-1 truncate text-sm font-medium">{file.name}</p>
-                      <p className="text-xs text-zinc-500">{file.size}</p>
+                      <p className="text-xs text-stone-500 dark:text-zinc-500">{file.size}</p>
                     </div>
                   </div>
                   </div>
@@ -1318,20 +1345,20 @@ export function MediaLibrary() {
                 })}
               </div>
             ) : (
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-x-auto">
+              <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg overflow-x-auto">
                 <table className="w-full min-w-[640px]">
-                  <thead className="border-b border-zinc-800/50">
+                  <thead className="border-b border-stone-200/85 dark:border-zinc-800/50">
                     <tr>
                       <th className="px-3 py-3 w-10 shrink-0"></th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Name</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-20">Type</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-24">Size</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Uploaded By</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Date</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider">Name</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider w-20">Type</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider w-24">Size</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Uploaded By</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Date</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider w-28 whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800">
+                  <tbody className="divide-y divide-stone-200 dark:divide-zinc-800">
                     {filteredMedia.map((file) => {
                       const rowAccent = resolveMediaAccent(file);
                       return (
@@ -1351,7 +1378,7 @@ export function MediaLibrary() {
                           e.dataTransfer.effectAllowed = "move";
                         }}
                         onDragEnd={() => setDropTargetKey(null)}
-                        className={`cursor-grab transition-colors active:cursor-grabbing hover:bg-zinc-800/30 ${
+                        className={`cursor-grab transition-colors active:cursor-grabbing hover:bg-stone-300 dark:hover:bg-zinc-800/30 ${
                           selectedFiles.has(file.id)
                             ? "bg-blue-500/10"
                             : rowAccent.bg
@@ -1360,18 +1387,18 @@ export function MediaLibrary() {
                         <td className="px-3 py-4">
                           <button
                             onClick={() => toggleFileSelection(file.id)}
-                            className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                            className="p-1 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors"
                           >
                             {selectedFiles.has(file.id) ? (
                               <CheckSquare className="w-5 h-5 text-blue-400" />
                             ) : (
-                              <Square className="w-5 h-5 text-zinc-400" />
+                              <Square className="w-5 h-5 text-stone-600 dark:text-zinc-400" />
                             )}
                           </button>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 bg-zinc-800 rounded flex items-center justify-center flex-shrink-0">
+                            <div className="w-9 h-9 bg-stone-200 dark:bg-zinc-800 rounded flex items-center justify-center flex-shrink-0">
                               {file.thumbnail ? (
                                 <img
                                   src={file.thumbnail}
@@ -1379,7 +1406,7 @@ export function MediaLibrary() {
                                   className="w-full h-full object-cover rounded"
                                 />
                               ) : (
-                                <FileText className="w-4 h-4 text-zinc-400" />
+                                <FileText className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                               )}
                             </div>
                             <span className="font-medium truncate text-sm">
@@ -1387,23 +1414,23 @@ export function MediaLibrary() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-sm text-zinc-400 capitalize whitespace-nowrap">
+                        <td className="px-3 py-3 text-sm text-stone-600 dark:text-zinc-400 capitalize whitespace-nowrap">
                           {file.type}
                         </td>
-                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap">{file.size}</td>
-                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap truncate max-w-[7rem]">
+                        <td className="px-3 py-3 text-sm text-stone-600 dark:text-zinc-400 whitespace-nowrap">{file.size}</td>
+                        <td className="px-3 py-3 text-sm text-stone-600 dark:text-zinc-400 whitespace-nowrap truncate max-w-[7rem]">
                           {file.uploadedBy}
                         </td>
-                        <td className="px-3 py-3 text-sm text-zinc-400 whitespace-nowrap">
+                        <td className="px-3 py-3 text-sm text-stone-600 dark:text-zinc-400 whitespace-nowrap">
                           {file.uploadedAt}
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-1">
-                            <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
-                              <Download className="w-4 h-4 text-zinc-400" />
+                            <button className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors">
+                              <Download className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                             </button>
-                            <button className="p-2 hover:bg-zinc-800 rounded transition-colors">
-                              <Trash2 className="w-4 h-4 text-zinc-400" />
+                            <button className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors">
+                              <Trash2 className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                             </button>
                             <button
                               type="button"
@@ -1430,11 +1457,11 @@ export function MediaLibrary() {
                                   prev === file.id ? null : file.id
                                 );
                               }}
-                              className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                              className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors"
                               aria-haspopup="menu"
                               aria-expanded={contextMenuFile === file.id}
                             >
-                              <MoreVertical className="w-4 h-4 text-zinc-400" />
+                              <MoreVertical className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                             </button>
                           </div>
                         </td>
@@ -1452,12 +1479,12 @@ export function MediaLibrary() {
         {/* File Details Modal */}
         {selectedFile && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-              <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+            <div className="bg-white/94 dark:bg-zinc-900/90 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+              <div className="flex items-center justify-between p-6 border-b border-stone-200/85 dark:border-zinc-800/50">
                 <h2 className="text-xl font-semibold">File Details</h2>
                 <button
                   onClick={() => setSelectedFile(null)}
-                  className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
+                  className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1467,7 +1494,7 @@ export function MediaLibrary() {
                 <div className="grid grid-cols-2 gap-6">
                   {/* Preview */}
                   <div>
-                    <div className="aspect-square bg-zinc-800/70 backdrop-blur-sm rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="aspect-square bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm rounded-lg flex items-center justify-center overflow-hidden">
                       {selectedFile.thumbnail ? (
                         <img
                           src={selectedFile.thumbnail}
@@ -1475,7 +1502,7 @@ export function MediaLibrary() {
                           className="w-full h-full object-contain"
                         />
                       ) : (
-                        <FileText className="w-24 h-24 text-zinc-600" />
+                        <FileText className="w-24 h-24 text-stone-600 dark:text-zinc-600" />
                       )}
                     </div>
                   </div>
@@ -1483,7 +1510,7 @@ export function MediaLibrary() {
                   {/* Details */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         File Name
                       </label>
                       <input
@@ -1500,42 +1527,42 @@ export function MediaLibrary() {
                             api.media.updateFile(selectedFile.id, { name }).catch(() => {});
                           }
                         }}
-                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                        className="w-full px-3 py-2 bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Type
                       </label>
-                      <p className="text-zinc-100 capitalize">
+                      <p className="text-stone-900 dark:text-zinc-100 capitalize">
                         {selectedFile.type}
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Format
                       </label>
-                      <p className="text-zinc-100">
+                      <p className="text-stone-900 dark:text-zinc-100">
                         {formatMimeTypeLabel(selectedFile.mimeType)}
                       </p>
-                      <p className="text-xs text-zinc-500 mt-0.5 font-mono">
+                      <p className="text-xs text-stone-500 dark:text-zinc-500 mt-0.5 font-mono">
                         {selectedFile.mimeType}
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Resolution
                       </label>
-                      <p className="text-zinc-100 font-mono text-sm">
+                      <p className="text-stone-900 dark:text-zinc-100 font-mono text-sm">
                         {resolutionLabel(selectedFile)}
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-2">
                         Accent color
                       </label>
                       <MediaLibraryAccentPicker
@@ -1545,7 +1572,7 @@ export function MediaLibrary() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Public URL
                       </label>
                       <div className="flex gap-2">
@@ -1554,7 +1581,7 @@ export function MediaLibrary() {
                           readOnly
                           value={selectedFile.url}
                           title={selectedFile.url}
-                          className="flex-1 min-w-0 px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-zinc-300 font-mono focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                          className="flex-1 min-w-0 px-3 py-2 bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-md text-xs text-stone-700 dark:text-zinc-300 font-mono focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
                         />
                         <button
                           type="button"
@@ -1563,7 +1590,7 @@ export function MediaLibrary() {
                             setUrlCopied(true);
                             window.setTimeout(() => setUrlCopied(false), 2000);
                           }}
-                          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md hover:bg-zinc-700 text-xs text-zinc-200 transition-colors"
+                          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-stone-200 dark:bg-zinc-800 border border-stone-300 dark:border-zinc-700 rounded-md hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-xs text-stone-800 dark:text-zinc-200 transition-colors"
                         >
                           {urlCopied ? (
                             <>
@@ -1590,31 +1617,31 @@ export function MediaLibrary() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Size
                       </label>
-                      <p className="text-zinc-100">{selectedFile.size}</p>
+                      <p className="text-stone-900 dark:text-zinc-100">{selectedFile.size}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Uploaded By
                       </label>
-                      <p className="text-zinc-100">{selectedFile.uploadedBy}</p>
+                      <p className="text-stone-900 dark:text-zinc-100">{selectedFile.uploadedBy}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-1">
                         Uploaded At
                       </label>
-                      <p className="text-zinc-100">{selectedFile.uploadedAt}</p>
+                      <p className="text-stone-900 dark:text-zinc-100">{selectedFile.uploadedAt}</p>
                     </div>
 
                     <div className="pt-4 flex items-center gap-3">
                       <a
                         href={selectedFile.url}
                         download={selectedFile.name}
-                        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md hover:bg-zinc-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-stone-200 dark:bg-zinc-800 border border-stone-300 dark:border-zinc-700 rounded-md hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 transition-colors"
                       >
                         <Download className="w-4 h-4" />
                         Download
@@ -1637,8 +1664,8 @@ export function MediaLibrary() {
         {/* Upload Modal */}
         {showUploadModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/50 rounded-lg w-full max-w-2xl">
-              <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+            <div className="bg-white/94 dark:bg-zinc-900/90 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg w-full max-w-2xl">
+              <div className="flex items-center justify-between p-6 border-b border-stone-200/85 dark:border-zinc-800/50">
                 <h2 className="text-xl font-semibold">Upload Files</h2>
                 <button
                   type="button"
@@ -1646,7 +1673,7 @@ export function MediaLibrary() {
                     setShowUploadModal(false);
                     setUploadAccent(undefined);
                   }}
-                  className="p-2 hover:bg-zinc-800/50 backdrop-blur-sm rounded transition-colors"
+                  className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 backdrop-blur-sm rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1654,7 +1681,7 @@ export function MediaLibrary() {
 
               <div className="p-6 space-y-4">
                 <div>
-                  <p className="text-sm text-zinc-400 mb-2">Accent for new files</p>
+                  <p className="text-sm text-stone-600 dark:text-zinc-400 mb-2">Accent for new files</p>
                   <MediaLibraryAccentPicker
                     value={uploadAccent}
                     onChange={setUploadAccent}
@@ -1702,20 +1729,20 @@ export function MediaLibrary() {
                       setUploadAccent(undefined);
                     }
                   }}
-                  className="border-2 border-dashed border-zinc-800/50 rounded-lg p-12 text-center hover:border-zinc-700/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-zinc-600"
+                  className="border-2 border-dashed border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-12 text-center hover:border-stone-400 dark:hover:border-zinc-700/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-stone-400 dark:focus-visible:ring-zinc-600"
                   onClick={() => uploadInputRef.current?.click()}
                 >
-                  <Upload className="w-12 h-12 text-zinc-400 mx-auto mb-4 pointer-events-none" />
+                  <Upload className="w-12 h-12 text-stone-600 dark:text-zinc-400 mx-auto mb-4 pointer-events-none" />
                   <h3 className="text-lg font-medium mb-2 pointer-events-none">
                     Drop files to upload
                   </h3>
-                  <p className="text-sm text-zinc-400 mb-4 pointer-events-none">
+                  <p className="text-sm text-stone-600 dark:text-zinc-400 mb-4 pointer-events-none">
                     or click to browse
                   </p>
-                  <span className="inline-flex px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md font-medium pointer-events-none">
+                  <span className="inline-flex px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md font-medium pointer-events-none">
                     Select Files
                   </span>
-                  <p className="text-xs text-zinc-500 mt-4 pointer-events-none">
+                  <p className="text-xs text-stone-500 dark:text-zinc-500 mt-4 pointer-events-none">
                     Supported formats: JPG, PNG, GIF, PDF, MP4 (Max 10MB)
                   </p>
                 </div>
@@ -1727,16 +1754,17 @@ export function MediaLibrary() {
         {/* Create Folder Modal */}
         {showCreateFolderModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+            <div className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg w-full max-w-md">
+              <div className="flex items-center justify-between p-6 border-b border-stone-200/85 dark:border-zinc-800/50">
                 <h2 className="text-xl font-semibold">Create New Folder</h2>
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateFolderModal(false);
                     setNewFolderAccent(undefined);
+                    setCreateFolderError(null);
                   }}
-                  className="p-2 hover:bg-zinc-800/50 rounded transition-colors"
+                  className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1750,11 +1778,19 @@ export function MediaLibrary() {
                   <input
                     type="text"
                     value={newFolderName}
-                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onChange={(e) => {
+                      setNewFolderName(e.target.value);
+                      setCreateFolderError(null);
+                    }}
                     placeholder="New Folder"
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                    className="w-full px-3 py-2 bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
                     autoFocus
                   />
+                  {createFolderError ? (
+                    <p className="mt-2 text-sm text-red-400" role="alert">
+                      {createFolderError}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="mb-6">
@@ -1773,15 +1809,16 @@ export function MediaLibrary() {
                     onClick={() => {
                       setShowCreateFolderModal(false);
                       setNewFolderAccent(undefined);
+                      setCreateFolderError(null);
                     }}
-                    className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors"
+                    className="px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleCreateFolder}
-                    className="px-6 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+                    className="px-6 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
                   >
                     Create Folder
                   </button>
@@ -1794,12 +1831,12 @@ export function MediaLibrary() {
         {/* Move to Folder Modal */}
         {showMoveModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+            <div className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg w-full max-w-md">
+              <div className="flex items-center justify-between p-6 border-b border-stone-200/85 dark:border-zinc-800/50">
                 <h2 className="text-xl font-semibold">Move to Folder</h2>
                 <button
                   onClick={() => setShowMoveModal(false)}
-                  className="p-2 hover:bg-zinc-800/50 rounded transition-colors"
+                  className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1809,16 +1846,16 @@ export function MediaLibrary() {
                 <div className="space-y-2 max-h-96 overflow-auto mb-6">
                   <button
                     onClick={() => handleMoveFiles(null)}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-lg hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-left"
                   >
-                    <Home className="w-5 h-5 text-zinc-400" />
+                    <Home className="w-5 h-5 text-stone-600 dark:text-zinc-400" />
                     <span>Root / All Files</span>
                   </button>
                   {folders.map((folder) => (
                     <button
                       key={folder.id}
                       onClick={() => handleMoveFiles(folder.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-lg hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-left"
                       style={{
                         paddingLeft: `${
                           (folders.filter((f) => f.id === folder.parentId)
@@ -1841,7 +1878,7 @@ export function MediaLibrary() {
                 <div className="flex items-center justify-end gap-3">
                   <button
                     onClick={() => setShowMoveModal(false)}
-                    className="px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors"
+                    className="px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1863,7 +1900,7 @@ export function MediaLibrary() {
               onClick={() => setContextMenuFolder(null)}
             />
             <div
-              className="fixed z-[210] w-60 rounded-lg border border-zinc-700/90 bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
+              className="fixed z-[210] w-60 rounded-lg border border-stone-300/85 dark:border-zinc-700/90 bg-stone-100 dark:bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
               style={{
                 top: `${contextMenuPosition.top}px`,
                 left: `${contextMenuPosition.left}px`,
@@ -1871,20 +1908,20 @@ export function MediaLibrary() {
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="border-b border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400">
+              <div className="border-b border-stone-200 dark:border-zinc-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-zinc-400">
                 Folder
               </div>
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => handleRenameFolder(contextMenuFolder)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-100 transition-colors hover:bg-zinc-800/90 hover:text-white"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-900 dark:text-zinc-100 transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800/90 hover:text-white"
               >
-                <Edit className="h-4 w-4 shrink-0 text-zinc-400" />
+                <Edit className="h-4 w-4 shrink-0 text-stone-600 dark:text-zinc-400" />
                 Rename
               </button>
-              <div className="border-t border-zinc-800 px-3 py-2">
-                <div className="mb-1.5 text-xs font-medium text-zinc-500">
+              <div className="border-t border-stone-200 dark:border-zinc-800 px-3 py-2">
+                <div className="mb-1.5 text-xs font-medium text-stone-500 dark:text-zinc-500">
                   Accent color
                 </div>
                 <MediaLibraryAccentPicker
@@ -1925,7 +1962,7 @@ export function MediaLibrary() {
               onClick={() => setContextMenuFile(null)}
             />
             <div
-              className="fixed z-[210] w-60 rounded-lg border border-zinc-700/90 bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
+              className="fixed z-[210] w-60 rounded-lg border border-stone-300/85 dark:border-zinc-700/90 bg-stone-100 dark:bg-zinc-950 py-1 shadow-2xl ring-1 ring-black/50"
               style={{
                 top: `${contextMenuPosition.top}px`,
                 left: `${contextMenuPosition.left}px`,
@@ -1933,7 +1970,7 @@ export function MediaLibrary() {
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="border-b border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400">
+              <div className="border-b border-stone-200 dark:border-zinc-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-zinc-400">
                 File
               </div>
               <button
@@ -1944,13 +1981,13 @@ export function MediaLibrary() {
                   if (f) setSelectedFile(f);
                   setContextMenuFile(null);
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-100 transition-colors hover:bg-zinc-800/90 hover:text-white"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-900 dark:text-zinc-100 transition-colors hover:bg-stone-300 dark:hover:bg-zinc-800/90 hover:text-white"
               >
-                <Settings className="h-4 w-4 shrink-0 text-zinc-400" />
+                <Settings className="h-4 w-4 shrink-0 text-stone-600 dark:text-zinc-400" />
                 File settings
               </button>
-              <div className="border-t border-zinc-800 px-3 py-2">
-                <div className="mb-1.5 text-xs font-medium text-zinc-500">
+              <div className="border-t border-stone-200 dark:border-zinc-800 px-3 py-2">
+                <div className="mb-1.5 text-xs font-medium text-stone-500 dark:text-zinc-500">
                   Accent color
                 </div>
                 <MediaLibraryAccentPicker

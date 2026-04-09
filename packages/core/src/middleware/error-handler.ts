@@ -1,4 +1,5 @@
 import type { FastifyError, FastifyRequest, FastifyReply } from 'fastify'
+import { PrismaClientKnownRequestError } from '@prisma/client'
 import { WolentError } from '@wolent/utils'
 import { ZodError } from 'zod'
 
@@ -34,6 +35,26 @@ export function errorHandler(error: any, req: any, reply: any): void {
       },
     })
     return
+  }
+
+  // Prisma unique / constraint violations
+  if (error instanceof PrismaClientKnownRequestError) {
+    if (error.code === 'P2002') {
+      const target = error.meta?.target
+      const targetStr = Array.isArray(target) ? target.join(', ') : String(target ?? '')
+      const folderPathConflict =
+        targetStr.includes('path') || targetStr.includes('tenantId')
+      void reply.status(409).send({
+        error: {
+          status: 409,
+          name: 'ConflictError',
+          message: folderPathConflict
+            ? 'A folder with this name already exists in this location.'
+            : 'This value already exists.',
+        },
+      })
+      return
+    }
   }
 
   // Fastify validation error (JSON schema)

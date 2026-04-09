@@ -130,11 +130,11 @@ export function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 lg:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold mb-2">{t("dashboard.title")}</h1>
-            <p className="text-zinc-400">{t("dashboard.welcome")}</p>
+            <p className="text-stone-600 dark:text-zinc-400">{t("dashboard.welcome")}</p>
           </div>
           <Link
             to="/content-types"
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">{t("dashboard.createContentType")}</span>
@@ -148,25 +148,25 @@ export function Dashboard() {
             <Link
               key={stat.nameKey}
               to={stat.href}
-              className={`bg-zinc-900/50 backdrop-blur-xl border ${colorClasses[stat.color].border} rounded-lg p-6 hover:border-zinc-700/50 transition-all hover:scale-[1.02] group relative overflow-hidden`}
+              className={`bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border ${colorClasses[stat.color].border} rounded-lg p-6 hover:border-stone-400 dark:hover:border-zinc-700/50 transition-all hover:scale-[1.02] group relative overflow-hidden`}
             >
               {/* Subtle gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-800/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-br from-stone-300/25 dark:from-zinc-800/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-12 h-12 rounded-lg bg-zinc-800/70 backdrop-blur-sm flex items-center justify-center group-hover:bg-zinc-700/70 transition-colors">
+                  <div className="w-12 h-12 rounded-lg bg-stone-200/95 dark:bg-zinc-800/70 backdrop-blur-sm flex items-center justify-center group-hover:bg-stone-300 dark:bg-zinc-700/70 transition-colors">
                     <stat.icon className={`w-6 h-6 ${colorClasses[stat.color].icon}`} />
                   </div>
                   <div className="text-3xl font-bold">{stat.value}</div>
                 </div>
-                <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                <p className="text-sm text-stone-600 dark:text-zinc-400 group-hover:text-stone-700 dark:text-zinc-300 transition-colors">
                   {t(stat.nameKey)}
                 </p>
                 
                 {/* Subtle indicator */}
-                <div className="mt-3 pt-3 border-t border-zinc-800/50">
-                  <span className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                <div className="mt-3 pt-3 border-t border-stone-200/85 dark:border-zinc-800/50">
+                  <span className="text-xs text-stone-500 dark:text-zinc-500 group-hover:text-stone-600 dark:text-zinc-400 transition-colors">
                     {t("dashboard.viewAll")}
                   </span>
                 </div>
@@ -176,27 +176,27 @@ export function Dashboard() {
         </div>
 
         {/* Recent Content */}
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg">
-          <div className="px-6 py-4 border-b border-zinc-800/50">
+        <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg">
+          <div className="px-6 py-4 border-b border-stone-200/85 dark:border-zinc-800/50">
             <h2 className="text-lg font-semibold">{t("dashboard.recentContent")}</h2>
           </div>
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-stone-200 dark:divide-zinc-800/50">
             {recentContent.length === 0 ? (
-              <div className="px-6 py-8 text-center text-zinc-500 text-sm">
+              <div className="px-6 py-8 text-center text-stone-500 dark:text-zinc-500 text-sm">
                 {t("dashboard.noRecentContent")}
               </div>
             ) : recentContent.map((item) => (
               <Link
                 key={item.id}
                 to={`/content/${item.typeApiId ?? item.type}/${item.id}`}
-                className="block px-6 py-4 hover:bg-zinc-800/50 transition-colors"
+                className="block px-6 py-4 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors"
               >
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
                   <div className="min-w-0">
                     <h3 className="font-medium mb-1">{item.title}</h3>
-                    <p className="text-sm text-zinc-400">{item.type}</p>
+                    <p className="text-sm text-stone-600 dark:text-zinc-400">{item.type}</p>
                   </div>
-                  <span className="text-sm text-zinc-500 shrink-0">{item.date}</span>
+                  <span className="text-sm text-stone-500 dark:text-zinc-500 shrink-0">{item.date}</span>
                 </div>
               </Link>
             ))}

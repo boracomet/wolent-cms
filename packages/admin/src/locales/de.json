@@ -1,4 +1,23 @@
 {
+  "common": {
+    "appShell": {
+      "loading": "Verbindung zur API…",
+      "apiDownTitle": "API nicht erreichbar",
+      "apiDownBody": "Stellen Sie sicher, dass das Backend läuft (z. B. auf localhost:3000).",
+      "retry": "Erneut versuchen"
+    },
+    "confirm": {
+      "defaultTitle": "Bestätigen",
+      "cancel": "Abbrechen",
+      "confirmDelete": "Löschen"
+    },
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "description": "Die gesuchte Seite existiert nicht oder wurde verschoben oder entfernt.",
+      "back": "Zurück",
+      "home": "Startseite"
+    }
+  },
   "layout": {
     "brand": {
       "title": "CMS",
@@ -19,11 +38,19 @@
       "auditLogs": "Audit-Protokoll",
       "settings": "Einstellungen",
       "logout": "Abmelden"
+    },
+    "theme": {
+      "useAuto": "Automatisch",
+      "useLight": "Helles Design",
+      "useDark": "Dunkles Design",
+      "switchToLight": "Zum hellen Design wechseln",
+      "switchToDark": "Zum dunklen Design wechseln",
+      "cycleA11y": "Thema wechseln: automatisch, hell, dunkel"
     }
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Öffentlicher Traffic und Sitzungen. Daten kommen von Ihrer Analytics-Ingest-API.",
+    "subtitle": "Öffentlicher Traffic und Sitzungen. Aktivieren Sie das Plugin „Native Analytics“, um Daten zu sammeln; Kennzahlen kommen von Ihrem Ingest-Endpunkt.",
     "disabledTitle": "Analytics ist aus",
     "disabledBody": "Aktivieren Sie das Plugin „Native analytics“ unter Plugins, um diese Ansicht und den Sidebar-Link anzuzeigen.",
     "goToPlugins": "Zu Plugins",
@@ -58,6 +85,49 @@
       "sun": "So"
     }
   },
+  "audit": {
+    "title": "Audit-Protokoll",
+    "subtitle": "Alle Aktionen in Ihrem CMS nachverfolgen.",
+    "filterPlaceholder": "Nach Aktion filtern (z. B. entry.create)",
+    "search": "Suchen",
+    "clear": "Zurücksetzen",
+    "loadError": "Audit-Protokoll konnte nicht geladen werden.",
+    "empty": "Noch keine Einträge im Audit-Protokoll.",
+    "exportPdf": "PDF exportieren",
+    "exportPdfBusy": "Wird vorbereitet…",
+    "exportPdfError": "Audit-Protokoll konnte nicht exportiert werden.",
+    "exportPdfEmpty": "Nichts zu exportieren.",
+    "exportPdfFilter": "Filter: {q}",
+    "exportPdfRecords": "{n} Einträge",
+    "exportPdfGenerated": "Erstellt",
+    "exportPdfTruncated": "Export auf die ersten {n} Einträge begrenzt.",
+    "pageOf": "Seite {page} von {totalPages} · {total} gesamt",
+    "col": {
+      "action": "Aktion",
+      "subject": "Objekt",
+      "user": "Benutzer",
+      "ip": "IP",
+      "date": "Datum"
+    },
+    "actions": {
+      "entry": {
+        "create": "Eintrag erstellt",
+        "update": "Eintrag aktualisiert",
+        "delete": "Eintrag gelöscht",
+        "publish": "Eintrag veröffentlicht",
+        "unpublish": "Eintrag zurückgezogen"
+      },
+      "media": {
+        "upload": "Medien hochgeladen",
+        "delete": "Medien gelöscht"
+      },
+      "contentType": {
+        "create": "Inhaltstyp erstellt",
+        "update": "Inhaltstyp aktualisiert",
+        "delete": "Inhaltstyp gelöscht"
+      }
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Willkommen zurück in Ihrem CMS",
@@ -89,11 +159,47 @@
       "integrations": "Integrationen",
       "backup": "Backup & Wiederherstellung"
     },
+    "i18nGemini": {
+      "autoTranslateTitle": "Auto-Übersetzung",
+      "pluginBadge": "Gemini AI",
+      "pluginTagline": "Gemini AI Translate Plugin",
+      "autoTranslateDescription": "Schlägt Übersetzungen vor, wenn Sie neue Sprachversionen anlegen. Nutzt Google Gemini, wenn das Plugin aktiviert ist und unter Plugins ein API-Schlüssel hinterlegt ist.",
+      "openPlugins": "In Plugins konfigurieren"
+    },
+    "menuBuilder": {
+      "title": "Menü-Builder",
+      "subtitle": "Navigationsmenü anpassen. Inhaltstypen einzeln hinzufügen und Sichtbarkeit pro Rolle festlegen.",
+      "hint": "Ziehen zum Sortieren. Symbole, Beschriftungen ändern und einstellen, welche Rollen jedes Element sehen können.",
+      "label": "Bezeichnung",
+      "path": "URL-Pfad",
+      "icon": "Symbol",
+      "visibleTo": "Sichtbar für Rollen",
+      "addContentType": "Inhaltstyp hinzufügen",
+      "addCustomItem": "Benutzerdefinierten Link hinzufügen",
+      "add": "Hinzufügen",
+      "save": "Menü speichern",
+      "saved": "Gespeichert!",
+      "badgeSystem": "System",
+      "badgeContentType": "Inhalt",
+      "badgeCustom": "Benutzerdefiniert",
+      "editRolesAria": "Rollen bearbeiten"
+    },
+    "integrations": {
+      "heading": "Integrationen",
+      "description": "Externe Dienste und Tools anbinden",
+      "bodyTitle": "Integrationen werden in Plugins verwaltet",
+      "bodyText": "Webhooks, S3, SMTP, Redis, n8n und mehr konfigurieren Sie auf der Plugins-Seite.",
+      "goToPlugins": "Zu Plugins"
+    },
     "backup": {
       "heading": "Backup & Wiederherstellung",
       "description": "JSON-Backup exportieren, selektiv importieren und letzte Snapshots verwalten. Zusätzliche Bestätigung vor diesem Bereich.",
       "mfaTitle": "Zum Fortfahren bestätigen",
       "mfaHint": "Kontopasswort eingeben, um Backup-Operationen für diese Sitzung freizuschalten.",
+      "totpTitle": "Zwei-Faktor-Authentifizierung",
+      "totpHint": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.",
+      "totpPlaceholder": "000000",
+      "wrongTotp": "Ungültiger Code, bitte erneut versuchen.",
       "mfaError": "Bitte einen Code eingeben.",
       "mfaVerify": "Prüfen & freischalten",
       "wrongPassword": "Falsches Passwort, bitte erneut versuchen.",
@@ -101,7 +207,9 @@
       "verifying": "Wird geprüft…",
       "passwordPlaceholder": "Kontopasswort eingeben",
       "exportError": "Backup konnte nicht erstellt werden.",
-      "restoreError": "Backup konnte nicht wiederhergestellt werden.",
+      "restoreError": "Wiederherstellung aus dem Backup ist fehlgeschlagen.",
+      "exporting": "Export läuft…",
+      "importing": "Import läuft…",
       "lockSection": "Bereich wieder sperren",
       "exportTitle": "Backup erstellen",
       "exportIntro": "Wählen Sie Bereiche für die JSON-Datei. Daten werden live von API und Datenbank abgerufen.",
@@ -128,7 +236,6 @@
       "deleted": "Backup entfernt.",
       "restoreNoSnapshots": "Dieses Backup enthält keine wiederherstellbaren Daten.",
       "restoreDone": "{n} Bereiche aus Backup wiederhergestellt.",
-      "restoreError": "Backup-Datei konnte nicht gelesen werden.",
       "invalidFile": "Keine gültige CMS-Backup-JSON.",
       "pickFileFirst": "Zuerst eine Backup-Datei wählen.",
       "importNothingApplied": "Keine passenden Bereiche im Backup gefunden.",
@@ -148,16 +255,27 @@
     "appearance": {
       "heading": "Erscheinungsbild",
       "description": "Look & Feel Ihres CMS anpassen",
+      "brandingSection": "Panel-Branding",
+      "brandingHint": "Logo, Titel und Untertitel erscheinen in der linken Sidebar und in der mobilen Kopfzeile. Leer lassen, um die Standardtexte der gewählten Sprache zu nutzen.",
+      "panelTitle": "Panel-Titel",
+      "panelSubtitle": "Panel-Untertitel",
+      "panelTitlePlaceholder": "z. B. Mein CMS",
+      "panelSubtitlePlaceholder": "z. B. Headless CMS",
+      "saved": "Gespeichert.",
       "panelLanguage": "Sprache des Admin-Panels",
-      "panelLanguageHint": "UI-Texte werden aus JSON-Dateien unter src/locales/ geladen (z. B. en.json, de.json). Passen Sie die Dateien an oder registrieren Sie neue Sprachen in src/app/i18n/catalog.ts.",
+      "panelLanguageHint": "UI-Texte kommen aus packages/admin/src/locales/*.json. Neue Sprache: Datei anlegen und in packages/admin/src/app/i18n/catalog.ts registrieren.",
       "theme": "Design",
-      "darkMode": "Dunkelmodus",
-      "darkModeSub": "Standarddesign",
-      "lightMode": "Hellmodus",
-      "lightModeSub": "Demnächst",
+      "autoMode": "Automatisch",
+      "autoModeSub": "Systemeinstellung verwenden",
+      "darkMode": "Dunkel",
+      "darkModeSub": "Immer dunkel",
+      "lightMode": "Hell",
+      "lightModeSub": "Immer hell",
       "logo": "Logo",
       "uploadLogo": "Logo hochladen",
+      "uploadingLogo": "Wird hochgeladen…",
       "logoHint": "Empfohlene Größe: 200×200 px",
+      "removeLogo": "Entfernen",
       "accentColor": "Akzentfarbe",
       "saveChanges": "Änderungen speichern"
     },
@@ -250,7 +368,7 @@
     },
     "sitemap": {
       "name": "XML-Sitemap",
-      "description": "Legen Sie fest, wie veröffentlichte URLs in sitemap.xml für Crawler bereitstehen. Die Erzeugung erfolgt typischerweise über API oder statischen Build — dieses Panel speichert Vorgaben dafür.",
+      "description": "Legen Sie fest, wie veröffentlichte URLs in sitemap.xml für Crawler erscheinen. Einstellungen werden über die API gespeichert; das Backend liefert /sitemap.xml automatisch aus.",
       "baseUrlLabel": "Öffentliche Basis-URL der Site",
       "baseUrlPlaceholder": "https://www.beispiel.de",
       "baseUrlHint": "Ohne abschließenden Schrägstrich. Wird für absolute <loc>-Einträge genutzt.",
@@ -462,6 +580,145 @@
     "configure": "Konfigurieren",
     "footer": "Weitere Plugins und ein Marktplatz erscheinen hier, sobald sie verfügbar sind."
   },
+  "contentTypes": {
+    "title": "Inhaltstypen",
+    "typesCount": "{n} Typen",
+    "viewMode": "Ansichtsmodus",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht",
+    "presets": "Vorlagen",
+    "createContentType": "Inhaltstyp erstellen",
+    "newType": "Neuer Typ",
+    "viewContent": "Inhalt anzeigen →",
+    "view": "Ansehen →",
+    "fieldsCount": "{n} Felder",
+    "singularLabel": "Singular",
+    "pluralLabel": "Plural",
+    "col": {
+      "contentType": "Inhaltstyp",
+      "apiId": "API-ID",
+      "fields": "Felder",
+      "actions": "Aktionen"
+    },
+    "duplicateSingle": "Einzeltyp duplizieren (Schema)",
+    "duplicateCollection": "Kollektionstyp duplizieren",
+    "deleteType": "Inhaltstyp löschen",
+    "editType": "Typ bearbeiten",
+    "close": "Schließen",
+    "contentPresets": "Inhaltsvorlagen",
+    "addPreset": "Vorlage hinzufügen",
+    "create": {
+      "title": "Inhaltstyp erstellen",
+      "configurations": "Konfiguration",
+      "configurationsDesc": "Ein Typ zur Datenmodellierung",
+      "displayName": "Anzeigename",
+      "displayNamePlaceholder": "Artikel",
+      "apiIdSingular": "API-ID (Singular)",
+      "apiIdSingularHint": "Die UID wird für API-Routen und Datenbanktabellen/-kollektionen verwendet",
+      "apiIdPlural": "API-ID (Plural)",
+      "apiIdPluralHint": "Pluralisierte API-ID",
+      "color": "Farbe",
+      "icon": "Symbol",
+      "type": "Typ",
+      "collectionType": "Kollektionstyp",
+      "collectionDesc": "Ideal für mehrere Instanzen wie Artikel, Produkte, Kommentare usw.",
+      "singleType": "Einzeltyp",
+      "singleDesc": "Ideal für einzelne Instanzen wie Über uns, Startseite usw.",
+      "cancel": "Abbrechen",
+      "continue": "Weiter"
+    }
+  },
+  "contentBuilder": {
+    "backToContentTypes": "Zurück zu Inhaltstypen",
+    "edit": "{name} bearbeiten",
+    "fieldsCount": "{n} Feld",
+    "fieldsCountPlural": "{n} Felder",
+    "collectionType": "Kollektionstyp",
+    "singleType": "Einzeltyp",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saving": "Speichert…",
+    "saveFailed": "Speichern fehlgeschlagen.",
+    "tabs": {
+      "basic": "Grundeinstellungen",
+      "advanced": "Erweiterte Einstellungen"
+    },
+    "displayName": "Anzeigename",
+    "apiIdSingular": "API-ID (Singular)",
+    "apiIdPlural": "API-ID (Plural)",
+    "singleTypePluralHint": "Einzeltypen nutzen einen Eintrag; Plural-API-ID entspricht der Singular-ID.",
+    "appearance": "Erscheinungsbild",
+    "color": "Farbe",
+    "icon": "Symbol",
+    "fields": "Felder",
+    "addField": "Weiteres Feld zu diesem {kind} hinzufügen",
+    "dragToReorder": "Zum Sortieren ziehen",
+    "removeField": "Feld entfernen",
+    "advanced": {
+      "title": "Erweiterte Einstellungen",
+      "draftPublish": "Entwurf & Veröffentlichung",
+      "draftPublishDesc": "Vor dem Veröffentlichen eine Entwurfsversion jedes Eintrags erstellen",
+      "i18n": "Internationalisierung",
+      "i18nDesc": "Inhalte in mehreren Sprachen verwalten (i18n)",
+      "reviewWorkflow": "Prüf-Workflow",
+      "reviewWorkflowDesc": "Vor dem Veröffentlichen eine Prüfphase einrichten",
+      "apiSettings": "API-Einstellungen",
+      "collectionName": "Kollektionsname",
+      "singleTypeApiKey": "Einzeltyp-API-Schlüssel",
+      "singularApiKey": "Singular-API-Schlüssel"
+    },
+    "addFieldModal": {
+      "title": "Neues Feld hinzufügen",
+      "selectType": "Feldtyp auswählen",
+      "fieldName": "Feldname",
+      "fieldNamePlaceholder": "z. B. Kategorie, Autor, Tags",
+      "required": "Pflichtfeld",
+      "requiredHint": "Dieses Feld muss ausgefüllt werden",
+      "cancel": "Abbrechen",
+      "addField": "Feld hinzufügen",
+      "relationTarget": "Ziel-Kollektion",
+      "relationType": "Beziehungstyp",
+      "enumerationValues": "Aufzählungswerte",
+      "enumerationPlaceholder": "z. B. Entwurf, veröffentlicht, archiviert (kommagetrennt)"
+    },
+    "fieldTypes": {
+      "text": "Text",
+      "text_long": "Text (Langtext)",
+      "blocks": "Rich Text (Blöcke)",
+      "json": "JSON",
+      "number_int": "Zahl (Ganzzahl)",
+      "number_float": "Zahl (Dezimal)",
+      "number_big": "Zahl (große Ganzzahl)",
+      "password": "Passwort",
+      "email": "E-Mail",
+      "enumeration": "Aufzählung",
+      "uid": "UID",
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "datetime": "Datum-Uhrzeit",
+      "boolean": "Boolesch",
+      "media": "Medien",
+      "relation": "Beziehung",
+      "component": "Komponente",
+      "dynamiczone": "Dynamische Zone"
+    },
+    "relationTypes": {
+      "manyToOne": "Viele zu Eins",
+      "manyToOneDesc": "Artikel → Kategorie",
+      "oneToMany": "Eins zu Viele",
+      "oneToManyDesc": "Kategorie → Artikel",
+      "oneToOne": "Eins zu Eins",
+      "oneToOneDesc": "Artikel → Autor",
+      "manyToMany": "Viele zu Viele",
+      "manyToManyDesc": "Artikel ↔ Tags"
+    },
+    "fieldDescriptions": {
+      "relation": "Beziehung ({type}) mit {target}",
+      "enumeration": "Aufzählung: {values}",
+      "component": "Komponente (wiederholbare Feldgruppe)",
+      "dynamiczone": "Dynamische Zone (Komponentenmix)"
+    }
+  },
   "login": {
     "title": "Anmelden",
     "subtitle": "Headless-CMS-Admin",
@@ -474,6 +731,11 @@
     "submit": "Anmelden",
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort ausblenden",
-    "skipToPanel": "Zum Panel"
+    "skipToPanel": "Zum Panel",
+    "verifyMfa": "Bestätigen",
+    "backToLogin": "← Zurück zur Anmeldung",
+    "totpLabel": "Zwei-Faktor-Authentifizierungscode",
+    "totpHint": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.",
+    "totpPlaceholder": "000000"
   }
 }

@@ -99,12 +99,18 @@ export async function mediaRoutes(app: FastifyInstance) {
       throw new BadRequestError(`File size exceeds limit of ${env.MAX_UPLOAD_SIZE / (1024 * 1024)}MB`)
     }
 
-    // Generate unique hash-based filename
-    const ext = path.extname(filename) || ''
+    // Sanitize extension — strip path separators and null bytes
+    const rawExt = path.extname(filename) || ''
+    const ext = rawExt.replace(/[^a-zA-Z0-9.]/g, '')
     const hash = crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 32)
     const storedName = `${hash}${ext}`
     const uploadDir = path.resolve(env.UPLOAD_DIR)
     const filePath = path.join(uploadDir, storedName)
+
+    // Path traversal guard
+    if (!filePath.startsWith(uploadDir + path.sep) && filePath !== uploadDir) {
+      throw new BadRequestError('Invalid file path')
+    }
 
     await fs.mkdir(uploadDir, { recursive: true })
     await fs.writeFile(filePath, buffer)

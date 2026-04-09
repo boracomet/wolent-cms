@@ -182,23 +182,23 @@ export function AiTranslateModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-translate-title"
-        className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-zinc-700/90 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
+        className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-stone-300/85 dark:border-zinc-700/90 bg-stone-100 dark:bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-800/80 px-5 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-stone-200/90 dark:border-zinc-800/80 px-5 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <GeminiLogo className="w-9 h-9 shrink-0" />
             <div className="min-w-0">
-              <h2 id="ai-translate-title" className="text-base font-semibold text-zinc-100">
+              <h2 id="ai-translate-title" className="text-base font-semibold text-stone-900 dark:text-zinc-100">
                 AI Translate
               </h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Gemini Auto Translate</p>
+              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-0.5">Gemini Auto Translate</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors shrink-0"
+            className="p-2 rounded-lg hover:bg-stone-300 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors shrink-0"
             aria-label="Kapat"
           >
             <X className="w-5 h-5" />
@@ -208,12 +208,12 @@ export function AiTranslateModal({
         <div className="p-5 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">Referans dili</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-zinc-500 mb-1.5">Referans dili</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
                 disabled={phase === "loading"}
-                className="w-full px-3 py-2 text-sm bg-zinc-900/80 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm bg-white/90 dark:bg-zinc-900/80 border border-stone-200 dark:border-zinc-800 rounded-lg text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50"
               >
                 {locales.map((l) => (
                   <option key={l.code} value={l.code}>
@@ -223,12 +223,12 @@ export function AiTranslateModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">Hedef dil</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-zinc-500 mb-1.5">Hedef dil</label>
               <select
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 disabled={phase === "loading"}
-                className="w-full px-3 py-2 text-sm bg-zinc-900/80 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm bg-white/90 dark:bg-zinc-900/80 border border-stone-200 dark:border-zinc-800 rounded-lg text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50"
               >
                 {locales.map((l) => (
                   <option key={l.code} value={l.code}>
@@ -255,11 +255,11 @@ export function AiTranslateModal({
 
           {phase === "loading" && (
             <div className="space-y-2 pt-1">
-              <div className="flex justify-between text-xs text-zinc-500">
+              <div className="flex justify-between text-xs text-stone-500 dark:text-zinc-500">
                 <span>Gemini ile çevriliyor…</span>
                 <span>{progress}%</span>
               </div>
-              <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+              <div className="h-2 rounded-full bg-stone-200 dark:bg-zinc-800 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-[width] duration-100 ease-linear"
                   style={{ width: `${progress}%` }}
@@ -269,14 +269,14 @@ export function AiTranslateModal({
           )}
 
           {phase === "done" && (
-            <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-4 space-y-3">
+            <div className="rounded-lg border border-stone-200/90 dark:border-zinc-800/80 bg-stone-50/92 dark:bg-zinc-900/40 p-4 space-y-3">
               <p className="text-xs font-medium text-violet-400 uppercase tracking-wide">
                 Çeviri çıktısı (düzenlenebilir)
               </p>
               <div>
                 <label
                   htmlFor="ai-translate-title"
-                  className="block text-[10px] text-zinc-500 uppercase mb-1"
+                  className="block text-[10px] text-stone-500 dark:text-zinc-500 uppercase mb-1"
                 >
                   Başlık
                 </label>
@@ -285,14 +285,14 @@ export function AiTranslateModal({
                   type="text"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-zinc-950/80 border border-zinc-700/80 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                  className="w-full px-3 py-2 text-sm bg-white/88 dark:bg-zinc-950/80 border border-stone-300/82 dark:border-zinc-700/80 rounded-lg text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
                 />
               </div>
               {showSummaryField && (
                 <div>
                   <label
                     htmlFor="ai-translate-summary"
-                    className="block text-[10px] text-zinc-500 uppercase mb-1"
+                    className="block text-[10px] text-stone-500 dark:text-zinc-500 uppercase mb-1"
                   >
                     Özet
                   </label>
@@ -301,7 +301,7 @@ export function AiTranslateModal({
                     value={editedSummary}
                     onChange={(e) => setEditedSummary(e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 text-sm bg-zinc-950/80 border border-zinc-700/80 rounded-lg text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-y min-h-[88px] leading-relaxed"
+                    className="w-full px-3 py-2 text-sm bg-white/88 dark:bg-zinc-950/80 border border-stone-300/82 dark:border-zinc-700/80 rounded-lg text-stone-800 dark:text-zinc-200 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-y min-h-[88px] leading-relaxed"
                   />
                 </div>
               )}
@@ -327,7 +327,7 @@ export function AiTranslateModal({
                 </p>
               )}
               {!translateError && (
-                <p className="text-[11px] text-zinc-600 pt-1">
+                <p className="text-[11px] text-stone-600 dark:text-zinc-600 pt-1">
                   Çeviri için Plugins sayfasından Gemini API anahtarını yapılandırın.
                 </p>
               )}
@@ -345,7 +345,7 @@ export function AiTranslateSidebarButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-lg border border-violet-500/35 bg-gradient-to-r from-violet-950/50 to-blue-950/40 hover:from-violet-900/50 hover:to-blue-900/40 text-sm font-medium text-zinc-100 transition-colors shadow-sm shadow-violet-950/20"
+      className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-lg border border-violet-500/35 bg-gradient-to-r from-violet-950/50 to-blue-950/40 hover:from-violet-900/50 hover:to-blue-900/40 text-sm font-medium text-stone-900 dark:text-zinc-100 transition-colors shadow-sm shadow-violet-950/20"
     >
       <GeminiLogo className="w-5 h-5 shrink-0" />
       AI Translate

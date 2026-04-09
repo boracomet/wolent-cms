@@ -930,18 +930,18 @@ export function Plugins() {
         )}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-zinc-800/80 border border-zinc-700/50 rounded-lg flex items-center justify-center">
-              <Puzzle className="w-5 h-5 text-zinc-300" />
+            <div className="w-10 h-10 bg-stone-200 dark:bg-zinc-800/80 border border-stone-300/75 dark:border-zinc-700/50 rounded-lg flex items-center justify-center">
+              <Puzzle className="w-5 h-5 text-stone-700 dark:text-zinc-300" />
             </div>
             <h1 className="text-3xl font-semibold">{t("plugins.title")}</h1>
           </div>
-          <p className="text-zinc-400">{t("plugins.subtitle")}</p>
+          <p className="text-stone-600 dark:text-zinc-400">{t("plugins.subtitle")}</p>
         </div>
 
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-800">
+        <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-200 dark:border-zinc-800">
             <h2 className="text-xl font-semibold">{t("plugins.installedHeading")}</h2>
-            <p className="text-sm text-zinc-400 mt-1">{t("plugins.installedDescription")}</p>
+            <p className="text-sm text-stone-600 dark:text-zinc-400 mt-1">{t("plugins.installedDescription")}</p>
           </div>
 
           <div className="p-6">
@@ -981,7 +981,7 @@ export function Plugins() {
                                     ? "bg-blue-500/15 border border-blue-500/25"
                                     : isImageOptimization
                                       ? "bg-amber-500/15 border border-amber-500/25"
-                                      : "bg-zinc-800";
+                                      : "bg-stone-200 dark:bg-zinc-800";
                 const iconColor =
                   isGemini
                     ? "text-cyan-400"
@@ -1002,13 +1002,13 @@ export function Plugins() {
                                   : isNativeAnalytics
                                     ? "text-blue-400"
                                     : isImageOptimization
-                                      ? "text-amber-400"
-                                      : "text-zinc-400";
+                                      ? "text-amber-700 dark:text-amber-400"
+                                      : "text-stone-600 dark:text-zinc-400";
 
                 return (
                   <div
                     key={plugin.id}
-                    className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 hover:border-zinc-700 transition-colors"
+                    className="bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded-lg p-6 hover:border-stone-400 dark:hover:border-zinc-700 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="flex items-start gap-4 min-w-0">
@@ -1019,10 +1019,10 @@ export function Plugins() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2 gap-y-1">
-                            <h3 className="font-semibold text-zinc-100">
+                            <h3 className="font-semibold text-stone-900 dark:text-zinc-100">
                               {t(`${plugin.i18nPrefix}.name`)}
                             </h3>
-                            <span className="text-xs text-zinc-500 font-mono px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800">
+                            <span className="text-xs text-stone-500 dark:text-zinc-500 font-mono px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800">
                               v{plugin.version}
                             </span>
                             {enabled ? (
@@ -1030,71 +1030,71 @@ export function Plugins() {
                                 {t("plugins.active")}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700/50">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-zinc-500 border border-stone-300/75 dark:border-zinc-700/50">
                                 {t("plugins.inactive")}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+                          <p className="text-sm text-stone-600 dark:text-zinc-400 mt-2 leading-relaxed">
                             {t(`${plugin.i18nPrefix}.description`)}
                           </p>
 
                           {isGemini && enabled && !hasGeminiKey && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.gemini.keyMissing")}
                             </p>
                           )}
                           {isS3 && enabled && !hasS3Credentials && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.s3.credentialsMissing")}
                             </p>
                           )}
                           {isSitemap && enabled && !hasSitemapBaseUrl && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.sitemap.baseUrlMissing")}
                             </p>
                           )}
                           {isRobots && enabled && !hasRobotsContent && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.robots.contentMissing")}
                             </p>
                           )}
                           {isRedis && enabled && !hasRedisConnection && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.redis.connectionMissing")}
                             </p>
                           )}
                           {isSmtp && enabled && !hasSmtpServerOk && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.smtp.serverMissing")}
                             </p>
                           )}
                           {isSmtp && enabled && hasSmtpServerOk && smtpNotifyMisconfigured && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.smtp.recipientsMissing")}
                             </p>
                           )}
                           {isN8n && enabled && !hasN8nWebhookUrl && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.n8n.webhookMissing")}
                             </p>
                           )}
                           {isN8n && enabled && hasN8nWebhookUrl && n8nTriggersMissing && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.n8n.triggersMissing")}
                             </p>
                           )}
                           {isOutboundWebhook && enabled && !hasOutboundWebhookUrl && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.outboundWebhook.webhookMissing")}
                             </p>
@@ -1103,13 +1103,13 @@ export function Plugins() {
                             enabled &&
                             hasOutboundWebhookUrl &&
                             outboundWebhookTriggersMissing && (
-                              <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                              <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                                 <KeyRound className="w-3.5 h-3.5 shrink-0" />
                                 {t("plugins.outboundWebhook.triggersMissing")}
                               </p>
                             )}
                           {isNativeAnalytics && enabled && nativeAnalyticsIngestInvalid && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.nativeAnalytics.ingestUrlInvalid")}
                             </p>
@@ -1118,31 +1118,31 @@ export function Plugins() {
                             enabled &&
                             !nativeAnalyticsIngestInvalid &&
                             !nativeAnalyticsConfig.siteKey.trim() && (
-                              <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                              <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                                 <KeyRound className="w-3.5 h-3.5 shrink-0" />
                                 {t("plugins.nativeAnalytics.siteKeyMissing")}
                               </p>
                             )}
                           {isImageOptimization && enabled && !imageOptimizationConfig.deliverAsWebp && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.imageOptimization.webpDisabledHint")}
                             </p>
                           )}
                           {isImageOptimization && enabled && imageOptQualityInvalid && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.imageOptimization.qualityInvalid")}
                             </p>
                           )}
                           {isImageOptimization && enabled && imageOptEffortInvalid && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.imageOptimization.effortInvalid")}
                             </p>
                           )}
                           {isImageOptimization && enabled && (imageOptMaxWInvalid || imageOptMaxHInvalid) && (
-                            <p className="text-xs text-amber-400/90 mt-2 flex items-center gap-1.5">
+                            <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-2 flex items-center gap-1.5">
                               <KeyRound className="w-3.5 h-3.5 shrink-0" />
                               {t("plugins.imageOptimization.dimensionInvalid")}
                             </p>
@@ -1236,7 +1236,7 @@ export function Plugins() {
                             }}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
+                          <div className="w-11 h-6 bg-stone-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
                         </label>
                         <button
                           type="button"
@@ -1256,8 +1256,8 @@ export function Plugins() {
                           }}
                           className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-colors ${
                             enabled
-                              ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700/50"
-                              : "bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed"
+                              ? "bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-900 dark:text-zinc-100 border border-stone-300/75 dark:border-zinc-700/50"
+                              : "bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-600 border border-stone-200 dark:border-zinc-800 cursor-not-allowed"
                           }`}
                         >
                           <Settings2 className="w-4 h-4" />
@@ -1267,10 +1267,10 @@ export function Plugins() {
                     </div>
 
                     {isGemini && enabled && geminiSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-5">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-5">
                         {/* API Key */}
                         <div>
-                          <label htmlFor="gemini-api-key" className="block text-sm font-medium text-zinc-200 mb-2">
+                          <label htmlFor="gemini-api-key" className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2">
                             {t("plugins.gemini.apiKeyLabel")}
                           </label>
                           <input
@@ -1283,21 +1283,21 @@ export function Plugins() {
                               setGeminiModelsError(null);
                             }}
                             placeholder={t("plugins.gemini.apiKeyPlaceholder")}
-                            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 font-mono"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 font-mono"
                           />
-                          <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{t("plugins.gemini.apiKeyHint")}</p>
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2 leading-relaxed">{t("plugins.gemini.apiKeyHint")}</p>
                         </div>
                         {/* Model seçimi — API'dan */}
                         <div className="max-w-md space-y-2">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <label htmlFor="gemini-model" className="block text-sm font-medium text-zinc-200">
+                            <label htmlFor="gemini-model" className="block text-sm font-medium text-stone-800 dark:text-zinc-200">
                               {t("plugins.gemini.modelLabel")}
                             </label>
                             <button
                               type="button"
                               disabled={!hasGeminiKey || geminiModelsLoading}
                               onClick={() => void fetchGeminiModels()}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-800 dark:text-zinc-200 border border-stone-400 dark:border-zinc-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                             >
                               {geminiModelsLoading ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden />
@@ -1314,7 +1314,7 @@ export function Plugins() {
                             id="gemini-model"
                             value={geminiModel}
                             onChange={(e) => setGeminiModel(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
                           >
                             {(geminiModels.length > 0 ? geminiModels : [
                               { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (latest)' },
@@ -1325,7 +1325,7 @@ export function Plugins() {
                               <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
                           </select>
-                          <p className="text-xs text-zinc-500 mt-1.5">Tier ve fiyat bilgisi için Google AI Studio'yu kontrol edin.</p>
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">Tier ve fiyat bilgisi için Google AI Studio'yu kontrol edin.</p>
                         </div>
                         {/* Kaydet */}
                         <div className="flex flex-wrap items-center gap-3">
@@ -1354,7 +1354,7 @@ export function Plugins() {
                                 setGeminiTestError(null);
                                 setGeminiTestTokens(null);
                               }}
-                              className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                              className="text-xs text-stone-600 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200 transition-colors"
                             >
                               {geminiTestOpen ? "Kapat" : "Aç"}
                             </button>
@@ -1364,22 +1364,22 @@ export function Plugins() {
                               {/* Dil seçimi */}
                               <div className="flex items-center gap-2 flex-wrap">
                                 <div className="flex-1 min-w-[120px]">
-                                  <label className="block text-xs text-zinc-400 mb-1">Kaynak dil</label>
+                                  <label className="block text-xs text-stone-600 dark:text-zinc-400 mb-1">Kaynak dil</label>
                                   <select
                                     value={geminiTestSrc}
                                     onChange={e => setGeminiTestSrc(e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
                                   >
                                     {GEMINI_TEST_LOCALES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
                                   </select>
                                 </div>
-                                <div className="mt-4 text-zinc-500 text-lg">→</div>
+                                <div className="mt-4 text-stone-500 dark:text-zinc-500 text-lg">→</div>
                                 <div className="flex-1 min-w-[120px]">
-                                  <label className="block text-xs text-zinc-400 mb-1">Hedef dil</label>
+                                  <label className="block text-xs text-stone-600 dark:text-zinc-400 mb-1">Hedef dil</label>
                                   <select
                                     value={geminiTestDst}
                                     onChange={e => setGeminiTestDst(e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
                                   >
                                     {GEMINI_TEST_LOCALES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
                                   </select>
@@ -1387,13 +1387,13 @@ export function Plugins() {
                               </div>
                               {/* Giriş metni */}
                               <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Çevrilecek metin</label>
+                                <label className="block text-xs text-stone-600 dark:text-zinc-400 mb-1">Çevrilecek metin</label>
                                 <textarea
                                   rows={3}
                                   value={geminiTestInput}
                                   onChange={e => setGeminiTestInput(e.target.value)}
                                   placeholder="Örnek: The quick brown fox jumps over the lazy dog."
-                                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 resize-none"
+                                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 resize-none"
                                 />
                               </div>
                               <div className="flex items-center gap-3">
@@ -1409,7 +1409,7 @@ export function Plugins() {
                                     <><Sparkles className="w-3.5 h-3.5" />Çevir</>
                                   )}
                                 </button>
-                                {!hasGeminiKey && <span className="text-xs text-amber-400">API anahtarı gerekli</span>}
+                                {!hasGeminiKey && <span className="text-xs text-amber-700 dark:text-amber-400">API anahtarı gerekli</span>}
                               </div>
                               {/* Hata */}
                               {geminiTestError && (
@@ -1419,14 +1419,14 @@ export function Plugins() {
                               )}
                               {/* Sonuç */}
                               {geminiTestResult && (
-                                <div className="rounded-md border border-zinc-700 bg-zinc-900 p-3 space-y-2">
+                                <div className="rounded-md border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Çeviri Sonucu</span>
-                                    <div className="flex flex-col items-end gap-1 text-xs text-zinc-500 text-right">
+                                    <span className="text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wider">Çeviri Sonucu</span>
+                                    <div className="flex flex-col items-end gap-1 text-xs text-stone-500 dark:text-zinc-500 text-right">
                                       {geminiTestResult.model && (
                                         <span>
                                           Model:{" "}
-                                          <span className="text-zinc-300">{geminiTestResult.model}</span>
+                                          <span className="text-stone-700 dark:text-zinc-300">{geminiTestResult.model}</span>
                                         </span>
                                       )}
                                       {geminiTestTokens && (
@@ -1436,7 +1436,7 @@ export function Plugins() {
                                               {geminiTestTokens.input + geminiTestTokens.output}
                                             </span>{" "}
                                             token
-                                            <span className="text-zinc-600">
+                                            <span className="text-stone-600 dark:text-zinc-600">
                                               {" "}
                                               ({geminiTestTokens.input} {t("plugins.gemini.tokensIn")} /{" "}
                                               {geminiTestTokens.output} {t("plugins.gemini.tokensOut")})
@@ -1445,7 +1445,7 @@ export function Plugins() {
                                           <span className="text-emerald-400/90">
                                             {t("plugins.gemini.estUsdCost")}: {formatUsdEstimate(geminiTestTokens.usd)}
                                             {geminiTestTokens.longContext && (
-                                              <span className="text-amber-400/80 ml-1">
+                                              <span className="text-amber-700/90 dark:text-amber-400/80 ml-1">
                                                 ({t("plugins.gemini.longContextTierHint")})
                                               </span>
                                             )}
@@ -1454,11 +1454,11 @@ export function Plugins() {
                                       )}
                                     </div>
                                   </div>
-                                  <p className="text-sm text-zinc-100 leading-relaxed">{geminiTestResult.title}</p>
+                                  <p className="text-sm text-stone-900 dark:text-zinc-100 leading-relaxed">{geminiTestResult.title}</p>
                                   {geminiTestResult.summary && (
-                                    <p className="text-sm text-zinc-300 border-t border-zinc-700/50 pt-2">{geminiTestResult.summary}</p>
+                                    <p className="text-sm text-stone-700 dark:text-zinc-300 border-t border-stone-300/75 dark:border-zinc-700/50 pt-2">{geminiTestResult.summary}</p>
                                   )}
-                                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
+                                  <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1 leading-relaxed">
                                     {t("plugins.gemini.tokenCostFootnote")}
                                   </p>
                                 </div>
@@ -1470,11 +1470,11 @@ export function Plugins() {
                     )}
 
                     {isS3 && enabled && s3SettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-4">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-4">
                         <div className="max-w-xl">
                           <label
                             htmlFor="s3-provider"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
+                            className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                           >
                             {t("plugins.s3.providerLabel")}
                           </label>
@@ -1484,7 +1484,7 @@ export function Plugins() {
                             onChange={(e) =>
                               setS3Config((c) => ({ ...c, providerId: e.target.value }))
                             }
-                            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40"
                           >
                             {S3_COMPATIBLE_PROVIDERS.map((p) => (
                               <option key={p.id} value={p.id}>
@@ -1492,8 +1492,8 @@ export function Plugins() {
                               </option>
                             ))}
                           </select>
-                          <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                            <span className="text-zinc-400 font-medium">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2 leading-relaxed">
+                            <span className="text-stone-600 dark:text-zinc-400 font-medium">
                               {t("plugins.s3.providerHintTitle")}:{" "}
                             </span>
                             {s3ProviderMeta.hint}
@@ -1504,7 +1504,7 @@ export function Plugins() {
                           <div className="sm:col-span-2">
                             <label
                               htmlFor="s3-endpoint"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.s3.endpointLabel")}
                             </label>
@@ -1517,14 +1517,14 @@ export function Plugins() {
                                 setS3Config((c) => ({ ...c, endpoint: e.target.value }))
                               }
                               placeholder={s3ProviderMeta.endpointPlaceholder}
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
                             />
-                            <p className="text-xs text-zinc-600 mt-1.5">{t("plugins.s3.endpointHint")}</p>
+                            <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1.5">{t("plugins.s3.endpointHint")}</p>
                           </div>
                           <div>
                             <label
                               htmlFor="s3-region"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.s3.regionLabel")}
                             </label>
@@ -1537,13 +1537,13 @@ export function Plugins() {
                                 setS3Config((c) => ({ ...c, region: e.target.value }))
                               }
                               placeholder={s3ProviderMeta.regionPlaceholder}
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="s3-bucket"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.s3.bucketLabel")}
                             </label>
@@ -1556,13 +1556,13 @@ export function Plugins() {
                                 setS3Config((c) => ({ ...c, bucket: e.target.value }))
                               }
                               placeholder="my-media-bucket"
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="s3-access-key"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.s3.accessKeyLabel")}
                             </label>
@@ -1574,13 +1574,13 @@ export function Plugins() {
                               onChange={(e) =>
                                 setS3Config((c) => ({ ...c, accessKey: e.target.value }))
                               }
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="s3-secret-key"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.s3.secretKeyLabel")}
                             </label>
@@ -1592,7 +1592,7 @@ export function Plugins() {
                               onChange={(e) =>
                                 setS3Config((c) => ({ ...c, secretKey: e.target.value }))
                               }
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500/40 font-mono"
                             />
                           </div>
                         </div>
@@ -1604,17 +1604,17 @@ export function Plugins() {
                             onChange={(e) =>
                               setS3Config((c) => ({ ...c, pathStyle: e.target.checked }))
                             }
-                            className="mt-1 rounded border-zinc-600 text-orange-500 focus:ring-orange-500/40"
+                            className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-orange-500 focus:ring-orange-500/40"
                           />
                           <span>
-                            <span className="text-sm font-medium text-zinc-200 block">
+                            <span className="text-sm font-medium text-stone-800 dark:text-zinc-200 block">
                               {t("plugins.s3.pathStyleLabel")}
                             </span>
-                            <span className="text-xs text-zinc-500">{t("plugins.s3.pathStyleHint")}</span>
+                            <span className="text-xs text-stone-500 dark:text-zinc-500">{t("plugins.s3.pathStyleHint")}</span>
                           </span>
                         </label>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-2xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-2xl">
                           {t("plugins.s3.storageHint")}
                         </p>
 
@@ -1634,11 +1634,11 @@ export function Plugins() {
                     )}
 
                     {isSitemap && enabled && sitemapSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-4">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-4">
                         <div className="max-w-xl">
                           <label
                             htmlFor="sitemap-base-url"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
+                            className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                           >
                             {t("plugins.sitemap.baseUrlLabel")}
                           </label>
@@ -1651,15 +1651,15 @@ export function Plugins() {
                               setSitemapConfig((c) => ({ ...c, baseUrl: e.target.value.trimEnd() }))
                             }
                             placeholder={t("plugins.sitemap.baseUrlPlaceholder")}
-                            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 font-mono"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 font-mono"
                           />
-                          <p className="text-xs text-zinc-500 mt-2">{t("plugins.sitemap.baseUrlHint")}</p>
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">{t("plugins.sitemap.baseUrlHint")}</p>
                         </div>
 
                         <div className="max-w-xl">
                           <label
                             htmlFor="sitemap-path"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
+                            className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                           >
                             {t("plugins.sitemap.pathLabel")}
                           </label>
@@ -1672,7 +1672,7 @@ export function Plugins() {
                               setSitemapConfig((c) => ({ ...c, sitemapPath: e.target.value }))
                             }
                             placeholder="/sitemap.xml"
-                            className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 font-mono"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 font-mono"
                           />
                         </div>
 
@@ -1680,7 +1680,7 @@ export function Plugins() {
                           <div>
                             <label
                               htmlFor="sitemap-changefreq"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.sitemap.changeFreqLabel")}
                             </label>
@@ -1693,7 +1693,7 @@ export function Plugins() {
                                   defaultChangeFreq: e.target.value as SitemapChangeFreq,
                                 }))
                               }
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                             >
                               <option value="always">always</option>
                               <option value="hourly">hourly</option>
@@ -1707,7 +1707,7 @@ export function Plugins() {
                           <div>
                             <label
                               htmlFor="sitemap-priority"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.sitemap.priorityLabel")}
                             </label>
@@ -1717,7 +1717,7 @@ export function Plugins() {
                               onChange={(e) =>
                                 setSitemapConfig((c) => ({ ...c, defaultPriority: e.target.value }))
                               }
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                             >
                               {["0.0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"].map(
                                 (p) => (
@@ -1737,13 +1737,13 @@ export function Plugins() {
                             onChange={(e) =>
                               setSitemapConfig((c) => ({ ...c, includeDrafts: e.target.checked }))
                             }
-                            className="mt-1 rounded border-zinc-600 text-emerald-500 focus:ring-emerald-500/40"
+                            className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-emerald-500 focus:ring-emerald-500/40"
                           />
                           <span>
-                            <span className="text-sm font-medium text-zinc-200 block">
+                            <span className="text-sm font-medium text-stone-800 dark:text-zinc-200 block">
                               {t("plugins.sitemap.includeDraftsLabel")}
                             </span>
-                            <span className="text-xs text-zinc-500">{t("plugins.sitemap.includeDraftsHint")}</span>
+                            <span className="text-xs text-stone-500 dark:text-zinc-500">{t("plugins.sitemap.includeDraftsHint")}</span>
                           </span>
                         </label>
 
@@ -1754,17 +1754,17 @@ export function Plugins() {
                             onChange={(e) =>
                               setSitemapConfig((c) => ({ ...c, pingSearchEngines: e.target.checked }))
                             }
-                            className="mt-1 rounded border-zinc-600 text-emerald-500 focus:ring-emerald-500/40"
+                            className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-emerald-500 focus:ring-emerald-500/40"
                           />
                           <span>
-                            <span className="text-sm font-medium text-zinc-200 block">
+                            <span className="text-sm font-medium text-stone-800 dark:text-zinc-200 block">
                               {t("plugins.sitemap.pingLabel")}
                             </span>
-                            <span className="text-xs text-zinc-500">{t("plugins.sitemap.pingHint")}</span>
+                            <span className="text-xs text-stone-500 dark:text-zinc-500">{t("plugins.sitemap.pingHint")}</span>
                           </span>
                         </label>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-2xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-2xl">
                           {t("plugins.sitemap.demoHint")}
                         </p>
 
@@ -1784,11 +1784,11 @@ export function Plugins() {
                     )}
 
                     {isRobots && enabled && robotsSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-4">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-4">
                         <div>
                           <label
                             htmlFor="robots-txt-editor"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
+                            className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                           >
                             {t("plugins.robots.editorLabel")}
                           </label>
@@ -1798,15 +1798,15 @@ export function Plugins() {
                             onChange={(e) => setRobotsTxt(e.target.value)}
                             spellCheck={false}
                             rows={14}
-                            className="w-full max-w-3xl px-4 py-3 bg-zinc-950 border border-zinc-700 rounded-md text-sm text-zinc-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-y min-h-[200px]"
+                            className="w-full max-w-3xl px-4 py-3 bg-stone-100 dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-y min-h-[200px]"
                             placeholder={t("plugins.robots.editorPlaceholder")}
                           />
-                          <p className="text-xs text-zinc-500 mt-2 max-w-3xl leading-relaxed">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2 max-w-3xl leading-relaxed">
                             {t("plugins.robots.editorHint")}
                           </p>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.robots.demoHint")}
                         </p>
 
@@ -1821,7 +1821,7 @@ export function Plugins() {
                           <button
                             type="button"
                             onClick={() => setRobotsTxt(DEFAULT_ROBOTS_TXT)}
-                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 rounded-md text-sm transition-colors"
+                            className="px-4 py-2 bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-800 dark:text-zinc-200 border border-stone-300/82 dark:border-zinc-700/80 rounded-md text-sm transition-colors"
                           >
                             {t("plugins.robots.resetSample")}
                           </button>
@@ -1833,12 +1833,12 @@ export function Plugins() {
                     )}
 
                     {isRedis && enabled && redisSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-4">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2 max-w-3xl">
                           <div className="sm:col-span-2">
                             <label
                               htmlFor="redis-host"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.hostLabel")}
                             </label>
@@ -1851,13 +1851,13 @@ export function Plugins() {
                                 setRedisConfig((c) => ({ ...c, host: e.target.value }))
                               }
                               placeholder={t("plugins.redis.hostPlaceholder")}
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="redis-port"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.portLabel")}
                             </label>
@@ -1871,17 +1871,17 @@ export function Plugins() {
                                 setRedisConfig((c) => ({ ...c, port: e.target.value }))
                               }
                               placeholder="6379"
-                              className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
                                 redisConfig.port.trim() !== "" && !redisPortOk
                                   ? "border-red-500/50 focus:ring-red-500/30"
-                                  : "border-zinc-700 focus:ring-rose-500/40"
+                                  : "border-stone-300 dark:border-zinc-700 focus:ring-rose-500/40"
                               }`}
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="redis-db"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.dbIndexLabel")}
                             </label>
@@ -1895,13 +1895,13 @@ export function Plugins() {
                                 setRedisConfig((c) => ({ ...c, dbIndex: e.target.value }))
                               }
                               placeholder="0"
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
                             />
                           </div>
                           <div className="sm:col-span-2">
                             <label
                               htmlFor="redis-password"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.passwordLabel")}
                             </label>
@@ -1913,13 +1913,13 @@ export function Plugins() {
                               onChange={(e) =>
                                 setRedisConfig((c) => ({ ...c, password: e.target.value }))
                               }
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="redis-prefix"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.keyPrefixLabel")}
                             </label>
@@ -1932,14 +1932,14 @@ export function Plugins() {
                                 setRedisConfig((c) => ({ ...c, keyPrefix: e.target.value }))
                               }
                               placeholder="cms:"
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
                             />
-                            <p className="text-xs text-zinc-600 mt-1.5">{t("plugins.redis.keyPrefixHint")}</p>
+                            <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1.5">{t("plugins.redis.keyPrefixHint")}</p>
                           </div>
                           <div>
                             <label
                               htmlFor="redis-ttl"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.redis.defaultTtlLabel")}
                             </label>
@@ -1953,9 +1953,9 @@ export function Plugins() {
                                 setRedisConfig((c) => ({ ...c, defaultTtlSec: e.target.value }))
                               }
                               placeholder="3600"
-                              className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
+                              className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-rose-500/40 font-mono"
                             />
-                            <p className="text-xs text-zinc-600 mt-1.5">{t("plugins.redis.defaultTtlHint")}</p>
+                            <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1.5">{t("plugins.redis.defaultTtlHint")}</p>
                           </div>
                         </div>
 
@@ -1966,17 +1966,17 @@ export function Plugins() {
                             onChange={(e) =>
                               setRedisConfig((c) => ({ ...c, useTls: e.target.checked }))
                             }
-                            className="mt-1 rounded border-zinc-600 text-rose-500 focus:ring-rose-500/40"
+                            className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-rose-500 focus:ring-rose-500/40"
                           />
                           <span>
-                            <span className="text-sm font-medium text-zinc-200 block">
+                            <span className="text-sm font-medium text-stone-800 dark:text-zinc-200 block">
                               {t("plugins.redis.tlsLabel")}
                             </span>
-                            <span className="text-xs text-zinc-500">{t("plugins.redis.tlsHint")}</span>
+                            <span className="text-xs text-stone-500 dark:text-zinc-500">{t("plugins.redis.tlsHint")}</span>
                           </span>
                         </label>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.redis.demoHint")}
                         </p>
 
@@ -1996,16 +1996,16 @@ export function Plugins() {
                     )}
 
                     {isSmtp && enabled && smtpSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-6">
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-3">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-3">
                             {t("plugins.smtp.serverHeading")}
                           </h4>
                           <div className="grid gap-4 sm:grid-cols-2 max-w-3xl">
                             <div className="sm:col-span-2">
                               <label
                                 htmlFor="smtp-host"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.hostLabel")}
                               </label>
@@ -2018,13 +2018,13 @@ export function Plugins() {
                                   setSmtpConfig((c) => ({ ...c, host: e.target.value }))
                                 }
                                 placeholder={t("plugins.smtp.hostPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
                               />
                             </div>
                             <div>
                               <label
                                 htmlFor="smtp-port"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.portLabel")}
                               </label>
@@ -2038,10 +2038,10 @@ export function Plugins() {
                                   setSmtpConfig((c) => ({ ...c, port: e.target.value }))
                                 }
                                 placeholder="587"
-                                className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
                                   smtpConfig.port.trim() !== "" && !smtpPortOk
                                     ? "border-red-500/50 focus:ring-red-500/30"
-                                    : "border-zinc-700 focus:ring-sky-500/40"
+                                    : "border-stone-300 dark:border-zinc-700 focus:ring-sky-500/40"
                                 }`}
                               />
                             </div>
@@ -2052,14 +2052,14 @@ export function Plugins() {
                                 onChange={(e) =>
                                   setSmtpConfig((c) => ({ ...c, useTls: e.target.checked }))
                                 }
-                                className="rounded border-zinc-600 text-sky-500 focus:ring-sky-500/40"
+                                className="rounded border-stone-400 dark:border-zinc-600 text-sky-500 focus:ring-sky-500/40"
                               />
-                              <span className="text-sm text-zinc-300">{t("plugins.smtp.tlsLabel")}</span>
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">{t("plugins.smtp.tlsLabel")}</span>
                             </label>
                             <div>
                               <label
                                 htmlFor="smtp-user"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.usernameLabel")}
                               </label>
@@ -2071,13 +2071,13 @@ export function Plugins() {
                                 onChange={(e) =>
                                   setSmtpConfig((c) => ({ ...c, username: e.target.value }))
                                 }
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
                               />
                             </div>
                             <div>
                               <label
                                 htmlFor="smtp-pass"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.passwordLabel")}
                               </label>
@@ -2089,13 +2089,13 @@ export function Plugins() {
                                 onChange={(e) =>
                                   setSmtpConfig((c) => ({ ...c, password: e.target.value }))
                                 }
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
                               />
                             </div>
                             <div>
                               <label
                                 htmlFor="smtp-from-email"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.fromEmailLabel")}
                               </label>
@@ -2108,13 +2108,13 @@ export function Plugins() {
                                   setSmtpConfig((c) => ({ ...c, fromEmail: e.target.value }))
                                 }
                                 placeholder="noreply@example.com"
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 font-mono"
                               />
                             </div>
                             <div>
                               <label
                                 htmlFor="smtp-from-name"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.smtp.fromNameLabel")}
                               </label>
@@ -2127,23 +2127,23 @@ export function Plugins() {
                                   setSmtpConfig((c) => ({ ...c, fromName: e.target.value }))
                                 }
                                 placeholder="CMS"
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
                               />
                             </div>
                           </div>
                         </div>
 
-                        <div className="border-t border-zinc-800/80 pt-5">
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                        <div className="border-t border-stone-200/90 dark:border-zinc-800/80 pt-5">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.smtp.notifyHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-4 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-4 max-w-3xl">
                             {t("plugins.smtp.notifyIntro")}
                           </p>
 
                           <label
                             htmlFor="smtp-recipients"
-                            className="block text-sm font-medium text-zinc-200 mb-2"
+                            className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                           >
                             {t("plugins.smtp.recipientsLabel")}
                           </label>
@@ -2156,13 +2156,13 @@ export function Plugins() {
                               setSmtpConfig((c) => ({ ...c, recipientEmails: e.target.value }))
                             }
                             placeholder={t("plugins.smtp.recipientsPlaceholder")}
-                            className="w-full max-w-3xl px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                            className="w-full max-w-3xl px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
                           />
-                          <p className="text-xs text-zinc-600 mt-1.5 mb-4 max-w-3xl">
+                          <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1.5 mb-4 max-w-3xl">
                             {t("plugins.smtp.recipientsHint")}
                           </p>
 
-                          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">
+                          <p className="text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wide mb-2">
                             {t("plugins.smtp.contentTypesHeading")}
                           </p>
                           <div className="grid gap-2 max-w-xl mb-5">
@@ -2181,16 +2181,16 @@ export function Plugins() {
                                   onChange={(e) =>
                                     setSmtpConfig((c) => ({ ...c, [key]: e.target.checked }))
                                   }
-                                  className="mt-1 rounded border-zinc-600 text-sky-500 focus:ring-sky-500/40"
+                                  className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-sky-500 focus:ring-sky-500/40"
                                 />
-                                <span className="text-sm text-zinc-300">
+                                <span className="text-sm text-stone-700 dark:text-zinc-300">
                                   {t(`plugins.smtp.${labelKey}`)}
                                 </span>
                               </label>
                             ))}
                           </div>
 
-                          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">
+                          <p className="text-xs font-medium text-stone-600 dark:text-zinc-400 uppercase tracking-wide mb-2">
                             {t("plugins.smtp.lifecycleHeading")}
                           </p>
                           <div className="grid gap-2 max-w-xl">
@@ -2204,9 +2204,9 @@ export function Plugins() {
                                     notifyOnPublished: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-sky-500 focus:ring-sky-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-sky-500 focus:ring-sky-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.smtp.notifyOnPublishedLabel")}
                               </span>
                             </label>
@@ -2220,16 +2220,16 @@ export function Plugins() {
                                     notifyOnDraftSaved: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-sky-500 focus:ring-sky-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-sky-500 focus:ring-sky-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.smtp.notifyOnDraftSavedLabel")}
                               </span>
                             </label>
                           </div>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.smtp.demoHint")}
                         </p>
 
@@ -2249,19 +2249,19 @@ export function Plugins() {
                     )}
 
                     {isN8n && enabled && n8nSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-6">
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.n8n.connectionHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-4 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-4 max-w-3xl">
                             {t("plugins.n8n.connectionIntro")}
                           </p>
                           <div className="grid gap-4 max-w-3xl">
                             <div>
                               <label
                                 htmlFor="n8n-instance-url"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.n8n.instanceUrlLabel")}
                               </label>
@@ -2274,16 +2274,16 @@ export function Plugins() {
                                   setN8nConfig((c) => ({ ...c, instanceUrl: e.target.value }))
                                 }
                                 placeholder={t("plugins.n8n.instanceUrlPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 font-mono"
                               />
-                              <p className="text-xs text-zinc-500 mt-1.5">
+                              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                 {t("plugins.n8n.instanceUrlHint")}
                               </p>
                             </div>
                             <div>
                               <label
                                 htmlFor="n8n-webhook-url"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.n8n.webhookUrlLabel")}
                               </label>
@@ -2296,14 +2296,14 @@ export function Plugins() {
                                   setN8nConfig((c) => ({ ...c, webhookUrl: e.target.value }))
                                 }
                                 placeholder={t("plugins.n8n.webhookUrlPlaceholder")}
-                                className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
                                   n8nWebhookInvalid
                                     ? "border-amber-500/50 focus:ring-amber-500/30"
-                                    : "border-zinc-700 focus:ring-indigo-500/40"
+                                    : "border-stone-300 dark:border-zinc-700 focus:ring-indigo-500/40"
                                 }`}
                               />
                               {n8nWebhookInvalid && (
-                                <p className="text-xs text-amber-400/90 mt-1.5">
+                                <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-1.5">
                                   {t("plugins.n8n.webhookUrlInvalid")}
                                 </p>
                               )}
@@ -2311,7 +2311,7 @@ export function Plugins() {
                             <div>
                               <label
                                 htmlFor="n8n-signing-secret"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.n8n.signingSecretLabel")}
                               </label>
@@ -2324,9 +2324,9 @@ export function Plugins() {
                                   setN8nConfig((c) => ({ ...c, signingSecret: e.target.value }))
                                 }
                                 placeholder={t("plugins.n8n.signingSecretPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 font-mono"
                               />
-                              <p className="text-xs text-zinc-500 mt-1.5">
+                              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                 {t("plugins.n8n.signingSecretHint")}
                               </p>
                             </div>
@@ -2334,10 +2334,10 @@ export function Plugins() {
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.n8n.triggersHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-3 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-3 max-w-3xl">
                             {t("plugins.n8n.triggersIntro")}
                           </p>
                           <div className="grid gap-3 max-w-3xl">
@@ -2363,19 +2363,19 @@ export function Plugins() {
                                   onChange={(e) =>
                                     setN8nConfig((c) => ({ ...c, [key]: e.target.checked }))
                                   }
-                                  className="mt-1 rounded border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
+                                  className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
                                 />
-                                <span className="text-sm text-zinc-300">{t(labelKey)}</span>
+                                <span className="text-sm text-stone-700 dark:text-zinc-300">{t(labelKey)}</span>
                               </label>
                             ))}
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.n8n.payloadHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-3 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-3 max-w-3xl">
                             {t("plugins.n8n.payloadIntro")}
                           </p>
                           <div className="grid gap-3 max-w-3xl">
@@ -2389,9 +2389,9 @@ export function Plugins() {
                                     payloadIncludeLocales: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.n8n.payloadIncludeLocalesLabel")}
                               </span>
                             </label>
@@ -2405,9 +2405,9 @@ export function Plugins() {
                                     payloadIncludeAuthor: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.n8n.payloadIncludeAuthorLabel")}
                               </span>
                             </label>
@@ -2421,16 +2421,16 @@ export function Plugins() {
                                     payloadIncludeFullEntry: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-indigo-500 focus:ring-indigo-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.n8n.payloadIncludeFullEntryLabel")}
                               </span>
                             </label>
                           </div>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.n8n.demoHint")}
                         </p>
 
@@ -2452,7 +2452,7 @@ export function Plugins() {
                               setN8nTestResult(result);
                               setN8nTesting(false);
                             }}
-                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/50 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                            className="px-4 py-2 bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-800 dark:text-zinc-200 border border-stone-300/75 dark:border-zinc-700/50 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             {n8nTesting ? "Testing..." : t("plugins.n8n.testWebhook")}
                           </button>
@@ -2469,19 +2469,19 @@ export function Plugins() {
                     )}
 
                     {isOutboundWebhook && enabled && outboundWebhookSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-6">
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.outboundWebhook.connectionHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-4 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-4 max-w-3xl">
                             {t("plugins.outboundWebhook.connectionIntro")}
                           </p>
                           <div className="grid gap-4 max-w-3xl">
                             <div>
                               <label
                                 htmlFor="outbound-webhook-channel"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.outboundWebhook.channelLabel")}
                               </label>
@@ -2497,16 +2497,16 @@ export function Plugins() {
                                   }))
                                 }
                                 placeholder={t("plugins.outboundWebhook.channelPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
                               />
-                              <p className="text-xs text-zinc-500 mt-1.5">
+                              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                 {t("plugins.outboundWebhook.channelHint")}
                               </p>
                             </div>
                             <div>
                               <label
                                 htmlFor="outbound-webhook-url"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.outboundWebhook.webhookUrlLabel")}
                               </label>
@@ -2522,14 +2522,14 @@ export function Plugins() {
                                   }))
                                 }
                                 placeholder={t("plugins.outboundWebhook.webhookUrlPlaceholder")}
-                                className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
                                   outboundWebhookInvalid
                                     ? "border-amber-500/50 focus:ring-amber-500/30"
-                                    : "border-zinc-700 focus:ring-teal-500/40"
+                                    : "border-stone-300 dark:border-zinc-700 focus:ring-teal-500/40"
                                 }`}
                               />
                               {outboundWebhookInvalid && (
-                                <p className="text-xs text-amber-400/90 mt-1.5">
+                                <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-1.5">
                                   {t("plugins.outboundWebhook.webhookUrlInvalid")}
                                 </p>
                               )}
@@ -2537,7 +2537,7 @@ export function Plugins() {
                             <div>
                               <label
                                 htmlFor="outbound-webhook-secret"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.outboundWebhook.signingSecretLabel")}
                               </label>
@@ -2553,9 +2553,9 @@ export function Plugins() {
                                   }))
                                 }
                                 placeholder={t("plugins.outboundWebhook.signingSecretPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-teal-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-teal-500/40 font-mono"
                               />
-                              <p className="text-xs text-zinc-500 mt-1.5">
+                              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                 {t("plugins.outboundWebhook.signingSecretHint")}
                               </p>
                             </div>
@@ -2563,10 +2563,10 @@ export function Plugins() {
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.outboundWebhook.triggersHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-3 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-3 max-w-3xl">
                             {t("plugins.outboundWebhook.triggersIntro")}
                           </p>
                           <div className="grid gap-3 max-w-3xl">
@@ -2616,19 +2616,19 @@ export function Plugins() {
                                       [key]: e.target.checked,
                                     }))
                                   }
-                                  className="mt-1 rounded border-zinc-600 text-teal-500 focus:ring-teal-500/40"
+                                  className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-teal-500 focus:ring-teal-500/40"
                                 />
-                                <span className="text-sm text-zinc-300">{t(labelKey)}</span>
+                                <span className="text-sm text-stone-700 dark:text-zinc-300">{t(labelKey)}</span>
                               </label>
                             ))}
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.outboundWebhook.payloadHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-3 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-3 max-w-3xl">
                             {t("plugins.outboundWebhook.payloadIntro")}
                           </p>
                           <div className="grid gap-3 max-w-3xl">
@@ -2642,9 +2642,9 @@ export function Plugins() {
                                     payloadIncludeLocales: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-teal-500 focus:ring-teal-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-teal-500 focus:ring-teal-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.outboundWebhook.payloadIncludeLocalesLabel")}
                               </span>
                             </label>
@@ -2658,9 +2658,9 @@ export function Plugins() {
                                     payloadIncludeAuthor: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-teal-500 focus:ring-teal-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-teal-500 focus:ring-teal-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.outboundWebhook.payloadIncludeAuthorLabel")}
                               </span>
                             </label>
@@ -2674,16 +2674,16 @@ export function Plugins() {
                                     payloadIncludeFullEntry: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-teal-500 focus:ring-teal-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-teal-500 focus:ring-teal-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.outboundWebhook.payloadIncludeFullEntryLabel")}
                               </span>
                             </label>
                           </div>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.outboundWebhook.demoHint")}
                         </p>
 
@@ -2705,7 +2705,7 @@ export function Plugins() {
                               setOutboundTestResult(result);
                               setOutboundTesting(false);
                             }}
-                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/50 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                            className="px-4 py-2 bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-800 dark:text-zinc-200 border border-stone-300/75 dark:border-zinc-700/50 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             {outboundTesting ? "Testing..." : t("plugins.outboundWebhook.testWebhook")}
                           </button>
@@ -2724,19 +2724,19 @@ export function Plugins() {
                     )}
 
                     {isNativeAnalytics && enabled && nativeAnalyticsSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-6">
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-1">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-1">
                             {t("plugins.nativeAnalytics.connectionHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-4 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-4 max-w-3xl">
                             {t("plugins.nativeAnalytics.connectionIntro")}
                           </p>
                           <div className="grid gap-4 max-w-3xl">
                             <div>
                               <label
                                 htmlFor="native-analytics-ingest"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.nativeAnalytics.ingestUrlLabel")}
                               </label>
@@ -2752,14 +2752,14 @@ export function Plugins() {
                                   }))
                                 }
                                 placeholder={t("plugins.nativeAnalytics.ingestUrlPlaceholder")}
-                                className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
+                                className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 font-mono ${
                                   nativeAnalyticsIngestInvalid
                                     ? "border-amber-500/50 focus:ring-amber-500/30"
-                                    : "border-zinc-700 focus:ring-blue-500/40"
+                                    : "border-stone-300 dark:border-zinc-700 focus:ring-blue-500/40"
                                 }`}
                               />
                               {nativeAnalyticsIngestInvalid && (
-                                <p className="text-xs text-amber-400/90 mt-1.5">
+                                <p className="text-xs text-amber-700 dark:text-amber-400/90 mt-1.5">
                                   {t("plugins.nativeAnalytics.ingestUrlInvalid")}
                                 </p>
                               )}
@@ -2767,7 +2767,7 @@ export function Plugins() {
                             <div>
                               <label
                                 htmlFor="native-analytics-site-key"
-                                className="block text-sm font-medium text-zinc-200 mb-2"
+                                className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                               >
                                 {t("plugins.nativeAnalytics.siteKeyLabel")}
                               </label>
@@ -2783,9 +2783,9 @@ export function Plugins() {
                                   }))
                                 }
                                 placeholder={t("plugins.nativeAnalytics.siteKeyPlaceholder")}
-                                className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-mono"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-mono"
                               />
-                              <p className="text-xs text-zinc-500 mt-1.5">
+                              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                 {t("plugins.nativeAnalytics.siteKeyHint")}
                               </p>
                             </div>
@@ -2793,21 +2793,21 @@ export function Plugins() {
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-2">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-2">
                             {t("plugins.nativeAnalytics.sdkHeading")}
                           </h4>
-                          <p className="text-xs text-zinc-500 mb-2 max-w-3xl">
+                          <p className="text-xs text-stone-500 dark:text-zinc-500 mb-2 max-w-3xl">
                             {t("plugins.nativeAnalytics.sdkModuleHint")}
                           </p>
-                          <pre className="max-w-3xl p-4 rounded-lg border border-zinc-800 bg-zinc-950 text-xs text-zinc-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">
+                          <pre className="max-w-3xl p-4 rounded-lg border border-stone-200 dark:border-zinc-800 bg-stone-100 dark:bg-zinc-950 text-xs text-stone-700 dark:text-zinc-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">
                             {NATIVE_ANALYTICS_SDK_SNIPPET}
                           </pre>
-                          <p className="text-xs text-zinc-600 mt-2 max-w-3xl">
+                          <p className="text-xs text-stone-600 dark:text-zinc-600 mt-2 max-w-3xl">
                             {t("plugins.nativeAnalytics.sdkNote")}
                           </p>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.nativeAnalytics.demoHint")}
                         </p>
 
@@ -2829,18 +2829,18 @@ export function Plugins() {
                     )}
 
                     {isImageOptimization && enabled && imageOptimizationSettingsOpen && (
-                      <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-stone-200/90 dark:border-zinc-800/80 space-y-6">
                         <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 max-w-3xl">
                           <p className="text-xs font-medium text-amber-200/90 mb-1">
                             {t("plugins.imageOptimization.recommendedHeading")}
                           </p>
-                          <p className="text-xs text-zinc-400 leading-relaxed">
+                          <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed">
                             {t("plugins.imageOptimization.recommendedBody")}
                           </p>
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-3">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-3">
                             {t("plugins.imageOptimization.outputHeading")}
                           </h4>
                           <div className="grid gap-3 max-w-3xl">
@@ -2854,13 +2854,13 @@ export function Plugins() {
                                     deliverAsWebp: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-amber-500 focus:ring-amber-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-amber-500 focus:ring-amber-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.imageOptimization.deliverAsWebpLabel")}
                               </span>
                             </label>
-                            <p className="text-xs text-zinc-500 -mt-1 ml-8">
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 -mt-1 ml-8">
                               {t("plugins.imageOptimization.deliverAsWebpHint")}
                             </p>
                           </div>
@@ -2870,7 +2870,7 @@ export function Plugins() {
                           <div>
                             <label
                               htmlFor="img-opt-quality"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.imageOptimization.qualityLabel")}
                             </label>
@@ -2885,20 +2885,20 @@ export function Plugins() {
                                   webpQuality: e.target.value,
                                 }))
                               }
-                              className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
                                 imageOptQualityInvalid
                                   ? "border-amber-500/50 focus:ring-amber-500/30"
-                                  : "border-zinc-700 focus:ring-amber-500/40"
+                                  : "border-stone-300 dark:border-zinc-700 focus:ring-amber-500/40"
                               }`}
                             />
-                            <p className="text-xs text-zinc-500 mt-1.5">
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                               {t("plugins.imageOptimization.qualityHint")}
                             </p>
                           </div>
                           <div>
                             <label
                               htmlFor="img-opt-effort"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.imageOptimization.effortLabel")}
                             </label>
@@ -2913,20 +2913,20 @@ export function Plugins() {
                                   webpEffort: e.target.value,
                                 }))
                               }
-                              className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
                                 imageOptEffortInvalid
                                   ? "border-amber-500/50 focus:ring-amber-500/30"
-                                  : "border-zinc-700 focus:ring-amber-500/40"
+                                  : "border-stone-300 dark:border-zinc-700 focus:ring-amber-500/40"
                               }`}
                             />
-                            <p className="text-xs text-zinc-500 mt-1.5">
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                               {t("plugins.imageOptimization.effortHint")}
                             </p>
                           </div>
                           <div>
                             <label
                               htmlFor="img-opt-maxw"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.imageOptimization.maxWidthLabel")}
                             </label>
@@ -2942,17 +2942,17 @@ export function Plugins() {
                                 }))
                               }
                               placeholder="2560"
-                              className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
                                 imageOptMaxWInvalid
                                   ? "border-amber-500/50 focus:ring-amber-500/30"
-                                  : "border-zinc-700 focus:ring-amber-500/40"
+                                  : "border-stone-300 dark:border-zinc-700 focus:ring-amber-500/40"
                               }`}
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="img-opt-maxh"
-                              className="block text-sm font-medium text-zinc-200 mb-2"
+                              className="block text-sm font-medium text-stone-800 dark:text-zinc-200 mb-2"
                             >
                               {t("plugins.imageOptimization.maxHeightLabel")}
                             </label>
@@ -2968,20 +2968,20 @@ export function Plugins() {
                                 }))
                               }
                               placeholder={t("plugins.imageOptimization.maxDimPlaceholder")}
-                              className={`w-full px-4 py-2.5 bg-zinc-900 border rounded-md text-sm text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
+                              className={`w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 ${
                                 imageOptMaxHInvalid
                                   ? "border-amber-500/50 focus:ring-amber-500/30"
-                                  : "border-zinc-700 focus:ring-amber-500/40"
+                                  : "border-stone-300 dark:border-zinc-700 focus:ring-amber-500/40"
                               }`}
                             />
-                            <p className="text-xs text-zinc-500 mt-1.5">
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                               {t("plugins.imageOptimization.maxDimHint")}
                             </p>
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-3">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-3">
                             {t("plugins.imageOptimization.processingHeading")}
                           </h4>
                           <div className="grid gap-3 max-w-3xl">
@@ -2995,9 +2995,9 @@ export function Plugins() {
                                     stripMetadata: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-amber-500 focus:ring-amber-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-amber-500 focus:ring-amber-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.imageOptimization.stripMetadataLabel")}
                               </span>
                             </label>
@@ -3011,9 +3011,9 @@ export function Plugins() {
                                     autoOrient: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-amber-500 focus:ring-amber-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-amber-500 focus:ring-amber-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.imageOptimization.autoOrientLabel")}
                               </span>
                             </label>
@@ -3027,20 +3027,20 @@ export function Plugins() {
                                     retainOriginals: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-amber-500 focus:ring-amber-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-amber-500 focus:ring-amber-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.imageOptimization.retainOriginalsLabel")}
                               </span>
                             </label>
-                            <p className="text-xs text-zinc-500 ml-8 -mt-2">
+                            <p className="text-xs text-stone-500 dark:text-zinc-500 ml-8 -mt-2">
                               {t("plugins.imageOptimization.retainOriginalsHint")}
                             </p>
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-sm font-semibold text-zinc-200 mb-3">
+                          <h4 className="text-sm font-semibold text-stone-800 dark:text-zinc-200 mb-3">
                             {t("plugins.imageOptimization.responsiveHeading")}
                           </h4>
                           <div className="grid gap-3 max-w-3xl">
@@ -3054,9 +3054,9 @@ export function Plugins() {
                                     generateSrcset: e.target.checked,
                                   }))
                                 }
-                                className="mt-1 rounded border-zinc-600 text-amber-500 focus:ring-amber-500/40"
+                                className="mt-1 rounded border-stone-400 dark:border-zinc-600 text-amber-500 focus:ring-amber-500/40"
                               />
-                              <span className="text-sm text-zinc-300">
+                              <span className="text-sm text-stone-700 dark:text-zinc-300">
                                 {t("plugins.imageOptimization.generateSrcsetLabel")}
                               </span>
                             </label>
@@ -3064,7 +3064,7 @@ export function Plugins() {
                               <div className="ml-8">
                                 <label
                                   htmlFor="img-opt-srcset"
-                                  className="block text-xs font-medium text-zinc-500 mb-1.5"
+                                  className="block text-xs font-medium text-stone-500 dark:text-zinc-500 mb-1.5"
                                 >
                                   {t("plugins.imageOptimization.srcsetWidthsLabel")}
                                 </label>
@@ -3078,9 +3078,9 @@ export function Plugins() {
                                       srcsetWidths: e.target.value,
                                     }))
                                   }
-                                  className="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                  className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-300 dark:border-zinc-700 rounded-md text-sm text-stone-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                                 />
-                                <p className="text-xs text-zinc-500 mt-1.5">
+                                <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
                                   {t("plugins.imageOptimization.srcsetWidthsHint")}
                                 </p>
                               </div>
@@ -3088,7 +3088,7 @@ export function Plugins() {
                           </div>
                         </div>
 
-                        <p className="text-xs text-zinc-500 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 leading-relaxed max-w-3xl">
                           {t("plugins.imageOptimization.demoHint")}
                         </p>
 
@@ -3105,7 +3105,7 @@ export function Plugins() {
                             onClick={() =>
                               setImageOptimizationConfig(defaultImageOptimizationConfig())
                             }
-                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/50 rounded-md text-sm font-medium transition-colors"
+                            className="px-4 py-2 bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 text-stone-800 dark:text-zinc-200 border border-stone-300/75 dark:border-zinc-700/50 rounded-md text-sm font-medium transition-colors"
                           >
                             {t("plugins.imageOptimization.resetRecommended")}
                           </button>
@@ -3122,8 +3122,8 @@ export function Plugins() {
               })}
             </div>
 
-            <div className="mt-6 rounded-lg border border-dashed border-zinc-800 bg-zinc-950/50 px-4 py-6 text-center">
-              <p className="text-sm text-zinc-500">{t("plugins.footer")}</p>
+            <div className="mt-6 rounded-lg border border-dashed border-stone-200 dark:border-zinc-800 bg-white/75 dark:bg-zinc-950/50 px-4 py-6 text-center">
+              <p className="text-sm text-stone-500 dark:text-zinc-500">{t("plugins.footer")}</p>
             </div>
           </div>
         </div>

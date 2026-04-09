@@ -49,13 +49,16 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
         assertPermission('db.read')
         const { prisma, runInTenantContext } = await import('@wolent/database')
         return runInTenantContext({ tenantId }, async () => {
-          // Only allow reading content entries — not users, tokens, etc.
           const ALLOWED_MODELS = new Set(['ContentType', 'Entry', 'MediaFile', 'MediaFolder'])
           if (!ALLOWED_MODELS.has(type)) {
             throw new PluginSandboxError(pluginName, `Access to model "${type}" is not allowed`)
           }
+          const modelKey = type.charAt(0).toLowerCase() + type.slice(1)
+          if (!Object.prototype.hasOwnProperty.call(prisma, modelKey)) {
+            throw new PluginSandboxError(pluginName, `Model "${type}" not found`)
+          }
           // @ts-ignore - dynamic model access
-          return prisma[type.charAt(0).toLowerCase() + type.slice(1)].findMany(query ?? {})
+          return prisma[modelKey].findMany(query ?? {})
         })
       },
 
@@ -67,8 +70,12 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
           if (!ALLOWED_MODELS.has(type)) {
             throw new PluginSandboxError(pluginName, `Access to model "${type}" is not allowed`)
           }
+          const modelKey = type.charAt(0).toLowerCase() + type.slice(1)
+          if (!Object.prototype.hasOwnProperty.call(prisma, modelKey)) {
+            throw new PluginSandboxError(pluginName, `Model "${type}" not found`)
+          }
           // @ts-ignore
-          return prisma[type.charAt(0).toLowerCase() + type.slice(1)].findFirst({ where: { id } })
+          return prisma[modelKey].findFirst({ where: { id } })
         })
       },
 
@@ -80,8 +87,12 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
           if (!ALLOWED_MODELS.has(type)) {
             throw new PluginSandboxError(pluginName, `Writing to model "${type}" is not allowed`)
           }
+          const modelKey = type.charAt(0).toLowerCase() + type.slice(1)
+          if (!Object.prototype.hasOwnProperty.call(prisma, modelKey)) {
+            throw new PluginSandboxError(pluginName, `Model "${type}" not found`)
+          }
           // @ts-ignore
-          return prisma[type.charAt(0).toLowerCase() + type.slice(1)].create({ data })
+          return prisma[modelKey].create({ data })
         })
       },
 
@@ -93,8 +104,12 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
           if (!ALLOWED_MODELS.has(type)) {
             throw new PluginSandboxError(pluginName, `Updating model "${type}" is not allowed`)
           }
+          const modelKey = type.charAt(0).toLowerCase() + type.slice(1)
+          if (!Object.prototype.hasOwnProperty.call(prisma, modelKey)) {
+            throw new PluginSandboxError(pluginName, `Model "${type}" not found`)
+          }
           // @ts-ignore
-          return prisma[type.charAt(0).toLowerCase() + type.slice(1)].update({ where: { id }, data })
+          return prisma[modelKey].update({ where: { id }, data })
         })
       },
 
@@ -106,8 +121,12 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
           if (!ALLOWED_MODELS.has(type)) {
             throw new PluginSandboxError(pluginName, `Deleting from model "${type}" is not allowed`)
           }
+          const modelKey = type.charAt(0).toLowerCase() + type.slice(1)
+          if (!Object.prototype.hasOwnProperty.call(prisma, modelKey)) {
+            throw new PluginSandboxError(pluginName, `Model "${type}" not found`)
+          }
           // @ts-ignore
-          await prisma[type.charAt(0).toLowerCase() + type.slice(1)].delete({ where: { id } })
+          await prisma[modelKey].delete({ where: { id } })
         })
       },
     },
@@ -176,19 +195,29 @@ function buildPluginApi(pluginName: string, permissions: Set<string>, tenantId: 
     storage: {
       async read(filePath) {
         assertPermission('storage.read')
-        // Restrict to plugin's own directory only
-        const resolved = path.resolve(filePath)
+        if (filePath.includes('\0')) {
+          throw new PluginSandboxError(pluginName, 'Null byte in path')
+        }
+        const { realpath } = await import('node:fs/promises')
         const allowed = path.resolve('./src/plugins')
-        if (!resolved.startsWith(allowed)) {
+        const resolved = path.resolve(filePath)
+        if (!resolved.startsWith(allowed + path.sep)) {
           throw new PluginSandboxError(pluginName, `Path traversal attempt detected: ${filePath}`)
         }
-        return readFile(resolved, 'utf8')
+        const real = await realpath(resolved).catch(() => resolved)
+        if (!real.startsWith(allowed + path.sep)) {
+          throw new PluginSandboxError(pluginName, `Symlink escape detected: ${filePath}`)
+        }
+        return readFile(real, 'utf8')
       },
       async write(filePath, content) {
         assertPermission('storage.write')
-        const resolved = path.resolve(filePath)
+        if (filePath.includes('\0')) {
+          throw new PluginSandboxError(pluginName, 'Null byte in path')
+        }
         const allowed = path.resolve('./src/plugins')
-        if (!resolved.startsWith(allowed)) {
+        const resolved = path.resolve(filePath)
+        if (!resolved.startsWith(allowed + path.sep)) {
           throw new PluginSandboxError(pluginName, `Path traversal attempt detected: ${filePath}`)
         }
         const { writeFile } = await import('node:fs/promises')

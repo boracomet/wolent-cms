@@ -56,12 +56,15 @@ export async function cookieConsentRoutes(app: FastifyInstance) {
 
     const input = schema.parse(req.body)
 
-    // Find tenant (public endpoint — no auth)
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
-    const pluginRow = await (prisma as any).pluginConfig.findFirst({
-      where: { pluginId: 'cookie-management', enabled: true },
-    }) as any
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = ''
+    let pluginRow: any
+    try {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
+      pluginRow = await (prisma as any).pluginConfig.findFirst({
+        where: { pluginId: 'cookie-management', enabled: true },
+      })
+    } finally {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = ''
+    }
 
     if (!pluginRow) {
       return reply.status(404).send({ error: 'Cookie consent not enabled' })
@@ -100,11 +103,15 @@ export async function cookieConsentRoutes(app: FastifyInstance) {
 
   // ─── GET /api/plugins/cookie-consent/config — Public ─────────────────────
   app.get('/api/plugins/cookie-consent/config', async (req, reply) => {
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
-    const pluginRow = await (prisma as any).pluginConfig.findFirst({
-      where: { pluginId: 'cookie-management', enabled: true },
-    }) as any
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = ''
+    let pluginRow: any
+    try {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
+      pluginRow = await (prisma as any).pluginConfig.findFirst({
+        where: { pluginId: 'cookie-management', enabled: true },
+      })
+    } finally {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = ''
+    }
 
     if (!pluginRow) {
       return reply.send({ data: null })
@@ -154,29 +161,53 @@ export async function cookieConsentRoutes(app: FastifyInstance) {
     }
 
     const baseUrl = process.env['FRONTEND_URL'] ?? 'http://localhost:3000'
+
+    const safeConfig = JSON.stringify({
+      title: config.bannerTitle,
+      text: config.bannerText,
+      acceptText: config.acceptButtonText,
+      declineText: config.declineButtonText,
+      position: config.position,
+      privacyUrl: config.privacyPolicyUrl,
+      baseUrl,
+    })
+
+    const positionCss = config.position === 'top' ? 'top:0' : 'bottom:0'
+
     const snippet = `<!-- Wolent CMS Cookie Consent -->
 <script>
 (function(){
   if(document.cookie.indexOf('wolent_consent=') > -1) return;
-  var config = ${JSON.stringify({
-    title: config.bannerTitle,
-    text: config.bannerText,
-    acceptText: config.acceptButtonText,
-    declineText: config.declineButtonText,
-    position: config.position,
-    privacyUrl: config.privacyPolicyUrl,
-  })};
+  var c = ${safeConfig};
+  function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
   var banner = document.createElement('div');
   banner.id = 'wolent-consent';
-  banner.style.cssText = 'position:fixed;${config.position === 'top' ? 'top:0' : 'bottom:0'};left:0;right:0;background:#18181b;color:#f4f4f5;padding:1rem 1.5rem;z-index:9999;display:flex;align-items:center;justify-content:space-between;gap:1rem;font-family:system-ui,sans-serif;font-size:0.875rem;';
-  banner.innerHTML = '<div><strong>'+config.title+'</strong><p style="margin:0.25rem 0 0">'+config.text+'</p></div>'
-    +'<div style="display:flex;gap:0.5rem;flex-shrink:0">'
-    +'<button onclick="wcc(false)" style="padding:0.5rem 1rem;border:1px solid #52525b;background:transparent;color:#a1a1aa;border-radius:0.375rem;cursor:pointer">'+config.declineText+'</button>'
-    +'<button onclick="wcc(true)" style="padding:0.5rem 1rem;background:#f4f4f5;color:#18181b;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500">'+config.acceptText+'</button>'
-    +'</div>';
+  banner.style.cssText = 'position:fixed;${positionCss};left:0;right:0;background:#18181b;color:#f4f4f5;padding:1rem 1.5rem;z-index:9999;display:flex;align-items:center;justify-content:space-between;gap:1rem;font-family:system-ui,sans-serif;font-size:0.875rem;';
+  var info = document.createElement('div');
+  var h = document.createElement('strong');
+  h.textContent = c.title;
+  var p = document.createElement('p');
+  p.style.margin = '0.25rem 0 0';
+  p.textContent = c.text;
+  info.appendChild(h);
+  info.appendChild(p);
+  banner.appendChild(info);
+  var btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:0.5rem;flex-shrink:0';
+  var decline = document.createElement('button');
+  decline.textContent = c.declineText;
+  decline.style.cssText = 'padding:0.5rem 1rem;border:1px solid #52525b;background:transparent;color:#a1a1aa;border-radius:0.375rem;cursor:pointer';
+  decline.onclick = function(){wcc(false)};
+  var accept = document.createElement('button');
+  accept.textContent = c.acceptText;
+  accept.style.cssText = 'padding:0.5rem 1rem;background:#f4f4f5;color:#18181b;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500';
+  accept.onclick = function(){wcc(true)};
+  btns.appendChild(decline);
+  btns.appendChild(accept);
+  banner.appendChild(btns);
   document.body.appendChild(banner);
   window.wcc = function(accepted){
-    fetch('${baseUrl}/api/plugins/cookie-consent/record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accepted:accepted})}).catch(function(){});
+    fetch(c.baseUrl+'/api/plugins/cookie-consent/record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accepted:accepted})}).catch(function(){});
     document.getElementById('wolent-consent').remove();
     delete window.wcc;
   };

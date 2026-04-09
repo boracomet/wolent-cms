@@ -128,11 +128,14 @@ export async function injectTenant(req: FastifyRequest, _reply: FastifyReply): P
   }
 
   try {
-    const prevBypass = process.env['WOLENT_BYPASS_TENANT_GUARD']
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tenant = await (prisma as any).tenant.findFirst({ where: { slug } })
-    process.env['WOLENT_BYPASS_TENANT_GUARD'] = prevBypass ?? ''
+    let tenant: any
+    try {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = 'true'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tenant = await (prisma as any).tenant.findFirst({ where: { slug } })
+    } finally {
+      process.env['WOLENT_BYPASS_TENANT_GUARD'] = ''
+    }
 
     if (tenant?.id) {
       tenantIdCache.set(slug, tenant.id)

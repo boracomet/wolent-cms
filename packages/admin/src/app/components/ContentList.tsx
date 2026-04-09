@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router";
+import { useConfirm } from "./ConfirmDialog";
 import {
   Plus,
   Search,
@@ -131,7 +132,7 @@ function emptyDraftFilter(): Omit<ListFilter, "id"> {
 }
 
 const selectPopoverClass =
-  "w-full px-3 py-2.5 rounded-md bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/40 appearance-none cursor-pointer";
+  "w-full px-3 py-2.5 rounded-md bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 text-sm text-stone-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/40 appearance-none cursor-pointer";
 
 function DuplicateEntryModal({
   row,
@@ -161,31 +162,31 @@ function DuplicateEntryModal({
       role="presentation"
     >
       <div
-        className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-xl w-full max-w-md shadow-xl"
+        className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-xl w-full max-w-md shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dup-entry-heading"
       >
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800/50">
-          <h2 id="dup-entry-heading" className="text-lg font-semibold text-zinc-100">
+        <div className="flex items-center justify-between p-5 border-b border-stone-200/85 dark:border-zinc-800/50">
+          <h2 id="dup-entry-heading" className="text-lg font-semibold text-stone-900 dark:text-zinc-100">
             İçeriği çoğalt
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5 text-zinc-400" />
+            <X className="w-5 h-5 text-stone-600 dark:text-zinc-400" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-sm text-zinc-400">
-            Kaynak: <span className="text-zinc-200 font-medium">{row.title}</span>
+          <p className="text-sm text-stone-600 dark:text-zinc-400">
+            Kaynak: <span className="text-stone-800 dark:text-zinc-200 font-medium">{row.title}</span>
           </p>
           <div>
-            <label htmlFor="dup-entry-title-input" className="block text-sm font-medium text-zinc-300 mb-2">
+            <label htmlFor="dup-entry-title-input" className="block text-sm font-medium text-stone-700 dark:text-zinc-300 mb-2">
               Yeni başlık
             </label>
             <input
@@ -193,7 +194,7 @@ function DuplicateEntryModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-600 text-zinc-100"
+              className="w-full px-3 py-2 bg-white/88 dark:bg-zinc-950/80 border border-stone-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-600 text-stone-900 dark:text-zinc-100"
             />
           </div>
           <button
@@ -209,7 +210,7 @@ function DuplicateEntryModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md border border-zinc-700 text-zinc-300 hover:bg-zinc-800/80 transition-colors"
+              className="px-4 py-2 rounded-md border border-stone-300 dark:border-zinc-700 text-stone-700 dark:text-zinc-300 hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90 transition-colors"
             >
               İptal
             </button>
@@ -217,7 +218,7 @@ function DuplicateEntryModal({
               type="button"
               onClick={() => onConfirm(title)}
               disabled={!title.trim()}
-              className="px-4 py-2 rounded-md bg-zinc-100 text-zinc-950 font-medium hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="px-4 py-2 rounded-md bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-medium hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               Çoğalt
             </button>
@@ -229,6 +230,7 @@ function DuplicateEntryModal({
 }
 
 export function ContentList() {
+  const confirmDialog = useConfirm();
   const { type } = useParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -451,7 +453,13 @@ export function ContentList() {
 
   const bulkDelete = async () => {
     if (!type || selectedIds.size === 0) return;
-    if (!confirm(`Delete ${selectedIds.size} entries?`)) return;
+    const ok = await confirmDialog({
+      title: "Toplu Silme",
+      message: `${selectedIds.size} içeriği silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+      confirmLabel: "Evet, Sil",
+      variant: "danger",
+    });
+    if (!ok) return;
     setBulkWorking(true);
     setApiError(null);
     const ids = [...selectedIds];
@@ -532,7 +540,7 @@ export function ContentList() {
         <div className="flex flex-col gap-4 mb-6">
           <Link
             to="/content-types"
-            className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors w-fit"
+            className="flex items-center gap-2 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors w-fit"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Content Types
@@ -541,11 +549,11 @@ export function ContentList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold mb-2">{listHeading}</h1>
-              <p className="text-zinc-400">{filteredContents.length} entries found</p>
+              <p className="text-stone-600 dark:text-zinc-400">{filteredContents.length} entries found</p>
             </div>
             <Link
               to={`/content/${type}/create`}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Create {schema?.singularName ?? "entry"}</span>
@@ -555,16 +563,16 @@ export function ContentList() {
         </div>
 
         {/* relative z-20: dropdowns extend over the table below; later sibling would paint on top otherwise */}
-        <div className="relative z-20 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-4 mb-6">
+        <div className="relative z-20 bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-4 mb-6">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-[200px] relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-600 dark:text-zinc-400" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-700"
+                className="w-full pl-10 pr-4 py-2 bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
               />
             </div>
             <div className="flex items-center gap-2 shrink-0 relative" ref={filterPopoverRef}>
@@ -577,7 +585,7 @@ export function ContentList() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-colors ${
                   filtersOpen || filterRows.length > 0
                     ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-200"
-                    : "bg-zinc-800/70 border-zinc-700/50 hover:bg-zinc-700/70 text-zinc-200"
+                    : "bg-stone-200/95 dark:bg-zinc-800/70 border-stone-300/75 dark:border-zinc-700/50 hover:bg-stone-300 active:bg-stone-400/85 dark:hover:bg-zinc-700/75 dark:active:bg-zinc-600/65 text-stone-800 dark:text-zinc-200"
                 }`}
               >
               <Filter className="w-4 h-4" />
@@ -588,17 +596,17 @@ export function ContentList() {
               </button>
 
               {filtersOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-[min(100vw-2rem,22rem)] rounded-xl border border-zinc-700/80 bg-zinc-950 shadow-xl shadow-black/50 p-3 space-y-3">
+                <div className="absolute right-0 top-full mt-2 z-50 w-[min(100vw-2rem,22rem)] rounded-xl border border-stone-300/82 dark:border-zinc-700/80 bg-stone-100 dark:bg-zinc-950 shadow-xl shadow-black/50 p-3 space-y-3">
                   {filterRows.length > 0 && (
-                    <ul className="space-y-2 max-h-32 overflow-y-auto text-xs border-b border-zinc-800 pb-2 mb-1">
+                    <ul className="space-y-2 max-h-32 overflow-y-auto text-xs border-b border-stone-200 dark:border-zinc-800 pb-2 mb-1">
                       {filterRows.map((f) => (
                         <li
                           key={f.id}
-                          className="flex items-center justify-between gap-2 text-zinc-400 bg-zinc-900/80 rounded-md px-2 py-1.5"
+                          className="flex items-center justify-between gap-2 text-stone-600 dark:text-zinc-400 bg-white/90 dark:bg-zinc-900/80 rounded-md px-2 py-1.5"
                         >
                           <span className="truncate">
                             {f.field === "createdAt" ? "createdAt" : f.field}{" "}
-                            <span className="text-zinc-500">{f.operator}</span>{" "}
+                            <span className="text-stone-500 dark:text-zinc-500">{f.operator}</span>{" "}
                             {f.field === "createdAt"
                               ? f.date || "—"
                               : f.field === "status"
@@ -608,7 +616,7 @@ export function ContentList() {
                           <button
                             type="button"
                             onClick={() => removeFilter(f.id)}
-                            className="text-zinc-500 hover:text-red-400 shrink-0"
+                            className="text-stone-500 dark:text-zinc-500 hover:text-red-400 shrink-0"
                             aria-label="Remove filter"
                           >
                             ×
@@ -651,21 +659,21 @@ export function ContentList() {
                   {draft.field === "createdAt" && (
                     <div className="grid grid-cols-2 gap-2">
                       <div className="relative">
-                        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 dark:text-zinc-500 pointer-events-none" />
                         <input
                           type="date"
                           value={draft.date}
                           onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-                          className="w-full pl-9 pr-2 py-2.5 rounded-md bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full pl-9 pr-2 py-2.5 rounded-md bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 text-sm text-stone-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                       </div>
                       <div className="relative">
-                        <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                        <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 dark:text-zinc-500 pointer-events-none" />
                         <input
                           type="time"
                           value={draft.time}
                           onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                          className="w-full pl-9 pr-2 py-2.5 rounded-md bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          className="w-full pl-9 pr-2 py-2.5 rounded-md bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 text-sm text-stone-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                       </div>
                     </div>
@@ -702,14 +710,14 @@ export function ContentList() {
                             ? "e.g. en"
                             : "Name contains…"
                       }
-                      className="w-full px-3 py-2.5 rounded-md bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full px-3 py-2.5 rounded-md bg-stone-100 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 text-sm text-stone-800 dark:text-zinc-200 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   )}
 
                   <button
                     type="button"
                     onClick={addFilterFromDraft}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-zinc-800/90 border border-zinc-700/80 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-stone-200 dark:bg-zinc-800/90 border border-stone-300/82 dark:border-zinc-700/80 text-sm text-stone-800 dark:text-zinc-200 hover:bg-stone-300 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Add filter
@@ -728,7 +736,7 @@ export function ContentList() {
               className={`relative shrink-0 p-2 rounded-md border transition-colors ${
                 trashOpen || trashCount > 0
                   ? "bg-rose-500/10 border-rose-500/40 text-rose-200"
-                  : "bg-zinc-800/70 border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/70"
+                  : "bg-stone-200/95 dark:bg-zinc-800/70 border-stone-300/75 dark:border-zinc-700/50 text-stone-700 dark:text-zinc-300 hover:bg-stone-300 active:bg-stone-400/85 dark:hover:bg-zinc-700/75 dark:active:bg-zinc-600/65"
               }`}
               title="Trash — deleted entries"
               aria-expanded={trashOpen}
@@ -751,7 +759,7 @@ export function ContentList() {
                 className={`p-2 rounded-md border transition-colors ${
                   columnsOpen
                     ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-200"
-                    : "bg-zinc-800/70 border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/70"
+                    : "bg-stone-200/95 dark:bg-zinc-800/70 border-stone-300/75 dark:border-zinc-700/50 text-stone-700 dark:text-zinc-300 hover:bg-stone-300 active:bg-stone-400/85 dark:hover:bg-zinc-700/75 dark:active:bg-zinc-600/65"
                 }`}
                 title="Configure the view"
                 aria-expanded={columnsOpen}
@@ -760,8 +768,8 @@ export function ContentList() {
               </button>
 
               {columnsOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-zinc-700/80 bg-zinc-950 shadow-xl shadow-black/50 overflow-hidden">
-                  <div className="px-3 py-2.5 border-b border-zinc-800/90 flex items-center gap-2 text-indigo-300/95">
+                <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-stone-300/82 dark:border-zinc-700/80 bg-stone-100 dark:bg-zinc-950 shadow-xl shadow-black/50 overflow-hidden">
+                  <div className="px-3 py-2.5 border-b border-stone-200 dark:border-zinc-800/90 flex items-center gap-2 text-indigo-300/95">
                     <ListPlus className="w-4 h-4 shrink-0" />
                     <span className="text-xs font-medium">Configure the view</span>
                   </div>
@@ -776,14 +784,14 @@ export function ContentList() {
                             disabled={locked}
                             onClick={() => toggleColumn(key)}
                             className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left text-sm transition-colors ${
-                              on ? "bg-zinc-800/70 text-zinc-100" : "text-zinc-400 hover:bg-zinc-800/40"
+                              on ? "bg-stone-200/95 dark:bg-zinc-800/70 text-stone-900 dark:text-zinc-100" : "text-stone-600 dark:text-zinc-400 hover:bg-stone-300 dark:hover:bg-zinc-800/40"
                             } ${locked ? "opacity-80 cursor-default" : ""}`}
                           >
                             <span
                               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                                 on
                                   ? "bg-indigo-500 border-indigo-400 text-white"
-                                  : "border-zinc-600 bg-zinc-900"
+                                  : "border-stone-400 dark:border-zinc-600 bg-white dark:bg-zinc-900"
                               }`}
                             >
                               {on ? "✓" : ""}
@@ -801,12 +809,12 @@ export function ContentList() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg">
-            <span className="text-sm text-zinc-300">{selectedIds.size} selected</span>
+          <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-stone-200/95 dark:bg-zinc-800/70 border border-stone-300/75 dark:border-zinc-700/50 rounded-lg">
+            <span className="text-sm text-stone-700 dark:text-zinc-300">{selectedIds.size} selected</span>
             <button onClick={bulkPublish} disabled={bulkWorking} className="px-3 py-1 text-xs bg-green-600/20 text-green-400 border border-green-600/30 rounded hover:bg-green-600/30 disabled:opacity-40 transition-colors">Publish</button>
-            <button onClick={bulkUnpublish} disabled={bulkWorking} className="px-3 py-1 text-xs bg-zinc-700/50 text-zinc-300 border border-zinc-600/30 rounded hover:bg-zinc-600/50 disabled:opacity-40 transition-colors">Unpublish</button>
+            <button onClick={bulkUnpublish} disabled={bulkWorking} className="px-3 py-1 text-xs bg-stone-300 dark:bg-zinc-700/50 text-stone-700 dark:text-zinc-300 border border-stone-400 dark:border-zinc-600/30 rounded hover:bg-stone-200 active:bg-stone-400/75 dark:hover:bg-zinc-600/55 dark:active:bg-zinc-600/70 disabled:opacity-40 transition-colors">Unpublish</button>
             <button onClick={bulkDelete} disabled={bulkWorking} className="px-3 py-1 text-xs bg-red-600/20 text-red-400 border border-red-600/30 rounded hover:bg-red-600/30 disabled:opacity-40 transition-colors">Delete</button>
-            <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-zinc-500 hover:text-zinc-300">Clear</button>
+            <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300">Clear</button>
           </div>
         )}
 
@@ -818,57 +826,57 @@ export function ContentList() {
         )}
 
         {apiLoading && (
-          <div className="flex items-center justify-center py-8 text-zinc-500 text-sm gap-2">
+          <div className="flex items-center justify-center py-8 text-stone-500 dark:text-zinc-500 text-sm gap-2">
             <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
             Loading...
           </div>
         )}
 
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg overflow-hidden">
+        <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem]">
-              <thead className="border-b border-zinc-800/50">
+              <thead className="border-b border-stone-200/85 dark:border-zinc-800/50">
                 <tr>
                   <th className="px-3 py-3 sm:px-4 sm:py-4 w-px">
                     <input type="checkbox" checked={selectedIds.size === filteredContents.length && filteredContents.length > 0} onChange={toggleSelectAll} className="w-4 h-4 rounded accent-zinc-100" />
                   </th>
                   {v.id && (
-                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">ID</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">ID</th>
                   )}
                   {v.title && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Title</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">Title</th>
                   )}
                   {showDescriptionCol && v.description && (
-                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400 min-w-[140px]">
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400 min-w-[140px]">
                       Description
                     </th>
                   )}
                   {showGalleryColumns && v.cover && (
-                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400 w-px whitespace-nowrap">
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400 w-px whitespace-nowrap">
                       {coverColumnLabel}
                     </th>
                   )}
                   {v.status && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Status</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">Status</th>
                   )}
                   {v.locale && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Locale</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">Locale</th>
                   )}
                   {v.updatedAt && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">Updated</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">Updated</th>
                   )}
                   {v.updatedBy && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-zinc-400">By</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-sm font-medium text-stone-600 dark:text-zinc-400">By</th>
                   )}
                   {v.actions && (
-                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-right text-sm font-medium text-zinc-400">Actions</th>
+                  <th className="px-3 py-3 sm:px-6 sm:py-4 text-right text-sm font-medium text-stone-600 dark:text-zinc-400">Actions</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-stone-200 dark:divide-zinc-800">
                 {!apiLoading && filteredContents.length === 0 && (
                   <tr>
-                    <td colSpan={20} className="px-6 py-12 text-center text-zinc-500 text-sm">
+                    <td colSpan={20} className="px-6 py-12 text-center text-stone-500 dark:text-zinc-500 text-sm">
                       {contents.length === 0 ? "No entries yet. Create your first entry." : "No entries match the current filters."}
                     </td>
                   </tr>
@@ -876,13 +884,13 @@ export function ContentList() {
                 {filteredContents.map((content) => (
                   <tr
                     key={`${content.id}-${content.updatedAt}-${content.title}`}
-                    className={`hover:bg-zinc-800/30 transition-colors ${selectedIds.has(content.id) ? "bg-zinc-800/50" : ""}`}
+                    className={`hover:bg-stone-300 dark:hover:bg-zinc-800/30 transition-colors ${selectedIds.has(content.id) ? "bg-stone-200/85 dark:bg-zinc-800/50" : ""}`}
                   >
                     <td className="px-3 py-3 sm:px-4 sm:py-4 w-px">
                       <input type="checkbox" checked={selectedIds.has(content.id)} onChange={() => toggleSelectRow(content.id)} className="w-4 h-4 rounded accent-zinc-100" />
                     </td>
                     {v.id && (
-                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-zinc-400 font-mono">{content.id}</td>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-stone-600 dark:text-zinc-400 font-mono">{content.id}</td>
                     )}
                     {v.title && (
                       <td
@@ -894,7 +902,7 @@ export function ContentList() {
                     )}
                     {showDescriptionCol && v.description && (
                       <td
-                        className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-zinc-400 max-w-xs truncate"
+                        className="px-3 py-3 sm:px-6 sm:py-4 text-sm text-stone-600 dark:text-zinc-400 max-w-xs truncate"
                         title={content.description}
                       >
                         {content.description && content.description !== "—"
@@ -908,14 +916,14 @@ export function ContentList() {
                           <img
                             src={content.coverUrl}
                             alt=""
-                            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-zinc-600/60 bg-zinc-800"
+                            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-stone-400 dark:ring-zinc-600/60 bg-stone-200 dark:bg-zinc-800"
                           />
                         ) : (
                           <div
-                            className="h-10 w-10 shrink-0 rounded-full bg-zinc-800 ring-1 ring-zinc-700/50 flex items-center justify-center"
+                            className="h-10 w-10 shrink-0 rounded-full bg-stone-200 dark:bg-zinc-800 ring-1 ring-stone-400 dark:ring-zinc-700/50 flex items-center justify-center"
                             aria-hidden
                           >
-                            <span className="text-[10px] text-zinc-600">—</span>
+                            <span className="text-[10px] text-stone-600 dark:text-zinc-600">—</span>
                           </div>
                         )}
                       </td>
@@ -934,45 +942,45 @@ export function ContentList() {
                     </td>
                     )}
                     {v.locale && (
-                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400 uppercase text-sm">{content.locale}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-stone-600 dark:text-zinc-400 uppercase text-sm">{content.locale}</td>
                     )}
                     {v.updatedAt && (
-                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400">{content.updatedAt}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-stone-600 dark:text-zinc-400">{content.updatedAt}</td>
                     )}
                     {v.updatedBy && (
-                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-zinc-400">{content.updatedBy}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4 text-stone-600 dark:text-zinc-400">{content.updatedBy}</td>
                     )}
                     {v.actions && (
                     <td className="px-3 py-3 sm:px-6 sm:py-4">
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           to={`/content/${type}/${content.id}`}
-                          className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                          className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors"
                         >
-                          <Edit className="w-4 h-4 text-zinc-400" />
+                          <Edit className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </Link>
                           {schema && !schema.isSingleType && (
                             <button
                               type="button"
                               onClick={() => setRowToDuplicate(content)}
-                              className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                              className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors"
                               title="Duplicate entry"
                               aria-label={`Duplicate “${content.title}”`}
                             >
-                              <Copy className="w-4 h-4 text-zinc-400" />
+                              <Copy className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                             </button>
                           )}
                           <button
                             type="button"
                             onClick={() => moveToTrash(content)}
-                            className="p-2 hover:bg-zinc-800 rounded transition-colors"
+                            className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors"
                             title="Move to trash"
                             aria-label={`Move “${content.title}” to trash`}
                           >
-                          <Trash2 className="w-4 h-4 text-zinc-400" />
+                          <Trash2 className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </button>
-                          <button type="button" className="p-2 hover:bg-zinc-800 rounded transition-colors">
-                          <MoreVertical className="w-4 h-4 text-zinc-400" />
+                          <button type="button" className="p-2 hover:bg-stone-300 dark:hover:bg-zinc-800 rounded transition-colors">
+                          <MoreVertical className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </button>
                       </div>
                     </td>
@@ -986,7 +994,7 @@ export function ContentList() {
       </div>
 
       {totalCount > PAGE_SIZE && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 text-sm text-zinc-400">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-stone-200 dark:border-zinc-800 text-sm text-stone-600 dark:text-zinc-400">
           <span>
             {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–{Math.min(page * PAGE_SIZE, totalCount)} / {totalCount} kayıt
           </span>
@@ -995,7 +1003,7 @@ export function ContentList() {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage(p => p - 1)}
-              className="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 rounded bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               ← Önceki
             </button>
@@ -1004,7 +1012,7 @@ export function ContentList() {
               type="button"
               disabled={page >= Math.ceil(totalCount / PAGE_SIZE)}
               onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 rounded bg-stone-200 dark:bg-zinc-800 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Sonraki →
             </button>
@@ -1035,22 +1043,22 @@ export function ContentList() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="trash-modal-title"
-              className="relative z-10 flex max-h-[min(85vh,32rem)] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-zinc-700/90 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
+              className="relative z-10 flex max-h-[min(85vh,32rem)] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-stone-300/85 dark:border-zinc-700/90 bg-stone-100 dark:bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-white/10"
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-3 border-b border-zinc-800/80 px-5 py-3 shrink-0">
+              <div className="flex items-start justify-between gap-3 border-b border-stone-200/90 dark:border-zinc-800/80 px-5 py-3 shrink-0">
                 <div className="min-w-0">
-                  <h2 id="trash-modal-title" className="text-base font-semibold text-zinc-100">
+                  <h2 id="trash-modal-title" className="text-base font-semibold text-stone-900 dark:text-zinc-100">
                     Trash
                   </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
+                  <p className="text-xs text-stone-500 dark:text-zinc-500 mt-0.5">
                     {listHeading} · {trashCount} deleted {trashCount === 1 ? "entry" : "entries"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setTrashOpen(false)}
-                  className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors shrink-0"
+                  className="p-2 rounded-lg hover:bg-stone-300 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors shrink-0"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
@@ -1058,23 +1066,23 @@ export function ContentList() {
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-4">
                 {trashedForType.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-14 text-center text-sm text-zinc-500">
+                  <div className="flex flex-col items-center justify-center py-14 text-center text-sm text-stone-500 dark:text-zinc-500">
                     <Trash2 className="w-10 h-10 mb-3 opacity-30" />
                     <p>Trash is empty.</p>
-                    <p className="text-xs text-zinc-600 mt-1">Deleted entries appear here. You can restore them anytime.</p>
+                    <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1">Deleted entries appear here. You can restore them anytime.</p>
                   </div>
                 ) : (
                   <ul className="space-y-2">
                     {trashedForType.map(({ key, row }) => (
                       <li
                         key={key}
-                        className="flex items-center gap-3 rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-3"
+                        className="flex items-center gap-3 rounded-lg border border-stone-200/90 dark:border-zinc-800/80 bg-stone-50/92 dark:bg-zinc-900/40 p-3"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-zinc-100 truncate" title={row.title}>
+                          <p className="text-sm font-medium text-stone-900 dark:text-zinc-100 truncate" title={row.title}>
                             {row.title}
                           </p>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-zinc-500">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-stone-500 dark:text-zinc-500">
                             <span
                               className={
                                 row.status === "published"
@@ -1093,7 +1101,7 @@ export function ContentList() {
                         <button
                           type="button"
                           onClick={() => restoreFromTrash(key)}
-                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:bg-zinc-700/80 transition-colors"
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-200 dark:bg-zinc-800 border border-stone-300/82 dark:border-zinc-700/80 text-stone-800 dark:text-zinc-200 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600/80 transition-colors"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           Restore

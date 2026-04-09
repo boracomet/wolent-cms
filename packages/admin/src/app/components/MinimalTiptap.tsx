@@ -74,7 +74,7 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[300px] px-4 py-3',
+        class: 'prose max-w-none focus:outline-none min-h-[300px] px-4 py-3 dark:prose-invert',
       },
     },
   });
@@ -108,17 +108,17 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
   };
 
   return (
-    <div className="border border-zinc-800/50 rounded-lg overflow-hidden bg-zinc-950/50 backdrop-blur-sm">
+    <div className="border border-stone-200/85 dark:border-zinc-800/50 rounded-lg overflow-hidden bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm">
       {/* Toolbar — dar ekranda yatay kaydırma; genişte sarma */}
-      <div className="border-b border-zinc-800/50 bg-zinc-900/30 overflow-x-auto overscroll-x-contain touch-pan-x">
+      <div className="border-b border-stone-200/85 dark:border-zinc-800/50 bg-stone-50/85 dark:bg-zinc-900/30 overflow-x-auto overscroll-x-contain touch-pan-x">
         <div className="flex flex-nowrap gap-1 p-2 min-w-min sm:flex-wrap sm:min-w-0">
         {/* Text Formatting */}
-        <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
+        <div className="flex gap-1 pr-2 border-r border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editor.can().chain().focus().toggleBold().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50 ${
-              editor.isActive('bold') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50 ${
+              editor.isActive('bold') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Bold"
           >
@@ -127,8 +127,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editor.can().chain().focus().toggleItalic().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50 ${
-              editor.isActive('italic') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50 ${
+              editor.isActive('italic') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Italic"
           >
@@ -137,8 +137,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             disabled={!editor.can().chain().focus().toggleUnderline().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50 ${
-              editor.isActive('underline') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50 ${
+              editor.isActive('underline') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Underline"
           >
@@ -147,8 +147,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().toggleStrike().run()}
             disabled={!editor.can().chain().focus().toggleStrike().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50 ${
-              editor.isActive('strike') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50 ${
+              editor.isActive('strike') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Strikethrough"
           >
@@ -157,8 +157,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().toggleCode().run()}
             disabled={!editor.can().chain().focus().toggleCode().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50 ${
-              editor.isActive('code') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50 ${
+              editor.isActive('code') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Code"
           >
@@ -167,11 +167,11 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
         </div>
 
         {/* Headings */}
-        <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
+        <div className="flex gap-1 pr-2 border-r border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('heading', { level: 1 }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('heading', { level: 1 }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Heading 1"
           >
@@ -179,8 +179,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('heading', { level: 2 }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('heading', { level: 2 }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Heading 2"
           >
@@ -188,8 +188,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('heading', { level: 3 }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('heading', { level: 3 }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Heading 3"
           >
@@ -198,11 +198,11 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
         </div>
 
         {/* Lists */}
-        <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
+        <div className="flex gap-1 pr-2 border-r border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('bulletList') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('bulletList') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Bullet List"
           >
@@ -210,8 +210,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('orderedList') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('orderedList') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Numbered List"
           >
@@ -219,8 +219,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('blockquote') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('blockquote') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Blockquote"
           >
@@ -229,11 +229,11 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
         </div>
 
         {/* Alignment */}
-        <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
+        <div className="flex gap-1 pr-2 border-r border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive({ textAlign: 'left' }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Align Left"
           >
@@ -241,8 +241,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive({ textAlign: 'center' }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Align Center"
           >
@@ -250,8 +250,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive({ textAlign: 'right' }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Align Right"
           >
@@ -259,8 +259,8 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive({ textAlign: 'justify' }) ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive({ textAlign: 'justify' }) ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Justify"
           >
@@ -269,11 +269,11 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
         </div>
 
         {/* Link & Image */}
-        <div className="flex gap-1 pr-2 border-r border-zinc-800/50">
+        <div className="flex gap-1 pr-2 border-r border-stone-200/85 dark:border-zinc-800/50">
           <button
             onClick={setLink}
-            className={`p-2 rounded hover:bg-zinc-800/50 transition-colors ${
-              editor.isActive('link') ? 'bg-zinc-800/70 text-blue-400' : ''
+            className={`p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors ${
+              editor.isActive('link') ? 'bg-stone-200/95 dark:bg-zinc-800/70 text-blue-400' : ''
             }`}
             title="Add Link"
           >
@@ -281,7 +281,7 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           </button>
           <button
             onClick={addImage}
-            className="p-2 rounded hover:bg-zinc-800/50 transition-colors"
+            className="p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors"
             title="Add Image"
           >
             <ImageIcon className="w-4 h-4" />
@@ -293,7 +293,7 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().chain().focus().undo().run()}
-            className="p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50"
+            className="p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50"
             title="Undo"
           >
             <Undo className="w-4 h-4" />
@@ -301,7 +301,7 @@ export function MinimalTiptap({ content, onChange, placeholder = 'Write somethin
           <button
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().chain().focus().redo().run()}
-            className="p-2 rounded hover:bg-zinc-800/50 transition-colors disabled:opacity-50"
+            className="p-2 rounded hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 transition-colors disabled:opacity-50"
             title="Redo"
           >
             <Redo className="w-4 h-4" />

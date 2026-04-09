@@ -14,6 +14,14 @@ import { validateEntryData } from './validator.js'
 import { sanitizeEntryData } from './sanitizer.js'
 import { generateDocumentId } from '../utils/slug.js'
 
+/** DB'deki schema JSON — düz veya iç içe `schema` sarmalayıcısı olabilir (create ile aynı). */
+function parseEntrySchemaFromStored(type: { schema: string }): ContentTypeDefinition {
+  const rawSchema = JSON.parse(type.schema) as ContentTypeDefinition & { schema?: ContentTypeDefinition }
+  return rawSchema.attributes
+    ? rawSchema
+    : (rawSchema as { schema?: ContentTypeDefinition }).schema ?? { attributes: {} }
+}
+
 export class ContentTypeService {
   async list(tenantId: string) {
     return runInTenantContext({ tenantId }, async () => {
@@ -256,11 +264,7 @@ export class EntryService {
       const type = await resolveContentType(uid, tenantId)
       if (!type) throw new NotFoundError('ContentType', uid)
 
-      const rawSchema = JSON.parse(type.schema) as ContentTypeDefinition & { schema?: ContentTypeDefinition }
-      // Normalize: schema may be stored with nested `schema.schema.attributes` structure
-      const schema: ContentTypeDefinition = rawSchema.attributes
-        ? rawSchema
-        : (rawSchema as any).schema ?? { attributes: {} }
+      const schema = parseEntrySchemaFromStored(type)
 
       // Validate against schema
       const errors = validateEntryData(data, schema)
@@ -306,7 +310,7 @@ export class EntryService {
       if (!existing) throw new NotFoundError(type.displayName, id)
       assertAuthorOwnsEntry(existing, userRole, userId)
 
-      const schema = JSON.parse(type.schema) as ContentTypeDefinition
+      const schema = parseEntrySchemaFromStored(type)
       const currentData = this.parseEntryData(existing)
       const merged = { ...currentData, ...data }
 

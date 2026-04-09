@@ -32,6 +32,7 @@ import { analyticsPluginRoutes } from './api/plugins/analytics.js'
 import { imageOptPluginRoutes } from './api/plugins/image-optimization.js'
 import { cookieConsentRoutes } from './api/plugins/cookie-consent.js'
 import { setupRoutes } from './api/setup.js'
+import { graphqlRoute } from './api/graphql-route.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -84,7 +85,6 @@ export async function buildApp() {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
     keyGenerator: (req) => req.ip,
-    allowList: (req) => req.url.split('?')[0].startsWith('/api/auth'),
     errorResponseBuilder: () => ({
       error: {
         status: 429,
@@ -94,7 +94,7 @@ export async function buildApp() {
     }),
   })
 
-  // ─── Auth: sıkı rate limit (global /api/auth allowList ile çakışmaz) ───────
+  // ─── Auth: sıkı rate limit (login/register brute-force koruması) ───────
   await app.register(async (authScope) => {
     await authScope.register(fastifyRateLimit, {
       max: 10,
@@ -172,6 +172,8 @@ export async function buildApp() {
   await app.register(setupRoutes)  // Must be first — setup wizard
   // authRoutes: yukarıdaki authScope içinde kayıtlı
   await app.register(contentTypeRoutes)
+  // POST /api/graphql — entryRoutes içindeki /api/:uid ile çakışmaması için önce
+  await app.register(graphqlRoute)
   await app.register(entryRoutes)
   await app.register(userRoutes)
   await app.register(mediaRoutes)

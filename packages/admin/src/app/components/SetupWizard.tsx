@@ -518,10 +518,10 @@ export function SetupWizard({ onComplete }: Props) {
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
   const fieldClass =
-    "w-full h-11 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/50 focus:border-zinc-600 transition-colors";
+    "w-full h-11 rounded-lg border border-stone-200 dark:border-zinc-800 bg-white/82 dark:bg-zinc-900/60 px-3.5 text-sm text-stone-900 dark:text-zinc-100 placeholder:text-stone-500 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-stone-400/60 dark:focus:ring-zinc-600/50 focus:border-stone-400 dark:focus:border-zinc-600 transition-colors";
   const selectClass =
-    "w-full h-11 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3.5 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-600/50 focus:border-zinc-600 transition-colors";
-  const labelClass = "block text-sm font-medium text-zinc-300 mb-1.5";
+    "w-full h-11 rounded-lg border border-stone-200 dark:border-zinc-800 bg-white/82 dark:bg-zinc-900/60 px-3.5 text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-stone-400/60 dark:focus:ring-zinc-600/50 focus:border-stone-400 dark:focus:border-zinc-600 transition-colors";
+  const labelClass = "block text-sm font-medium text-stone-700 dark:text-zinc-300 mb-1.5";
 
   const STEPS: Step[] = ["database", "welcome", "admin", "settings", "security"];
   const stepIndex = STEPS.indexOf(step);
@@ -529,32 +529,32 @@ export function SetupWizard({ onComplete }: Props) {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4 py-8">
+    <div className="min-h-[100dvh] bg-stone-100 dark:bg-zinc-950 text-stone-900 dark:text-zinc-100 flex flex-col items-center justify-center p-4 py-8">
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-11 h-11 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
-            <Layers className="w-6 h-6 text-zinc-950" />
+          <div className="w-11 h-11 rounded-lg border border-stone-200 bg-white dark:border-transparent dark:bg-zinc-100 flex items-center justify-center shrink-0">
+            <Layers className="w-6 h-6 text-stone-800 dark:text-zinc-950" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Wolent CMS</h1>
-            <p className="text-xs text-zinc-500">Setup Wizard</p>
+            <h1 className="text-xl font-semibold text-stone-900 dark:text-zinc-100">Wolent CMS</h1>
+            <p className="text-xs text-stone-500 dark:text-zinc-500">Setup Wizard</p>
           </div>
         </div>
 
         {/* ── Step: Database ─────────────────────────────────────────────── */}
         {step === "database" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 mb-4">
-                <span className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-medium">1</span>
+              <div className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-zinc-500 mb-4">
+                <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center text-stone-700 dark:text-zinc-300 font-medium">1</span>
                 <span>Step 1 of 5</span>
               </div>
               <div className="flex items-center gap-3 mb-2">
                 <Database className="w-7 h-7 text-sky-400" />
                 <h2 className="text-2xl font-semibold">Choose your database</h2>
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-stone-600 dark:text-zinc-400 text-sm leading-relaxed">
                 SQLite is ideal for local development. PostgreSQL is recommended for production. The connection is checked on this server before continuing.
               </p>
             </div>
@@ -580,24 +580,24 @@ export function SetupWizard({ onComplete }: Props) {
                   onClick={() => setProvider("sqlite")}
                   className={`rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
                     databaseProvider === "sqlite"
-                      ? "border-sky-500/50 bg-sky-500/10 text-zinc-100"
-                      : "border-zinc-800 bg-zinc-900/40 text-zinc-500 hover:border-zinc-700"
+                      ? "border-sky-500/50 bg-sky-500/10 text-stone-900 dark:text-zinc-100"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50/92 dark:bg-zinc-900/40 text-stone-500 dark:text-zinc-500 hover:border-stone-400 dark:hover:border-zinc-700"
                   }`}
                 >
                   <span className="font-medium block">SQLite</span>
-                  <span className="text-xs text-zinc-500 mt-1 block">Single file, no server</span>
+                  <span className="text-xs text-stone-500 dark:text-zinc-500 mt-1 block">Single file, no server</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setProvider("postgresql")}
                   className={`rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
                     databaseProvider === "postgresql"
-                      ? "border-sky-500/50 bg-sky-500/10 text-zinc-100"
-                      : "border-zinc-800 bg-zinc-900/40 text-zinc-500 hover:border-zinc-700"
+                      ? "border-sky-500/50 bg-sky-500/10 text-stone-900 dark:text-zinc-100"
+                      : "border-stone-200 dark:border-zinc-800 bg-stone-50/92 dark:bg-zinc-900/40 text-stone-500 dark:text-zinc-500 hover:border-stone-400 dark:hover:border-zinc-700"
                   }`}
                 >
                   <span className="font-medium block">PostgreSQL</span>
-                  <span className="text-xs text-zinc-500 mt-1 block">Server database</span>
+                  <span className="text-xs text-stone-500 dark:text-zinc-500 mt-1 block">Server database</span>
                 </button>
               </div>
 
@@ -622,8 +622,8 @@ export function SetupWizard({ onComplete }: Props) {
                   autoFocus
                 />
                 {databaseProvider === "sqlite" && (
-                  <p className="text-xs text-zinc-600 mt-2">
-                    Paths are relative to <code className="text-zinc-500">packages/database/prisma/</code> unless you use an absolute <code className="text-zinc-500">file:/…</code> URL.
+                  <p className="text-xs text-stone-600 dark:text-zinc-600 mt-2">
+                    Paths are relative to <code className="text-stone-500 dark:text-zinc-500">packages/database/prisma/</code> unless you use an absolute <code className="text-stone-500 dark:text-zinc-500">file:/…</code> URL.
                   </p>
                 )}
               </div>
@@ -633,7 +633,7 @@ export function SetupWizard({ onComplete }: Props) {
                   type="button"
                   onClick={handleTestDatabase}
                   disabled={dbCheckLoading}
-                  className="h-10 px-4 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800/80 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="h-10 px-4 rounded-lg border border-stone-300 dark:border-zinc-700 text-stone-700 dark:text-zinc-300 text-sm hover:bg-stone-200/95 active:bg-stone-300/80 dark:hover:bg-zinc-800/75 dark:active:bg-zinc-800/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {dbCheckLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Test connection
@@ -645,7 +645,7 @@ export function SetupWizard({ onComplete }: Props) {
               type="button"
               onClick={handleDatabaseContinue}
               disabled={loading}
-              className="w-full h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Verifying…" : "Continue"}
@@ -656,14 +656,14 @@ export function SetupWizard({ onComplete }: Props) {
 
         {/* ── Step: Welcome / Site Info ──────────────────────────────────── */}
         {step === "welcome" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 mb-4">
-                <span className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-medium">2</span>
+              <div className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-zinc-500 mb-4">
+                <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center text-stone-700 dark:text-zinc-300 font-medium">2</span>
                 <span>Step 2 of 5</span>
               </div>
               <h2 className="text-2xl font-semibold mb-2">Welcome to Wolent CMS 👋</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-stone-600 dark:text-zinc-400 text-sm leading-relaxed">
                 Let's configure your CMS. This takes about 2 minutes.
               </p>
             </div>
@@ -679,8 +679,8 @@ export function SetupWizard({ onComplete }: Props) {
               ].map((s) => {
                 const Icon = s.icon;
                 return (
-                  <div key={s.step} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${s.active ? "bg-zinc-800/80 text-zinc-200" : "bg-zinc-900/50 text-zinc-500"}`}>
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${s.active ? "text-zinc-300" : "text-zinc-600"}`} />
+                  <div key={s.step} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${s.active ? "bg-stone-200 dark:bg-zinc-800/80 text-stone-800 dark:text-zinc-200" : "bg-white/78 dark:bg-zinc-900/50 text-stone-500 dark:text-zinc-500"}`}>
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${s.active ? "text-stone-700 dark:text-zinc-300" : "text-stone-600 dark:text-zinc-600"}`} />
                     {s.label}
                   </div>
                 );
@@ -711,7 +711,7 @@ export function SetupWizard({ onComplete }: Props) {
 
               <div>
                 <label className={labelClass}>
-                  Site URL <span className="text-zinc-600 font-normal">(optional)</span>
+                  Site URL <span className="text-stone-600 dark:text-zinc-600 font-normal">(optional)</span>
                 </label>
                 <input
                   type="url"
@@ -724,7 +724,7 @@ export function SetupWizard({ onComplete }: Props) {
 
               <div>
                 <label className={labelClass}>
-                  Site Description <span className="text-zinc-600 font-normal">(optional)</span>
+                  Site Description <span className="text-stone-600 dark:text-zinc-600 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -771,14 +771,14 @@ export function SetupWizard({ onComplete }: Props) {
               <button
                 type="button"
                 onClick={() => setStep("database")}
-                className="h-11 px-5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors text-sm"
+                className="h-11 px-5 rounded-lg border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-sm"
               >
                 Back
               </button>
               <button
                 type="button"
                 onClick={handleWelcomeContinue}
-                className="flex-1 h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors flex items-center justify-center gap-2"
               >
                 Continue
                 <ArrowRight className="w-4 h-4" />
@@ -789,14 +789,14 @@ export function SetupWizard({ onComplete }: Props) {
 
         {/* ── Step: Admin account ────────────────────────────────────────── */}
         {step === "admin" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 mb-4">
-                <span className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-medium">3</span>
+              <div className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-zinc-500 mb-4">
+                <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center text-stone-700 dark:text-zinc-300 font-medium">3</span>
                 <span>Step 3 of 5</span>
               </div>
               <h2 className="text-2xl font-semibold mb-2">Create Admin Account</h2>
-              <p className="text-zinc-400 text-sm">This will be your super admin account.</p>
+              <p className="text-stone-600 dark:text-zinc-400 text-sm">This will be your super admin account.</p>
             </div>
 
             {error && (
@@ -856,7 +856,7 @@ export function SetupWizard({ onComplete }: Props) {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -870,7 +870,7 @@ export function SetupWizard({ onComplete }: Props) {
                         /[0-9]/.test(input.password),
                         /[^A-Za-z0-9]/.test(input.password),
                       ].map((ok, i) => (
-                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${ok ? "bg-emerald-500" : "bg-zinc-700"}`} />
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${ok ? "bg-emerald-500" : "bg-stone-300 dark:bg-zinc-700"}`} />
                       ))}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5">
@@ -880,7 +880,7 @@ export function SetupWizard({ onComplete }: Props) {
                         { label: "Number", ok: /[0-9]/.test(input.password) },
                         { label: "Special", ok: /[^A-Za-z0-9]/.test(input.password) },
                       ].map(({ label, ok }) => (
-                        <span key={label} className={`text-[11px] flex items-center gap-1 ${ok ? "text-emerald-400" : "text-zinc-600"}`}>
+                        <span key={label} className={`text-[11px] flex items-center gap-1 ${ok ? "text-emerald-400" : "text-stone-600 dark:text-zinc-600"}`}>
                           <span>{ok ? "✓" : "○"}</span>
                           {label}
                         </span>
@@ -909,7 +909,7 @@ export function SetupWizard({ onComplete }: Props) {
               <button
                 type="button"
                 onClick={() => setStep("welcome")}
-                className="h-11 px-5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors text-sm"
+                className="h-11 px-5 rounded-lg border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-sm"
               >
                 Back
               </button>
@@ -917,7 +917,7 @@ export function SetupWizard({ onComplete }: Props) {
                 type="button"
                 onClick={handleAdminContinue}
                 disabled={loading}
-                className="flex-1 h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? "Setting up…" : "Continue"}
@@ -929,14 +929,14 @@ export function SetupWizard({ onComplete }: Props) {
 
         {/* ── Step: Features & Locales ───────────────────────────────────── */}
         {step === "settings" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 mb-4">
-                <span className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-medium">4</span>
+              <div className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-zinc-500 mb-4">
+                <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center text-stone-700 dark:text-zinc-300 font-medium">4</span>
                 <span>Step 4 of 5</span>
               </div>
               <h2 className="text-2xl font-semibold mb-2">Features & Locales</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-stone-600 dark:text-zinc-400 text-sm leading-relaxed">
                 Enable built-in features and choose which content languages to support. You can change these anytime.
               </p>
             </div>
@@ -944,26 +944,26 @@ export function SetupWizard({ onComplete }: Props) {
             {/* ── Built-in features ── */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-zinc-300 flex items-center gap-1.5">
-                  <Puzzle className="w-4 h-4 text-zinc-500" /> Built-in features
+                <p className="text-sm font-medium text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Puzzle className="w-4 h-4 text-stone-500 dark:text-zinc-500" /> Built-in features
                 </p>
                 <div className="flex gap-3 text-xs">
                   <button
                     type="button"
                     onClick={() => setEnabledFeatures(Object.fromEntries(FEATURES.map(f => [f.id, true])))}
-                    className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="text-stone-600 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200 transition-colors"
                   >
                     Select all
                   </button>
-                  <span className="text-zinc-700">·</span>
+                  <span className="text-stone-700 dark:text-zinc-700">·</span>
                   <button
                     type="button"
                     onClick={() => setEnabledFeatures(Object.fromEntries(FEATURES.map(f => [f.id, false])))}
-                    className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="text-stone-600 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200 transition-colors"
                   >
                     Clear
                   </button>
-                  <span className="text-zinc-600">
+                  <span className="text-stone-600 dark:text-zinc-600">
                     {Object.values(enabledFeatures).filter(Boolean).length}/{FEATURES.length}
                   </span>
                 </div>
@@ -978,25 +978,25 @@ export function SetupWizard({ onComplete }: Props) {
                       type="button"
                       onClick={() => toggleFeature(f.id)}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
-                        enabled ? "border-zinc-700/60 bg-zinc-800/50" : "border-zinc-800/40 bg-zinc-900/30 opacity-60 hover:opacity-80"
+                        enabled ? "border-stone-300 dark:border-zinc-700/60 bg-stone-200/85 dark:bg-zinc-800/50" : "border-stone-200/80 dark:border-zinc-800/40 bg-stone-50/85 dark:bg-zinc-900/30 opacity-60 hover:opacity-80"
                       }`}
                     >
-                      <div className={`w-5 h-5 rounded shrink-0 flex items-center justify-center border transition-colors ${enabled ? "bg-zinc-100 border-zinc-100" : "bg-transparent border-zinc-600"}`}>
-                        {enabled && <Check className="w-3.5 h-3.5 text-zinc-950" />}
+                      <div className={`w-5 h-5 rounded shrink-0 flex items-center justify-center border transition-colors ${enabled ? "bg-stone-900 dark:bg-zinc-100 border-stone-300 dark:border-zinc-100" : "bg-transparent border-stone-400 dark:border-zinc-600"}`}>
+                        {enabled && <Check className="w-3.5 h-3.5 text-white dark:text-zinc-950" />}
                       </div>
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${enabled ? "bg-zinc-700/80" : "bg-zinc-800/60"}`}>
-                        <Icon className={`w-4 h-4 ${enabled ? "text-zinc-200" : "text-zinc-500"}`} />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${enabled ? "bg-stone-300 dark:bg-zinc-700/80" : "bg-stone-200/90 dark:bg-zinc-800/60"}`}>
+                        <Icon className={`w-4 h-4 ${enabled ? "text-stone-800 dark:text-zinc-200" : "text-stone-500 dark:text-zinc-500"}`} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-zinc-200">{f.label}</span>
+                          <span className="text-sm font-medium text-stone-800 dark:text-zinc-200">{f.label}</span>
                           {f.recommended && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">
                               Recommended
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-zinc-500 mt-0.5">{f.description}</p>
+                        <p className="text-xs text-stone-500 dark:text-zinc-500 mt-0.5">{f.description}</p>
                       </div>
                     </button>
                   );
@@ -1007,10 +1007,10 @@ export function SetupWizard({ onComplete }: Props) {
             {/* ── Content locales ── */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-zinc-300 flex items-center gap-1.5">
-                  <Languages className="w-4 h-4 text-zinc-500" /> Content languages
+                <p className="text-sm font-medium text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Languages className="w-4 h-4 text-stone-500 dark:text-zinc-500" /> Content languages
                 </p>
-                <span className="text-xs text-zinc-600">{contentLocales.length} selected</span>
+                <span className="text-xs text-stone-600 dark:text-zinc-600">{contentLocales.length} selected</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {CONTENT_LOCALES.map((loc) => {
@@ -1021,18 +1021,18 @@ export function SetupWizard({ onComplete }: Props) {
                       type="button"
                       onClick={() => toggleLocale(loc.code)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition-all ${
-                        active ? "border-zinc-700/60 bg-zinc-800/50 text-zinc-200" : "border-zinc-800/40 bg-zinc-900/20 text-zinc-500 hover:border-zinc-700/40 hover:text-zinc-400"
+                        active ? "border-stone-300 dark:border-zinc-700/60 bg-stone-200/85 dark:bg-zinc-800/50 text-stone-800 dark:text-zinc-200" : "border-stone-200/80 dark:border-zinc-800/40 bg-white dark:bg-zinc-900/20 text-stone-500 dark:text-zinc-500 hover:border-stone-400 dark:hover:border-zinc-700/40 hover:text-stone-600 dark:text-zinc-400"
                       }`}
                     >
-                      <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${active ? "bg-zinc-100 border-zinc-100" : "bg-transparent border-zinc-600"}`}>
-                        {active && <Check className="w-2.5 h-2.5 text-zinc-950" />}
+                      <div className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-colors ${active ? "bg-stone-900 dark:bg-zinc-100 border-stone-300 dark:border-zinc-100" : "bg-transparent border-stone-400 dark:border-zinc-600"}`}>
+                        {active && <Check className="w-2.5 h-2.5 text-white dark:text-zinc-950" />}
                       </div>
                       <span className="text-xs">{loc.label}</span>
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs text-zinc-600 mt-2">
+              <p className="text-xs text-stone-600 dark:text-zinc-600 mt-2">
                 The first selected language will be the default. You can add more in Settings → i18n.
               </p>
             </div>
@@ -1041,7 +1041,7 @@ export function SetupWizard({ onComplete }: Props) {
               <button
                 type="button"
                 onClick={() => setStep("admin")}
-                className="h-11 px-5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors text-sm"
+                className="h-11 px-5 rounded-lg border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-sm"
               >
                 Back
               </button>
@@ -1049,7 +1049,7 @@ export function SetupWizard({ onComplete }: Props) {
                 type="button"
                 onClick={handleSettingsContinue}
                 disabled={loading}
-                className="flex-1 h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? "Saving…" : "Continue"}
@@ -1061,17 +1061,17 @@ export function SetupWizard({ onComplete }: Props) {
 
         {/* ── Step: Security / MFA ───────────────────────────────────────── */}
         {step === "security" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 mb-4">
-                <span className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-medium">5</span>
+              <div className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-zinc-500 mb-4">
+                <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center text-stone-700 dark:text-zinc-300 font-medium">5</span>
                 <span>Step 5 of 5</span>
               </div>
               <div className="flex items-center gap-3 mb-2">
                 <Shield className="w-6 h-6 text-blue-400" />
                 <h2 className="text-2xl font-semibold">Two-Factor Authentication</h2>
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-stone-600 dark:text-zinc-400 text-sm leading-relaxed">
                 Secure your admin account with an authenticator app.{" "}
                 <span className="text-amber-400 font-medium">Strongly recommended</span>
                 {" "}— you can skip and enable later in Account Settings.
@@ -1086,22 +1086,22 @@ export function SetupWizard({ onComplete }: Props) {
                   <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
                     <QrCode className="w-4 h-4" /> How 2FA works
                   </p>
-                  <ol className="space-y-1.5 text-sm text-zinc-400">
+                  <ol className="space-y-1.5 text-sm text-stone-600 dark:text-zinc-400">
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">1</span>
-                      Tap <strong className="text-zinc-200">"Set up 2FA"</strong> to generate a QR code
+                      <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">1</span>
+                      Tap <strong className="text-stone-800 dark:text-zinc-200">"Set up 2FA"</strong> to generate a QR code
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">2</span>
-                      Scan with <strong className="text-zinc-200">Google Authenticator, Authy</strong> or any TOTP app
+                      <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">2</span>
+                      Scan with <strong className="text-stone-800 dark:text-zinc-200">Google Authenticator, Authy</strong> or any TOTP app
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">3</span>
+                      <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">3</span>
                       Enter the 6-digit code to confirm and activate
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">4</span>
-                      Download <strong className="text-zinc-200">backup codes</strong> to a safe place
+                      <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 text-[11px] flex items-center justify-center shrink-0 mt-0.5 font-medium">4</span>
+                      Download <strong className="text-stone-800 dark:text-zinc-200">backup codes</strong> to a safe place
                     </li>
                   </ol>
                 </div>
@@ -1117,7 +1117,7 @@ export function SetupWizard({ onComplete }: Props) {
                   <button
                     type="button"
                     onClick={() => { setMfaSkipped(true); setStep("done"); }}
-                    className="flex-1 h-11 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors text-sm"
+                    className="flex-1 h-11 rounded-lg border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 hover:border-stone-400 dark:hover:border-zinc-700 transition-colors text-sm"
                   >
                     Skip for now
                   </button>
@@ -1138,7 +1138,7 @@ export function SetupWizard({ onComplete }: Props) {
             {mfaSetupData && !mfaEnabled && (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-zinc-400 mb-3">
+                  <p className="text-sm text-stone-600 dark:text-zinc-400 mb-3">
                     Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.
                   </p>
                   <div className="flex justify-center mb-4">
@@ -1146,12 +1146,12 @@ export function SetupWizard({ onComplete }: Props) {
                       <img src={mfaSetupData.qrCode} alt="MFA QR code" className="w-44 h-44" />
                     </div>
                   </div>
-                  <div className="rounded-lg bg-zinc-800/60 border border-zinc-700/50 px-3.5 py-2.5 flex items-center justify-between gap-3">
-                    <span className="text-xs text-zinc-500 font-mono break-all">{mfaSetupData.secret}</span>
+                  <div className="rounded-lg bg-stone-200/90 dark:bg-zinc-800/60 border border-stone-300/75 dark:border-zinc-700/50 px-3.5 py-2.5 flex items-center justify-between gap-3">
+                    <span className="text-xs text-stone-500 dark:text-zinc-500 font-mono break-all">{mfaSetupData.secret}</span>
                     <button
                       type="button"
                       onClick={() => navigator.clipboard.writeText(mfaSetupData.secret)}
-                      className="shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="shrink-0 text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300 transition-colors"
                       title="Copy secret"
                     >
                       <Copy className="w-4 h-4" />
@@ -1184,7 +1184,7 @@ export function SetupWizard({ onComplete }: Props) {
                   <button
                     type="button"
                     onClick={() => { setMfaSetupData(null); setMfaCode(""); setMfaError(null); }}
-                    className="h-11 px-5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors text-sm"
+                    className="h-11 px-5 rounded-lg border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors text-sm"
                   >
                     Back
                   </button>
@@ -1218,18 +1218,18 @@ export function SetupWizard({ onComplete }: Props) {
                     <button
                       type="button"
                       onClick={() => setMfaBackupVisible((v) => !v)}
-                      className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="text-xs text-stone-500 dark:text-zinc-500 hover:text-stone-700 dark:hover:text-zinc-300 transition-colors"
                     >
                       {mfaBackupVisible ? "Hide" : "Show"}
                     </button>
                   </div>
-                  <p className="text-xs text-zinc-500 mb-3">
+                  <p className="text-xs text-stone-500 dark:text-zinc-500 mb-3">
                     Save these backup codes in a safe place. Each can be used once to recover access if you lose your authenticator.
                   </p>
                   {mfaBackupVisible && mfaSetupData.backupCodes?.length > 0 && (
                     <div className="grid grid-cols-2 gap-1.5 mb-3">
                       {mfaSetupData.backupCodes.map((code) => (
-                        <div key={code} className="font-mono text-xs text-zinc-300 bg-zinc-800/60 rounded px-2.5 py-1.5 border border-zinc-700/40">
+                        <div key={code} className="font-mono text-xs text-stone-700 dark:text-zinc-300 bg-stone-200/90 dark:bg-zinc-800/60 rounded px-2.5 py-1.5 border border-stone-300 dark:border-zinc-700/40">
                           {code}
                         </div>
                       ))}
@@ -1248,7 +1248,7 @@ export function SetupWizard({ onComplete }: Props) {
                 <button
                   type="button"
                   onClick={() => setStep("done")}
-                  className="w-full h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors flex items-center justify-center gap-2"
                 >
                   Finish Setup
                   <ArrowRight className="w-4 h-4" />
@@ -1260,13 +1260,13 @@ export function SetupWizard({ onComplete }: Props) {
 
         {/* ── Step: Done ────────────────────────────────────────────────── */}
         {step === "done" && (
-          <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 text-center space-y-6">
+          <div className="bg-white/78 dark:bg-zinc-900/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-xl p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto">
               <Check className="w-8 h-8 text-green-400" />
             </div>
             <div>
               <h2 className="text-2xl font-semibold mb-2">You're all set! 🎉</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-stone-600 dark:text-zinc-400 text-sm leading-relaxed">
                 Your Wolent CMS is ready.{" "}
                 {mfaSkipped && (
                   <span className="text-amber-400">You skipped 2FA — enable it anytime in Account Settings.</span>
@@ -1293,11 +1293,11 @@ export function SetupWizard({ onComplete }: Props) {
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2.5 text-sm">
                   <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                    item.done ? "bg-green-500/20 text-green-400" : item.warning ? "bg-amber-500/20 text-amber-400" : "bg-zinc-800 text-zinc-500"
+                    item.done ? "bg-green-500/20 text-green-400" : item.warning ? "bg-amber-500/20 text-amber-400" : "bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-zinc-500"
                   }`}>
                     {item.done ? <Check className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
                   </div>
-                  <span className={item.done ? "text-zinc-300" : "text-zinc-500"}>{item.label}</span>
+                  <span className={item.done ? "text-stone-700 dark:text-zinc-300" : "text-stone-500 dark:text-zinc-500"}>{item.label}</span>
                 </div>
               ))}
             </div>
@@ -1305,7 +1305,7 @@ export function SetupWizard({ onComplete }: Props) {
             <button
               type="button"
               onClick={onComplete}
-              className="w-full h-11 rounded-lg bg-zinc-100 text-zinc-950 text-sm font-semibold hover:bg-white transition-colors flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-lg bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 text-sm font-semibold hover:bg-stone-800 active:bg-stone-950 dark:hover:bg-zinc-200 dark:active:bg-white transition-colors flex items-center justify-center gap-2"
             >
               {localStorage.getItem("wolent_access_token") ? "Enter Dashboard" : "Go to Login"}
               <ArrowRight className="w-4 h-4" />
@@ -1320,7 +1320,7 @@ export function SetupWizard({ onComplete }: Props) {
               <div
                 key={s}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === stepIndex ? "w-6 bg-zinc-100" : i < stepIndex ? "w-3 bg-zinc-500" : "w-3 bg-zinc-800"
+                  i === stepIndex ? "w-6 bg-stone-900 dark:bg-zinc-100" : i < stepIndex ? "w-3 bg-stone-400 dark:bg-zinc-500" : "w-3 bg-stone-200 dark:bg-zinc-800"
                 }`}
               />
             ))}

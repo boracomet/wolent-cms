@@ -165,7 +165,13 @@ export async function setupRoutes(app: FastifyInstance) {
   })
 
   app.post('/api/setup/check-db', async (req, reply) => {
-    // Ortam değişkeni zaten ayarlıysa (Docker), direkt test et
+    const setupRequired = await isSetupRequired()
+    if (!setupRequired) {
+      return reply.status(403).send({
+        error: { status: 403, name: 'ForbiddenError', message: 'Setup already completed' },
+      })
+    }
+
     const envDbUrl = process.env['DATABASE_URL']
     if (envDbUrl) {
       try {

@@ -11,7 +11,7 @@ type Props = {
 };
 
 const inputClass =
-  "w-full px-4 py-2.5 bg-zinc-950/50 backdrop-blur-sm border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+  "w-full px-4 py-2.5 bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
 
 export function DynamicSchemaFields({ fields, values, onChange }: Props) {
   return (
@@ -28,7 +28,7 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
           <label className="block text-sm font-medium mb-2">
             {field.label} {req}
             {field.description && (
-              <span className="block text-xs font-normal text-zinc-500 mt-0.5">{field.description}</span>
+              <span className="block text-xs font-normal text-stone-500 dark:text-zinc-500 mt-0.5">{field.description}</span>
             )}
           </label>
         );
@@ -201,20 +201,20 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
             return (
               <div
                 key={field.id}
-                className="flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg"
               >
                 <div>
                   <p className="font-medium text-sm">
                     {field.label} {req}
                   </p>
-                  {field.description && <p className="text-xs text-zinc-500 mt-1">{field.description}</p>}
+                  {field.description && <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1">{field.description}</p>}
                 </div>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={on}
                   onClick={() => onChange(field.apiName, on ? "false" : "true")}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${on ? "bg-blue-500" : "bg-zinc-700"}`}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${on ? "bg-blue-500" : "bg-stone-300 dark:bg-zinc-700"}`}
                 >
                   <span
                     className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -279,27 +279,27 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
                   {field.label}
                   {req}
                 </div>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-stone-500 dark:text-zinc-500">
                   Add dynamic blocks to this zone.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="px-3 py-1.5 rounded-md bg-zinc-800 text-xs border border-zinc-700 hover:bg-zinc-700"
+                    className="px-3 py-1.5 rounded-md bg-stone-200 dark:bg-zinc-800 text-xs border border-stone-300 dark:border-zinc-700 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
                     onClick={() => onChange(field.apiName, v ? `${v}+hero` : "hero")}
                   >
                     + Hero block
                   </button>
                   <button
                     type="button"
-                    className="px-3 py-1.5 rounded-md bg-zinc-800 text-xs border border-zinc-700 hover:bg-zinc-700"
+                    className="px-3 py-1.5 rounded-md bg-stone-200 dark:bg-zinc-800 text-xs border border-stone-300 dark:border-zinc-700 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
                     onClick={() => onChange(field.apiName, v ? `${v}+quote` : "quote")}
                   >
                     + Quote block
                   </button>
                 </div>
                 {v && (
-                  <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                  <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-zinc-400 font-mono">
                     <Layers className="w-3.5 h-3.5" />
                     {v}
                   </div>
@@ -317,7 +317,7 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
                   onChange={(e) => onChange(field.apiName, e.target.value)}
                   className={inputClass}
                 />
-                <p className="text-xs text-zinc-600 mt-1">Tip: {field.type} (fallback)</p>
+                <p className="text-xs text-stone-600 dark:text-zinc-600 mt-1">Tip: {field.type} (fallback)</p>
               </div>
             );
         }
@@ -348,7 +348,7 @@ function DynamicMediaField({
     <label className="block text-sm font-medium mb-2" htmlFor={`media-file-${field.id}`}>
       {field.label} {req}
       {field.description && (
-        <span className="block text-xs font-normal text-zinc-500 mt-0.5">{field.description}</span>
+        <span className="block text-xs font-normal text-stone-500 dark:text-zinc-500 mt-0.5">{field.description}</span>
       )}
     </label>
   );
@@ -374,20 +374,20 @@ function DynamicMediaField({
           <img
             src={value}
             alt=""
-            className="max-h-48 rounded-lg border border-zinc-800/50 object-cover"
+            className="max-h-48 rounded-lg border border-stone-200/85 dark:border-zinc-800/50 object-cover"
           />
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setPickerOpen(true)}
-              className="text-sm px-3 py-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-200 hover:bg-zinc-700"
+              className="text-sm px-3 py-1.5 rounded-md bg-stone-200 dark:bg-zinc-800 border border-stone-300 dark:border-zinc-700 text-stone-800 dark:text-zinc-200 hover:bg-stone-300 active:bg-stone-400/90 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
             >
               Change from Gallery
             </button>
             <button
               type="button"
               onClick={() => onChange(field.apiName, "")}
-              className="text-sm text-zinc-400 hover:text-zinc-200"
+              className="text-sm text-stone-600 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200"
             >
               Clear
             </button>
@@ -407,10 +407,10 @@ function DynamicMediaField({
       {label}
       <div className="flex flex-col sm:flex-row gap-2">
         <div
-          className={`flex-1 min-h-[8.5rem] flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors bg-zinc-950/30 ${
+          className={`flex-1 min-h-[8.5rem] flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-lg transition-colors bg-stone-100/88 dark:bg-zinc-950/30 ${
             dragOver
               ? "border-blue-500/60 bg-blue-500/5"
-              : "border-zinc-800/50 hover:border-zinc-600/50"
+              : "border-stone-200/85 dark:border-zinc-800/50 hover:border-stone-400 dark:hover:border-zinc-600/50"
           }`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -436,22 +436,22 @@ function DynamicMediaField({
               e.target.value = "";
             }}
           />
-          <Upload className="w-8 h-8 text-zinc-500 shrink-0" aria-hidden />
-          <p className="text-sm text-zinc-400 text-center px-2">
+          <Upload className="w-8 h-8 text-stone-500 dark:text-zinc-500 shrink-0" aria-hidden />
+          <p className="text-sm text-stone-600 dark:text-zinc-400 text-center px-2">
             Sürükleyip bırakın veya{" "}
             <label
               htmlFor={`media-file-${field.id}`}
-              className="text-zinc-200 underline underline-offset-2 cursor-pointer hover:text-white"
+              className="text-stone-800 dark:text-zinc-200 underline underline-offset-2 cursor-pointer hover:text-white"
             >
               dosya seçin
             </label>
           </p>
-          <p className="text-xs text-zinc-600">PNG, JPG, WebP, GIF</p>
+          <p className="text-xs text-stone-600 dark:text-zinc-600">PNG, JPG, WebP, GIF</p>
         </div>
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-0 sm:min-w-[8.5rem] bg-zinc-800/70 border border-zinc-200/90 rounded-md text-sm text-zinc-100 hover:bg-zinc-800 transition-colors shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2 sm:py-0 sm:min-w-[8.5rem] bg-stone-200/95 dark:bg-zinc-800/70 border border-zinc-200/90 rounded-md text-sm text-stone-900 dark:text-zinc-100 hover:bg-stone-300 dark:hover:bg-zinc-800 transition-colors shrink-0"
         >
           <Images className="w-4 h-4" />
           Gallery

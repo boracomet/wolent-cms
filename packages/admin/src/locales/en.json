@@ -1,4 +1,23 @@
 {
+  "common": {
+    "appShell": {
+      "loading": "Connecting to API…",
+      "apiDownTitle": "Cannot reach the API",
+      "apiDownBody": "Make sure the backend is running (for example on localhost:3000).",
+      "retry": "Retry"
+    },
+    "confirm": {
+      "defaultTitle": "Confirm",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you’re looking for doesn’t exist, or it may have been moved or removed.",
+      "back": "Go back",
+      "home": "Home"
+    }
+  },
   "layout": {
     "brand": {
       "title": "CMS",
@@ -19,6 +38,14 @@
       "auditLogs": "Audit Logs",
       "settings": "Settings",
       "logout": "Log out"
+    },
+    "theme": {
+      "useAuto": "Auto",
+      "useLight": "Light theme",
+      "useDark": "Dark theme",
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme",
+      "cycleA11y": "Cycle theme: automatic, light, dark"
     }
   },
   "analytics": {
@@ -58,6 +85,49 @@
       "sun": "Sun"
     }
   },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "Track every action taken in your CMS.",
+    "filterPlaceholder": "Filter by action (e.g. entry.create)",
+    "search": "Search",
+    "clear": "Clear",
+    "loadError": "Failed to load audit logs.",
+    "empty": "No audit logs yet.",
+    "exportPdf": "Export PDF",
+    "exportPdfBusy": "Preparing…",
+    "exportPdfError": "Could not export audit logs.",
+    "exportPdfEmpty": "Nothing to export.",
+    "exportPdfFilter": "Filter: {q}",
+    "exportPdfRecords": "{n} records",
+    "exportPdfGenerated": "Generated",
+    "exportPdfTruncated": "Export limited to the first {n} records.",
+    "pageOf": "Page {page} of {totalPages} · {total} total",
+    "col": {
+      "action": "Action",
+      "subject": "Subject",
+      "user": "User",
+      "ip": "IP",
+      "date": "Date"
+    },
+    "actions": {
+      "entry": {
+        "create": "Entry created",
+        "update": "Entry updated",
+        "delete": "Entry deleted",
+        "publish": "Entry published",
+        "unpublish": "Entry unpublished"
+      },
+      "media": {
+        "upload": "Media uploaded",
+        "delete": "Media deleted"
+      },
+      "contentType": {
+        "create": "Content type created",
+        "update": "Content type updated",
+        "delete": "Content type deleted"
+      }
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back to your CMS",
@@ -89,11 +159,47 @@
       "integrations": "Integrations",
       "backup": "Backup & restore"
     },
+    "i18nGemini": {
+      "autoTranslateTitle": "Auto-translate",
+      "pluginBadge": "Gemini AI",
+      "pluginTagline": "Gemini AI Translate plugin",
+      "autoTranslateDescription": "Suggests translations when you add new locales. Uses Google Gemini when the plugin is enabled and an API key is set under Plugins.",
+      "openPlugins": "Configure in Plugins"
+    },
+    "menuBuilder": {
+      "title": "Menu Builder",
+      "subtitle": "Customize the navigation menu. Add content types individually and control visibility per role.",
+      "hint": "Drag to reorder. Change icons, labels, and configure which roles can see each item.",
+      "label": "Label",
+      "path": "URL path",
+      "icon": "Icon",
+      "visibleTo": "Visible to roles",
+      "addContentType": "Add content type",
+      "addCustomItem": "Add custom link",
+      "add": "Add",
+      "save": "Save menu",
+      "saved": "Saved!",
+      "badgeSystem": "System",
+      "badgeContentType": "Content",
+      "badgeCustom": "Custom",
+      "editRolesAria": "Edit roles"
+    },
+    "integrations": {
+      "heading": "Integrations",
+      "description": "Connect external services and tools",
+      "bodyTitle": "Integration settings are managed in Plugins",
+      "bodyText": "Configure webhooks, S3, SMTP, Redis, n8n and more from the Plugins page.",
+      "goToPlugins": "Go to Plugins"
+    },
     "backup": {
       "heading": "Backup & restore",
       "description": "Export a JSON backup, import selective data, and manage recent snapshots. Extra verification is required before opening this section.",
       "mfaTitle": "Verify to continue",
       "mfaHint": "Enter your account password to unlock backup operations for this session.",
+      "totpTitle": "Two-factor authentication",
+      "totpHint": "Enter the 6-digit code from your authenticator app to verify your identity.",
+      "totpPlaceholder": "000000",
+      "wrongTotp": "Invalid code, please try again.",
       "mfaError": "Enter a code to continue.",
       "mfaVerify": "Verify & unlock",
       "wrongPassword": "Wrong password, please try again.",
@@ -101,7 +207,9 @@
       "verifying": "Verifying…",
       "passwordPlaceholder": "Enter your account password",
       "exportError": "Could not create backup.",
-      "restoreError": "Could not restore backup.",
+      "restoreError": "Could not restore from backup.",
+      "exporting": "Exporting…",
+      "importing": "Importing…",
       "lockSection": "Lock section again",
       "exportTitle": "Create backup",
       "exportIntro": "Choose which areas to include in the downloadable JSON file. Data is fetched live from the API and database.",
@@ -128,7 +236,6 @@
       "deleted": "Backup removed.",
       "restoreNoSnapshots": "This backup has no data to restore.",
       "restoreDone": "Restored {n} sections from backup.",
-      "restoreError": "Could not read this backup file.",
       "invalidFile": "Not a valid CMS backup JSON.",
       "pickFileFirst": "Choose a backup file first.",
       "importNothingApplied": "No matching sections found in backup.",
@@ -148,16 +255,27 @@
     "appearance": {
       "heading": "Appearance Settings",
       "description": "Customize the look and feel of your CMS",
+      "brandingSection": "Panel branding",
+      "brandingHint": "Logo, title, and subtitle appear in the left sidebar and mobile header. Leave title or subtitle empty to use the default for the selected language.",
+      "panelTitle": "Panel title",
+      "panelSubtitle": "Panel subtitle",
+      "panelTitlePlaceholder": "e.g. My CMS",
+      "panelSubtitlePlaceholder": "e.g. Headless CMS",
+      "saved": "Saved.",
       "panelLanguage": "Admin panel language",
-      "panelLanguageHint": "UI copy is loaded from JSON files in src/locales/ (e.g. en.json, tr.json). Edit those files or add a new locale and register it in src/app/i18n/catalog.ts to customize wording.",
+      "panelLanguageHint": "UI strings load from packages/admin/src/locales/*.json (e.g. en.json). Add a locale file and register it in packages/admin/src/app/i18n/catalog.ts.",
       "theme": "Theme",
-      "darkMode": "Dark Mode",
-      "darkModeSub": "Default theme",
-      "lightMode": "Light Mode",
-      "lightModeSub": "Coming soon",
+      "autoMode": "Auto",
+      "autoModeSub": "Follow system preference",
+      "darkMode": "Dark",
+      "darkModeSub": "Always dark",
+      "lightMode": "Light",
+      "lightModeSub": "Always light",
       "logo": "Logo",
       "uploadLogo": "Upload Logo",
+      "uploadingLogo": "Uploading…",
       "logoHint": "Recommended size: 200x200px",
+      "removeLogo": "Remove",
       "accentColor": "Accent Color",
       "saveChanges": "Save Changes"
     },
@@ -250,7 +368,7 @@
     },
     "sitemap": {
       "name": "XML Sitemap",
-      "description": "Configure how published URLs are exposed in sitemap.xml for crawlers. Settings are saved to the API and the backend serves /sitemap.xml automatically.",
+      "description": "Configure how published URLs appear in sitemap.xml for crawlers. Settings are stored via the API; the backend serves /sitemap.xml automatically.",
       "baseUrlLabel": "Public site base URL",
       "baseUrlPlaceholder": "https://www.example.com",
       "baseUrlHint": "No trailing slash. Used to build absolute <loc> entries.",
@@ -462,6 +580,145 @@
     "configure": "Configure",
     "footer": "More plugins and a marketplace will appear here as they become available."
   },
+  "contentTypes": {
+    "title": "Content Types",
+    "typesCount": "{n} types",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "presets": "Presets",
+    "createContentType": "Create Content Type",
+    "newType": "New Type",
+    "viewContent": "View Content →",
+    "view": "View →",
+    "fieldsCount": "{n} fields",
+    "singularLabel": "Singular",
+    "pluralLabel": "Plural",
+    "col": {
+      "contentType": "Content type",
+      "apiId": "API ID",
+      "fields": "Fields",
+      "actions": "Actions"
+    },
+    "duplicateSingle": "Duplicate single type (schema)",
+    "duplicateCollection": "Duplicate collection type",
+    "deleteType": "Delete content type",
+    "editType": "Edit type",
+    "close": "Close",
+    "contentPresets": "Content presets",
+    "addPreset": "Add preset",
+    "create": {
+      "title": "Create Content Type",
+      "configurations": "Configurations",
+      "configurationsDesc": "A type for modeling data",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Article",
+      "apiIdSingular": "API ID (Singular)",
+      "apiIdSingularHint": "The UID is used to generate the API routes and databases tables/collections",
+      "apiIdPlural": "API ID (Plural)",
+      "apiIdPluralHint": "Pluralized API ID",
+      "color": "Color",
+      "icon": "Icon",
+      "type": "Type",
+      "collectionType": "Collection Type",
+      "collectionDesc": "Best for multiple instances like articles, products, comments, etc.",
+      "singleType": "Single Type",
+      "singleDesc": "Best for single instance like about us, homepage, etc.",
+      "cancel": "Cancel",
+      "continue": "Continue"
+    }
+  },
+  "contentBuilder": {
+    "backToContentTypes": "Back to Content Types",
+    "edit": "Edit {name}",
+    "fieldsCount": "{n} field",
+    "fieldsCountPlural": "{n} fields",
+    "collectionType": "Collection type",
+    "singleType": "Single type",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "saveFailed": "Save failed.",
+    "tabs": {
+      "basic": "Basic settings",
+      "advanced": "Advanced settings"
+    },
+    "displayName": "Display Name",
+    "apiIdSingular": "API ID (Singular)",
+    "apiIdPlural": "API ID (Plural)",
+    "singleTypePluralHint": "Single types use one entry; plural API id matches singular.",
+    "appearance": "Appearance",
+    "color": "Color",
+    "icon": "Icon",
+    "fields": "Fields",
+    "addField": "Add another field to this {kind}",
+    "dragToReorder": "Drag to reorder",
+    "removeField": "Remove field",
+    "advanced": {
+      "title": "Advanced Settings",
+      "draftPublish": "Draft & Publish",
+      "draftPublishDesc": "Write a draft version of each entry before publishing it",
+      "i18n": "Internationalization",
+      "i18nDesc": "Manage content in multiple languages (i18n)",
+      "reviewWorkflow": "Review Workflow",
+      "reviewWorkflowDesc": "Add a review stage before publishing content",
+      "apiSettings": "API Settings",
+      "collectionName": "Collection Name",
+      "singleTypeApiKey": "Single type API key",
+      "singularApiKey": "Singular API key"
+    },
+    "addFieldModal": {
+      "title": "Add New Field",
+      "selectType": "Select Field Type",
+      "fieldName": "Field Name",
+      "fieldNamePlaceholder": "e.g. Category, Author, Tags",
+      "required": "Required field",
+      "requiredHint": "This field must be filled in",
+      "cancel": "Cancel",
+      "addField": "Add Field",
+      "relationTarget": "Target Collection",
+      "relationType": "Relation Type",
+      "enumerationValues": "Enumeration values",
+      "enumerationPlaceholder": "e.g. draft, published, archived (comma-separated)"
+    },
+    "fieldTypes": {
+      "text": "Text",
+      "text_long": "Text (Long text)",
+      "blocks": "Rich text (Blocks)",
+      "json": "JSON",
+      "number_int": "Number (integer)",
+      "number_float": "Number (decimal)",
+      "number_big": "Number (big integer)",
+      "password": "Password",
+      "email": "Email",
+      "enumeration": "Enumeration",
+      "uid": "UID",
+      "date": "Date",
+      "time": "Time",
+      "datetime": "Datetime",
+      "boolean": "Boolean",
+      "media": "Media",
+      "relation": "Relation",
+      "component": "Component",
+      "dynamiczone": "Dynamic Zone"
+    },
+    "relationTypes": {
+      "manyToOne": "Many to One",
+      "manyToOneDesc": "Articles → Category",
+      "oneToMany": "One to Many",
+      "oneToManyDesc": "Category → Articles",
+      "oneToOne": "One to One",
+      "oneToOneDesc": "Article → Author",
+      "manyToMany": "Many to Many",
+      "manyToManyDesc": "Articles ↔ Tags"
+    },
+    "fieldDescriptions": {
+      "relation": "Relation ({type}) with {target}",
+      "enumeration": "Enumeration: {values}",
+      "component": "Component (repeatable group of fields)",
+      "dynamiczone": "Dynamic Zone (mix of components)"
+    }
+  },
   "login": {
     "title": "Sign in",
     "subtitle": "Headless CMS admin",
@@ -474,6 +731,11 @@
     "submit": "Sign in",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "skipToPanel": "Continue to panel"
+    "skipToPanel": "Continue to panel",
+    "verifyMfa": "Verify",
+    "backToLogin": "← Back to login",
+    "totpLabel": "Two-factor authentication code",
+    "totpHint": "Enter the 6-digit code from your authenticator app.",
+    "totpPlaceholder": "000000"
   }
 }

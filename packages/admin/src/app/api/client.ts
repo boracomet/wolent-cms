@@ -57,8 +57,10 @@ async function request<T>(endpoint: string, opts: RequestOptions = {}): Promise<
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'X-Wolent-Tenant': 'default',
+  }
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (!noAuth) {
@@ -165,6 +167,12 @@ export const api = {
 
     enable2fa: (totpCode: string) =>
       request<{ data: { backupCodes: string[] } }>('/auth/2fa/enable', {
+        method: 'POST',
+        body: { totpCode },
+      }),
+
+    verify2fa: (totpCode: string) =>
+      request<{ data: { ok: boolean } }>('/auth/2fa/verify', {
         method: 'POST',
         body: { totpCode },
       }),

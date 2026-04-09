@@ -111,22 +111,24 @@ export async function backupRoutes(app: FastifyInstance) {
 
   // POST /api/admin/backup/import — restore from backup JSON
   app.post('/api/admin/backup/import', { preHandler: [requireAuth, await adminOnly] }, async (req, reply) => {
-    const body = req.body as {
-      backup: {
-        cmsBackup: boolean
-        version: string
-        included: BackupIncluded
-        data: Record<string, unknown>
-      }
-      include?: Partial<BackupIncluded>
-    }
+    const ImportSchema = z.object({
+      backup: z.object({
+        cmsBackup: z.literal(true),
+        version: z.string(),
+        included: BackupIncludedSchema.optional(),
+        data: z.record(z.unknown()).default({}),
+      }),
+      include: BackupIncludedSchema.partial().optional(),
+    })
 
-    if (!body?.backup?.cmsBackup) {
-      return reply.status(400).send({ error: { status: 400, name: 'BadRequestError', message: 'Invalid backup file' } })
+    const parsed = ImportSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return reply.status(400).send({ error: { status: 400, name: 'BadRequestError', message: 'Invalid backup file format' } })
     }
+    const body = parsed.data
 
     const include = body.include ?? body.backup.included ?? BackupIncludedSchema.parse({})
-    const bData = body.backup.data ?? {}
+    const bData = body.backup.data
     const tenantId = req.tenantId
 
     let restored = 0

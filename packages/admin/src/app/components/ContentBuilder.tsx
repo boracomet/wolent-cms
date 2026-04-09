@@ -24,11 +24,15 @@ import {
   Clock,
   Package,
   LayoutGrid,
+  Database,
+  ChevronDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { CmsColorName } from "../lib/cmsColors";
-import { fieldTileColors, getCmsColorClasses } from "../lib/cmsColors";
+import { fieldTileColors, getCmsColorClasses, cmsColorSwatches as availableColors } from "../lib/cmsColors";
 import { api } from "../api/client";
+import { useI18n } from "../i18n";
+import { CT_ICON_OPTIONS } from "./ContentTypes";
 
 interface Field {
   id: string;
@@ -98,6 +102,97 @@ function reorderFieldsById(list: Field[], draggedId: string, targetId: string): 
   return next;
 }
 
+function AppearancePicker({
+  selectedColor,
+  setSelectedColor,
+  selectedIcon,
+  setSelectedIcon,
+}: {
+  selectedColor: string;
+  setSelectedColor: (c: string) => void;
+  selectedIcon: string;
+  setSelectedIcon: (i: string) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const colorMeta = availableColors.find(c => c.name === selectedColor);
+  const IconCmp = CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.icon ?? Database;
+
+  return (
+    <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-6 mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-3 w-full text-left group"
+      >
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorMeta?.bg ?? 'bg-stone-200 dark:bg-zinc-800'}`}>
+          <IconCmp className={`w-5 h-5 ${colorMeta?.icon ?? 'text-stone-900 dark:text-zinc-100'}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium">{t("contentBuilder.appearance")}</h3>
+          <p className="text-xs text-stone-500 dark:text-zinc-500 capitalize">{selectedColor} · {CT_ICON_OPTIONS.find(i => i.id === selectedIcon)?.label ?? selectedIcon}</p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-stone-400 dark:text-zinc-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="mt-5 pt-5 border-t border-stone-200/85 dark:border-zinc-800/50 space-y-5">
+          <div>
+            <label className="block text-sm font-medium mb-3">{t("contentBuilder.color")}</label>
+            <div className="grid grid-cols-6 gap-3">
+              {availableColors.map((color) => (
+                <button
+                  key={color.name}
+                  type="button"
+                  onClick={() => setSelectedColor(color.name)}
+                  className={`relative h-12 rounded-lg ${color.bg} ${color.border} border-2 transition-all hover:scale-105 ${
+                    selectedColor === color.name ? "ring-2 ring-stone-400 ring-offset-2 ring-offset-stone-100 dark:ring-zinc-100 dark:ring-offset-zinc-950" : ""
+                  }`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient} to-transparent rounded-lg`} />
+                  {selectedColor === color.name && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-5 h-5 bg-stone-900 dark:bg-zinc-100 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white dark:text-zinc-950" />
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-3">{t("contentBuilder.icon")}</label>
+            <div className="grid grid-cols-10 gap-1.5">
+              {CT_ICON_OPTIONS.map(({ id, icon: Ic, label }) => {
+                const cm = availableColors.find(c => c.name === selectedColor);
+                const isSelected = selectedIcon === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    title={label}
+                    onClick={() => setSelectedIcon(id)}
+                    className={`group relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
+                      isSelected
+                        ? `${cm?.bg ?? 'bg-stone-200 dark:bg-zinc-800'} ${cm?.border ?? 'border-stone-400 dark:border-zinc-600'} border-2 shadow-sm`
+                        : 'border-stone-200/85 dark:border-zinc-800/50 bg-stone-50/92 dark:bg-zinc-900/40 hover:border-stone-400 dark:hover:border-zinc-700 hover:bg-stone-300 dark:hover:bg-zinc-800/60'
+                    }`}
+                  >
+                    <Ic className={`w-5 h-5 ${isSelected ? (cm?.icon ?? 'text-stone-900 dark:text-zinc-100') : 'text-stone-600 dark:text-zinc-400 group-hover:text-stone-800 dark:text-zinc-200'}`} />
+                    <span className="text-[9px] text-stone-500 dark:text-zinc-500 group-hover:text-stone-600 dark:text-zinc-400 truncate w-full text-center leading-tight">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ContentBuilder() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -115,12 +210,15 @@ export function ContentBuilder() {
 
   const kindParam = searchParams.get("kind");
   const [isSingleType, setIsSingleType] = useState(kindParam === "single");
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<"basic" | "advanced">("basic");
 
   const [displayName, setDisplayName] = useState("");
   const [singularId, setSingularId] = useState("");
   const [pluralId, setPluralId] = useState("");
+  const [selectedColor, setSelectedColor] = useState("blue");
+  const [selectedIcon, setSelectedIcon] = useState("database");
 
   // For create mode: prefill from navigation state
   useEffect(() => {
@@ -128,6 +226,8 @@ export function ContentBuilder() {
       if (createState?.displayName) setDisplayName(createState.displayName);
       if (createState?.singularId) setSingularId(createState.singularId);
       if (createState?.pluralId) setPluralId(createState.pluralId);
+      if (createState?.color) setSelectedColor(createState.color);
+      if (createState?.icon) setSelectedIcon(createState.icon);
     }
   }, [id, createState]);
 
@@ -142,6 +242,8 @@ export function ContentBuilder() {
       setSingularId((t['singularName'] as string) ?? '');
       setPluralId((t['pluralName'] as string) ?? '');
       setIsSingleType(t['kind'] === 'singleType');
+      if (t['color']) setSelectedColor(t['color'] as string);
+      if (t['icon']) setSelectedIcon(t['icon'] as string);
       setDraftAndPublish(Boolean((schema['options'] as Record<string, unknown> | undefined)?.['draftAndPublish'] ?? true));
       const loadedFields: Field[] = Object.entries(attrs).map(([name, def], i) => {
         const d = def as Record<string, unknown>;
@@ -215,8 +317,8 @@ export function ContentBuilder() {
         i18n,
         reviewWorkflow,
         attributes,
-        ...(createState?.color ? { color: createState.color } : {}),
-        ...(createState?.icon ? { icon: createState.icon } : {}),
+        color: selectedColor,
+        icon: selectedIcon,
       };
       if (id && id !== "create") {
         await api.contentTypes.update(id, payload);
@@ -270,73 +372,73 @@ export function ContentBuilder() {
     closeModal();
   };
 
-  const typeLabel = isSingleType ? "Single type" : "Collection type";
+  const typeLabel = isSingleType ? t("contentBuilder.singleType") : t("contentBuilder.collectionType");
 
   return (
-    <div className="bg-zinc-950">
+    <div className="bg-stone-100 dark:bg-zinc-950">
       <div className="p-4 sm:p-6 lg:p-8 pb-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col gap-4 mb-6">
             <Link
               to="/content-types"
-              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors w-fit"
+              className="flex items-center gap-2 text-sm text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors w-fit"
             >
               <ArrowLeft className="w-4 h-4 shrink-0" />
-              Back to Content Types
+              {t("contentBuilder.backToContentTypes")}
             </Link>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-2xl sm:text-3xl font-semibold mb-2 truncate">
-                  Edit {displayName}
+                  {t("contentBuilder.edit", { name: displayName })}
                 </h1>
-                <p className="text-zinc-400">
-                  {fields.length} field{fields.length !== 1 ? "s" : ""} · {typeLabel}
+                <p className="text-stone-600 dark:text-zinc-400">
+                  {fields.length === 1 ? t("contentBuilder.fieldsCount", { n: fields.length }) : t("contentBuilder.fieldsCountPlural", { n: fields.length })} · {typeLabel}
                 </p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:shrink-0">
                 <Link
                   to="/content-types"
-                  className="flex items-center justify-center px-4 py-2 text-zinc-300 hover:text-zinc-100 transition-colors text-center sm:text-left"
+                  className="flex items-center justify-center px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors text-center sm:text-left"
                 >
-                  Cancel
+                  {t("contentBuilder.cancel")}
                 </Link>
                 {saveError && <span className="text-xs text-red-400">{saveError}</span>}
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-md hover:bg-zinc-200 transition-colors font-medium disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium disabled:opacity-50"
                 >
-                  {saving ? "Saving…" : "Save"}
+                  {saving ? t("contentBuilder.saving") : t("contentBuilder.save")}
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="relative z-20 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg px-4 pt-3 mb-6">
-            <div className="flex items-center gap-6 sm:gap-8 border-b border-zinc-800/50 overflow-x-auto">
+          <div className="relative z-20 bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg px-4 pt-3 mb-6">
+            <div className="flex items-center gap-6 sm:gap-8 border-b border-stone-200/85 dark:border-zinc-800/50 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab("basic")}
                 className={`text-sm font-medium pb-3 border-b-2 -mb-px transition-colors ${
                   activeTab === "basic"
-                    ? "text-zinc-100 border-zinc-100"
-                    : "text-zinc-500 border-transparent hover:text-zinc-300"
+                    ? "text-stone-900 dark:text-zinc-100 border-stone-300 dark:border-zinc-100"
+                    : "text-stone-500 dark:text-zinc-500 border-transparent hover:text-stone-700 dark:hover:text-zinc-300"
                 }`}
               >
-                Basic settings
+                {t("contentBuilder.tabs.basic")}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("advanced")}
                 className={`text-sm font-medium pb-3 border-b-2 -mb-px transition-colors ${
                   activeTab === "advanced"
-                    ? "text-zinc-100 border-zinc-100"
-                    : "text-zinc-500 border-transparent hover:text-zinc-300"
+                    ? "text-stone-900 dark:text-zinc-100 border-stone-300 dark:border-zinc-100"
+                    : "text-stone-500 dark:text-zinc-500 border-transparent hover:text-stone-700 dark:hover:text-zinc-300"
                 }`}
               >
-                Advanced settings
+                {t("contentBuilder.tabs.advanced")}
               </button>
             </div>
           </div>
@@ -344,54 +446,61 @@ export function ContentBuilder() {
         <div>
           {activeTab === "basic" ? (
             <>
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-6 mb-6">
+              <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Display Name</label>
+                    <label className="block text-sm font-medium mb-2">{t("contentBuilder.displayName")}</label>
                     <input
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full px-4 py-2 bg-zinc-950/70 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-zinc-400">API ID (Singular)</label>
+                    <label className="block text-sm font-medium mb-2 text-stone-600 dark:text-zinc-400">{t("contentBuilder.apiIdSingular")}</label>
                     <input
                       type="text"
                       value={singularId}
                       onChange={(e) => setSingularId(e.target.value)}
-                      className="w-full px-4 py-2 bg-zinc-950/70 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
                     <label
-                      className={`block text-sm font-medium mb-2 ${isSingleType ? "text-zinc-500" : "text-zinc-400"}`}
+                      className={`block text-sm font-medium mb-2 ${isSingleType ? "text-stone-500 dark:text-zinc-500" : "text-stone-600 dark:text-zinc-400"}`}
                     >
-                      API ID (Plural)
+                      {t("contentBuilder.apiIdPlural")}
                     </label>
                     <input
                       type="text"
                       value={isSingleType ? singularId : pluralId}
                       onChange={(e) => !isSingleType && setPluralId(e.target.value)}
                       disabled={isSingleType}
-                      className={`w-full px-4 py-2 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isSingleType ? "bg-zinc-950/30 text-zinc-500 cursor-not-allowed" : "bg-zinc-950/70"
+                      className={`w-full px-4 py-2 border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isSingleType ? "bg-stone-100/88 dark:bg-zinc-950/30 text-stone-500 dark:text-zinc-500 cursor-not-allowed" : "bg-white/82 dark:bg-zinc-950/70"
                       }`}
                     />
                     {isSingleType && (
-                      <p className="text-xs text-zinc-500 mt-1.5">
-                        Single types use one entry; plural API id matches singular.
+                      <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1.5">
+                        {t("contentBuilder.singleTypePluralHint")}
                       </p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Fields</h3>
+              <AppearancePicker
+                selectedColor={selectedColor}
+                setSelectedColor={setSelectedColor}
+                selectedIcon={selectedIcon}
+                setSelectedIcon={setSelectedIcon}
+              />
+
+              <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">{t("contentBuilder.fields")}</h3>
 
                 <div className="space-y-2 mb-4">
                   {fields.map((field) => {
@@ -425,15 +534,15 @@ export function ContentBuilder() {
                           if (!fromId || fromId === field.id) return;
                           setFields((prev) => reorderFieldsById(prev, fromId, field.id));
                         }}
-                        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 px-4 py-3 bg-zinc-950/50 border rounded-lg transition-colors group ${listColors.border} ${
+                        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 px-4 py-3 bg-white/75 dark:bg-zinc-950/50 border rounded-lg transition-colors group ${listColors.border} ${
                           isOver ? "ring-2 ring-zinc-400/50 border-zinc-500/60" : ""
-                        } ${isDragging ? "opacity-50" : ""} hover:border-zinc-600/50`}
+                        } ${isDragging ? "opacity-50" : ""} hover:border-stone-400 dark:hover:border-zinc-600/50`}
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div
                           role="button"
                           tabIndex={0}
-                          aria-label="Drag to reorder"
+                          aria-label={t("contentBuilder.dragToReorder")}
                           draggable
                           onDragStart={(e) => {
                             e.stopPropagation();
@@ -455,7 +564,7 @@ export function ContentBuilder() {
                             setFieldDraggingId(null);
                             setFieldDragOverId(null);
                           }}
-                          className="touch-none shrink-0 cursor-grab rounded p-1 -m-1 text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300 active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
+                          className="touch-none shrink-0 cursor-grab rounded p-1 -m-1 text-stone-500 dark:text-zinc-500 hover:bg-stone-300 dark:hover:bg-zinc-800/60 hover:text-stone-700 dark:hover:text-zinc-300 active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
                         >
                           <GripVertical className="w-5 h-5 pointer-events-none" />
                         </div>
@@ -472,7 +581,7 @@ export function ContentBuilder() {
                             <span className="font-medium">{field.name}</span>
                             {field.required && <span className="text-red-400 text-xs">*</span>}
                           </div>
-                          <p className="text-sm text-zinc-500 truncate">
+                          <p className="text-sm text-stone-500 dark:text-zinc-500 truncate">
                             {field.description || def.label}
                           </p>
                         </div>
@@ -482,10 +591,10 @@ export function ContentBuilder() {
                           type="button"
                           draggable={false}
                           onClick={() => setFields((prev) => prev.filter((f) => f.id !== field.id))}
-                          className="self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-zinc-800/50 rounded transition-all"
-                          aria-label="Remove field"
+                          className="self-end sm:self-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-all"
+                          aria-label={t("contentBuilder.removeField")}
                         >
-                          <Trash2 className="w-4 h-4 text-zinc-400" />
+                          <Trash2 className="w-4 h-4 text-stone-600 dark:text-zinc-400" />
                         </button>
                       </div>
                     );
@@ -498,25 +607,25 @@ export function ContentBuilder() {
                   onClick={() => setShowAddFieldModal(true)}
                 >
                   <Plus className="w-4 h-4" />
-                  Add another field to this {isSingleType ? "single type" : "collection type"}
+                  + {t("contentBuilder.addField", { kind: typeLabel })}
                 </button>
               </div>
             </>
           ) : (
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-6">Advanced Settings</h3>
+            <div className="bg-white/78 dark:bg-zinc-900/50 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-6">{t("contentBuilder.advanced.title")}</h3>
 
               <div className="space-y-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium mb-1">Draft & Publish</h4>
-                    <p className="text-sm text-zinc-400">Write a draft version of each entry before publishing it</p>
+                    <h4 className="font-medium mb-1">{t("contentBuilder.advanced.draftPublish")}</h4>
+                    <p className="text-sm text-stone-600 dark:text-zinc-400">{t("contentBuilder.advanced.draftPublishDesc")}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setDraftAndPublish(!draftAndPublish)}
                     className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${
-                      draftAndPublish ? "bg-blue-500" : "bg-zinc-700"
+                      draftAndPublish ? "bg-blue-500" : "bg-stone-300 dark:bg-zinc-700"
                     }`}
                   >
                     <div
@@ -527,15 +636,15 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium mb-1">Internationalization</h4>
-                    <p className="text-sm text-zinc-400">Manage content in multiple languages (i18n)</p>
+                    <h4 className="font-medium mb-1">{t("contentBuilder.advanced.i18n")}</h4>
+                    <p className="text-sm text-stone-600 dark:text-zinc-400">{t("contentBuilder.advanced.i18nDesc")}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setI18n(!i18n)}
-                    className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${i18n ? "bg-blue-500" : "bg-zinc-700"}`}
+                    className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${i18n ? "bg-blue-500" : "bg-stone-300 dark:bg-zinc-700"}`}
                   >
                     <div
                       className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -545,16 +654,16 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium mb-1">Review Workflow</h4>
-                    <p className="text-sm text-zinc-400">Add a review stage before publishing content</p>
+                    <h4 className="font-medium mb-1">{t("contentBuilder.advanced.reviewWorkflow")}</h4>
+                    <p className="text-sm text-stone-600 dark:text-zinc-400">{t("contentBuilder.advanced.reviewWorkflowDesc")}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setReviewWorkflow(!reviewWorkflow)}
                     className={`relative w-12 h-6 shrink-0 rounded-full transition-colors self-start sm:self-auto ${
-                      reviewWorkflow ? "bg-blue-500" : "bg-zinc-700"
+                      reviewWorkflow ? "bg-blue-500" : "bg-stone-300 dark:bg-zinc-700"
                     }`}
                   >
                     <div
@@ -565,26 +674,26 @@ export function ContentBuilder() {
                   </button>
                 </div>
 
-                <div className="p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg min-w-0">
-                  <h4 className="font-medium mb-3">API Settings</h4>
+                <div className="p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg min-w-0">
+                  <h4 className="font-medium mb-3">{t("contentBuilder.advanced.apiSettings")}</h4>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
-                        {isSingleType ? "Single type API key" : "Collection Name"}
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-2">
+                        {isSingleType ? t("contentBuilder.advanced.singleTypeApiKey") : t("contentBuilder.advanced.collectionName")}
                       </label>
                       <input
                         type="text"
                         value={isSingleType ? singularId : pluralId}
-                        className="w-full px-4 py-2 bg-zinc-950/70 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-4 py-2 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         readOnly
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">Singular API key</label>
+                      <label className="block text-sm text-stone-600 dark:text-zinc-400 mb-2">{t("contentBuilder.advanced.singularApiKey")}</label>
                       <input
                         type="text"
                         value={singularId}
-                        className="w-full px-4 py-2 bg-zinc-950/70 border border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-4 py-2 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         readOnly
                       />
                     </div>
@@ -599,10 +708,10 @@ export function ContentBuilder() {
 
       {showAddFieldModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-xl w-full max-w-6xl max-h-[min(92vh,56rem)] flex flex-col shadow-2xl overflow-hidden">
-            <div className="shrink-0 bg-zinc-900/95 border-b border-zinc-800/50 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between">
-              <h2 className="text-lg sm:text-xl font-semibold">Add New Field</h2>
-              <button type="button" onClick={closeModal} className="p-2 hover:bg-zinc-800/50 rounded transition-colors">
+          <div className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-xl w-full max-w-6xl max-h-[min(92vh,56rem)] flex flex-col shadow-2xl overflow-hidden">
+            <div className="shrink-0 bg-white/96 dark:bg-zinc-900/95 border-b border-stone-200/85 dark:border-zinc-800/50 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between">
+              <h2 className="text-lg sm:text-xl font-semibold">{t("contentBuilder.addFieldModal.title")}</h2>
+              <button type="button" onClick={closeModal} className="p-2 hover:bg-stone-200/90 active:bg-stone-300/65 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800/65 rounded transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -610,7 +719,7 @@ export function ContentBuilder() {
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-3">
-                  Select Field Type <span className="text-red-400">*</span>
+                  {t("contentBuilder.addFieldModal.selectType")} <span className="text-red-400">*</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
                   {STRAPI_FIELD_TYPES.map((ft) => {
@@ -651,7 +760,7 @@ export function ContentBuilder() {
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-3">
-                      Relation Type <span className="text-red-400">*</span>
+                      {t("contentBuilder.addFieldModal.relationType")} <span className="text-red-400">*</span>
                     </label>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                       {(
@@ -669,14 +778,14 @@ export function ContentBuilder() {
                           className={`p-4 rounded-lg border-2 text-left transition-all ${
                             relationType === key
                               ? "border-violet-400 bg-violet-500/15 ring-1 ring-violet-400/30"
-                              : "border-zinc-800/50 hover:border-violet-500/40 bg-zinc-950/50"
+                              : "border-stone-200/85 dark:border-zinc-800/50 hover:border-violet-500/40 bg-white/75 dark:bg-zinc-950/50"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium">{title}</p>
                             {relationType === key && <Check className="w-5 h-5 text-violet-400" />}
                           </div>
-                          <p className="text-xs text-zinc-500">{sub}</p>
+                          <p className="text-xs text-stone-500 dark:text-zinc-500">{sub}</p>
                         </button>
                       ))}
                     </div>
@@ -684,12 +793,12 @@ export function ContentBuilder() {
 
                   <div>
                     <label className="block text-sm font-medium mb-3">
-                      Target Collection <span className="text-red-400">*</span>
+                      {t("contentBuilder.addFieldModal.relationTarget")} <span className="text-red-400">*</span>
                     </label>
                     <select
                       value={relationTarget}
                       onChange={(e) => setRelationTarget(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-zinc-950/70 border border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="w-full px-4 py-2.5 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                     >
                       {availableCollections.map((col) => (
                         <option key={col.id} value={col.id}>
@@ -703,40 +812,40 @@ export function ContentBuilder() {
 
               {selectedFieldType === "enumeration" && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Enumeration values</label>
+                  <label className="block text-sm font-medium mb-2">{t("contentBuilder.addFieldModal.enumerationValues")}</label>
                   <textarea
                     value={enumerationValues}
                     onChange={(e) => setEnumerationValues(e.target.value)}
-                    placeholder="e.g. draft, published, archived (comma-separated)"
+                    placeholder={t("contentBuilder.addFieldModal.enumerationPlaceholder")}
                     rows={2}
-                    className="w-full px-4 py-2.5 bg-zinc-950/70 border border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                    className="w-full px-4 py-2.5 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
                   />
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Field Name <span className="text-red-400">*</span>
+                  {t("contentBuilder.addFieldModal.fieldName")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={newFieldName}
                   onChange={(e) => setNewFieldName(e.target.value)}
-                  placeholder="e.g. Category, Author, Tags"
-                  className="w-full px-4 py-2.5 bg-zinc-950/70 border border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("contentBuilder.addFieldModal.fieldNamePlaceholder")}
+                  className="w-full px-4 py-2.5 bg-white/82 dark:bg-zinc-950/70 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-white/75 dark:bg-zinc-950/50 border border-stone-200/85 dark:border-zinc-800/50 rounded-lg">
                 <div>
-                  <p className="font-medium mb-1">Required field</p>
-                  <p className="text-sm text-zinc-500">This field must be filled in</p>
+                  <p className="font-medium mb-1">{t("contentBuilder.addFieldModal.required")}</p>
+                  <p className="text-sm text-stone-500 dark:text-zinc-500">{t("contentBuilder.addFieldModal.requiredHint")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setNewFieldRequired(!newFieldRequired)}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
-                    newFieldRequired ? "bg-blue-500" : "bg-zinc-700"
+                    newFieldRequired ? "bg-blue-500" : "bg-stone-300 dark:bg-zinc-700"
                   }`}
                 >
                   <div
@@ -748,17 +857,17 @@ export function ContentBuilder() {
               </div>
             </div>
 
-            <div className="shrink-0 bg-zinc-900/95 border-t border-zinc-800/50 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={closeModal} className="px-5 sm:px-6 py-2.5 text-zinc-300 hover:text-zinc-100 transition-colors text-sm sm:text-base">
-                Cancel
+            <div className="shrink-0 bg-white/96 dark:bg-zinc-900/95 border-t border-stone-200/85 dark:border-zinc-800/50 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-end gap-3">
+              <button type="button" onClick={closeModal} className="px-5 sm:px-6 py-2.5 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors text-sm sm:text-base">
+                {t("contentBuilder.addFieldModal.cancel")}
               </button>
               <button
                 type="button"
                 onClick={addField}
                 disabled={!selectedFieldType || !newFieldName.trim()}
-                className="px-5 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm sm:text-base"
+                className="px-5 sm:px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-300 dark:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm sm:text-base"
               >
-                Add Field
+                {t("contentBuilder.addFieldModal.addField")}
               </button>
             </div>
           </div>
