@@ -25,10 +25,17 @@ function getByPath(obj: unknown, path: string): string | undefined {
   return typeof cur === "string" ? cur : undefined;
 }
 
+function interpolate(template: string, vars?: Record<string, string | number>): string {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, k) =>
+    vars[k] !== undefined ? String(vars[k]) : `{${k}}`
+  );
+}
+
 export type I18nContextValue = {
   locale: AdminLocale;
   setLocale: (locale: AdminLocale) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   panelLanguageOptions: typeof PANEL_LANGUAGE_OPTIONS;
 };
 
@@ -59,11 +66,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: string) => {
+    (key: string, vars?: Record<string, string | number>) => {
       const fromCurrent = getByPath(catalogs[locale], key);
-      if (fromCurrent !== undefined) return fromCurrent;
-      const fallback = getByPath(catalogs[DEFAULT_ADMIN_LOCALE], key);
-      return fallback ?? key;
+      const raw =
+        fromCurrent !== undefined
+          ? fromCurrent
+          : (getByPath(catalogs[DEFAULT_ADMIN_LOCALE], key) ?? key);
+      return interpolate(raw, vars);
     },
     [locale]
   );

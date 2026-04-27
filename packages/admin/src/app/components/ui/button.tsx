@@ -44,15 +44,17 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot : "button";
-
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
+  const cls = cn(buttonVariants({ variant, size, className }));
+  if (asChild) {
+    return (
+      <Slot
+        data-slot="button"
+        className={cls}
+        {...(props as React.ComponentPropsWithoutRef<typeof Slot>)}
+      />
+    );
+  }
+  return <button type="button" data-slot="button" className={cls} {...props} />;
 }
 
 export { Button, buttonVariants };

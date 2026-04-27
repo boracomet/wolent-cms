@@ -38,15 +38,17 @@ function BreadcrumbLink({
 }: React.ComponentProps<"a"> & {
   asChild?: boolean;
 }) {
-  const Comp = asChild ? Slot : "a";
-
-  return (
-    <Comp
-      data-slot="breadcrumb-link"
-      className={cn("hover:text-foreground transition-colors", className)}
-      {...props}
-    />
-  );
+  const cls = cn("hover:text-foreground transition-colors", className);
+  if (asChild) {
+    return (
+      <Slot
+        data-slot="breadcrumb-link"
+        className={cls}
+        {...(props as React.ComponentPropsWithoutRef<typeof Slot>)}
+      />
+    );
+  }
+  return <a data-slot="breadcrumb-link" className={cls} {...props} />;
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {

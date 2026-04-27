@@ -444,7 +444,7 @@ export function ApiPermissions() {
                           perms.create && "create",
                           perms.update && "update",
                           perms.delete && "delete",
-                        ].filter(Boolean);
+                        ].filter((p): p is string => typeof p === "string");
 
                         return (
                           <div

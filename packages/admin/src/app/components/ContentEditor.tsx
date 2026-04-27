@@ -216,7 +216,7 @@ export function ContentEditor() {
     }
   }, [type, id, isNew, contentByLocale, currentLocale, navigate, status, coverImage]);
 
-  const typeName = type?.charAt(0).toUpperCase() + type?.slice(1) || "";
+  const typeName = type ? type.charAt(0).toUpperCase() + type.slice(1) : "";
   const headingLabel = schemaType?.singularName ?? typeName;
   const backToListLabel = schemaType?.pluralName
     ? `Back to ${schemaType.pluralName}`

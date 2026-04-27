@@ -739,10 +739,11 @@ export function MediaLibrary() {
 
   const getBreadcrumbs = () => {
     const breadcrumbs: FolderItem[] = [];
-    let folder = currentFolder;
+    let folder: FolderItem | undefined = currentFolder;
     while (folder) {
       breadcrumbs.unshift(folder);
-      folder = folders.find((f) => f.id === folder!.parentId) || null;
+      const parentId = folder.parentId;
+      folder = parentId ? folders.find((f) => f.id === parentId) : undefined;
     }
     return breadcrumbs;
   };

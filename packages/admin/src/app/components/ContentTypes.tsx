@@ -637,6 +637,7 @@ function PresetsModal({
   onClose: () => void;
   onApply: (preset: ContentPresetDefinition) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white/96 dark:bg-zinc-900/95 backdrop-blur-xl border border-stone-200/85 dark:border-zinc-800/50 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-black/40">
