@@ -27,10 +27,17 @@ export class ContentTypeService {
     return runInTenantContext({ tenantId }, async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const types = await (prisma as any).contentType.findMany({ orderBy: { createdAt: 'desc' } }) as any[]
-      return types.map((t: any) => ({
-        ...t,
-        schema: JSON.parse(t.schema) as ContentTypeDefinition,
-      }))
+      return types.map((t: any) => {
+        const parsed = JSON.parse(t.schema)
+        // Unwrap double-nesting: stored JSON has { uid, kind, ..., schema: { attributes } }
+        // Admin expects { uid, kind, ..., attributes }  (flat)
+        const inner = parsed.schema ?? parsed
+        return {
+          ...t,
+          ...parsed,
+          schema: inner,
+        }
+      })
     })
   }
 
@@ -40,7 +47,9 @@ export class ContentTypeService {
         where: uid.includes('::') ? { uid } : { OR: [{ uid }, { singularName: uid }, { id: uid }] }
       })
       if (!type) throw new NotFoundError('ContentType', uid)
-      return { ...type, schema: JSON.parse(type.schema) as ContentTypeDefinition }
+      const parsed = JSON.parse(type.schema)
+      const inner = parsed.schema ?? parsed
+      return { ...type, ...parsed, schema: inner }
     })
   }
 
