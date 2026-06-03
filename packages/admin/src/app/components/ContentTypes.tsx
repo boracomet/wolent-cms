@@ -52,10 +52,13 @@ import { useI18n } from "../i18n";
 import { CONTENT_TYPES_STORAGE_KEY } from "../data/demoContentTypes";
 import type { DemoContentType } from "../data/demoContentTypes";
 import { duplicateContentTypeSchema, nextDuplicateDisplayName } from "../lib/cmsDuplicate";
+import { RELATION_TYPE_LABELS } from "./RelationTypePicker";
 import {
   contentPresets,
+  quickStartTemplates,
   type ContentPresetDefinition,
   type PresetIconKey,
+  type QuickStartTemplate,
 } from "../data/contentPresets";
 
 const CONTENT_TYPES_VIEW_KEY = "cms-content-types-view-mode";
@@ -77,6 +80,8 @@ const PRESET_ICONS: Record<PresetIconKey, LucideIcon> = {
   landing: LayoutTemplate,
   faq: HelpCircle,
   testimonial: Quote,
+  product: ShoppingBag,
+  portfolio: Briefcase,
 };
 
 
@@ -163,6 +168,10 @@ export function ContentTypes() {
         if (f.description) attr['description'] = f.description;
         if (f.type === 'enumeration' && f.enumOptions?.length) {
           attr['enum'] = f.enumOptions;
+        }
+        if (f.type === 'relation') {
+          if (f.targetType) attr['targetType'] = f.targetType;
+          if (f.relation) attr['relation'] = f.relation;
         }
         attributes[f.apiName] = attr;
       }
@@ -746,13 +755,73 @@ export const CT_ICON_OPTIONS: { id: string; icon: LucideIcon; label: string }[] 
   { id: 'layers', icon: Layers, label: 'Section' },
 ];
 
+function slugFromDisplayName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "content-type";
+}
+
+const WIZARD_STEPS = [
+  { id: 1, label: "İsim" },
+  { id: 2, label: "Şablon" },
+  { id: 3, label: "Önizleme" },
+] as const;
+
+function WizardStepIndicator({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="flex items-center gap-2 sm:gap-4 mb-6">
+      {WIZARD_STEPS.map((s, i) => {
+        const active = step === s.id;
+        const done = step > s.id;
+        return (
+          <div key={s.id} className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
+                  active
+                    ? "bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950"
+                    : done
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                      : "bg-stone-200/90 dark:bg-zinc-800 text-stone-500 dark:text-zinc-500"
+                }`}
+              >
+                {done ? "✓" : s.id}
+              </div>
+              <span
+                className={`text-xs sm:text-sm truncate ${
+                  active ? "font-medium text-stone-900 dark:text-zinc-100" : "text-stone-500 dark:text-zinc-500"
+                }`}
+              >
+                {s.label}
+              </span>
+            </div>
+            {i < WIZARD_STEPS.length - 1 && (
+              <div className="hidden sm:block flex-1 h-px bg-stone-200 dark:bg-zinc-800 min-w-[12px]" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
   const [displayName, setDisplayName] = useState("");
   const [selectedType, setSelectedType] = useState<"collection" | "single">("collection");
   const [selectedIcon, setSelectedIcon] = useState("database");
   const [selectedColor, setSelectedColor] = useState("blue");
+  const [quickStart, setQuickStart] = useState<QuickStartTemplate>(quickStartTemplates[0]);
   const { t } = useI18n();
+
+  const slug = slugFromDisplayName(displayName.trim());
+  const pluralSlug = selectedType === "single" ? slug : slug ? `${slug}s` : "content-types";
+  const typeLabel =
+    selectedType === "single" ? t("contentTypes.create.singleType") : t("contentTypes.create.collectionType");
+
+  const canNextStep1 = displayName.trim().length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -781,13 +850,10 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
 
         {/* Content */}
         <div className="p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-1">{t("contentTypes.create.configurations")}</h3>
-            <p className="text-sm text-stone-600 dark:text-zinc-400">{t("contentTypes.create.configurationsDesc")}</p>
-          </div>
+          <WizardStepIndicator step={wizardStep} />
 
+          {wizardStep === 1 && (
           <div className="space-y-6">
-            {/* Display Name */}
             <div>
               <label className="block text-sm font-medium mb-2">{t("contentTypes.create.displayName")}</label>
               <input
@@ -797,34 +863,9 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
                 placeholder={t("contentTypes.create.displayNamePlaceholder")}
                 className="w-full px-3 py-2 bg-white/75 dark:bg-zinc-950/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-zinc-700"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              {/* API ID Singular */}
-              <div>
-                <label className="block text-sm font-medium mb-2">{t("contentTypes.create.apiIdSingular")}</label>
-                <input
-                  type="text"
-                  value={displayName.toLowerCase()}
-                  disabled
-                  className="w-full px-3 py-2 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md text-stone-600 dark:text-zinc-400"
-                />
-                <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">
-                  {t("contentTypes.create.apiIdSingularHint")}
-                </p>
-              </div>
-
-              {/* API ID Plural */}
-              <div>
-                <label className="block text-sm font-medium mb-2">{t("contentTypes.create.apiIdPlural")}</label>
-                <input
-                  type="text"
-                  value={displayName.toLowerCase() + "s"}
-                  disabled
-                  className="w-full px-3 py-2 bg-stone-200/85 dark:bg-zinc-800/50 backdrop-blur-sm border border-stone-200/85 dark:border-zinc-800/50 rounded-md text-stone-600 dark:text-zinc-400"
-                />
-                <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">{t("contentTypes.create.apiIdPluralHint")}</p>
-              </div>
+              <p className="text-xs text-stone-500 dark:text-zinc-500 mt-2">
+                Teknik kimlik otomatik oluşturulur; gelişmiş ayarlardan görüntülenebilir.
+              </p>
             </div>
 
             {/* Color Selection */}
@@ -938,43 +979,143 @@ function CreateContentTypeModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
+          )}
+
+          {wizardStep === 2 && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Hızlı başlangıç</h3>
+                <p className="text-sm text-stone-600 dark:text-zinc-400">
+                  Hazır alan şablonu seçin veya boş başlayın. Alanları oluşturucuda düzenleyebilirsiniz.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {quickStartTemplates.map((tpl) => {
+                  const selected = quickStart.id === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => setQuickStart(tpl)}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        selected
+                          ? "border-stone-400 dark:border-zinc-300 bg-stone-200/70 dark:bg-zinc-800/50"
+                          : "border-stone-200/85 dark:border-zinc-800/50 hover:border-stone-400 dark:hover:border-zinc-600 bg-white/75 dark:bg-zinc-950/40"
+                      }`}
+                    >
+                      <h4 className="font-medium mb-1">{tpl.title}</h4>
+                      <p className="text-xs text-stone-500 dark:text-zinc-500">{tpl.description}</p>
+                      {tpl.fields.length > 0 && (
+                        <p className="text-[11px] text-stone-400 dark:text-zinc-600 mt-2">
+                          {tpl.fields.length} alan
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 3 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Önizleme</h3>
+              <div className="rounded-lg border border-stone-200/85 dark:border-zinc-800/50 bg-stone-50/90 dark:bg-zinc-950/50 p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const IconCmp = CT_ICON_OPTIONS.find((i) => i.id === selectedIcon)?.icon ?? Database;
+                    const colorMeta = availableColors.find((c) => c.name === selectedColor);
+                    return (
+                      <div
+                        className={`w-11 h-11 rounded-lg flex items-center justify-center ${colorMeta?.bg ?? "bg-stone-200 dark:bg-zinc-800"}`}
+                      >
+                        <IconCmp className={`w-5 h-5 ${colorMeta?.icon ?? "text-stone-900 dark:text-zinc-100"}`} />
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <p className="font-semibold text-lg">{displayName.trim()}</p>
+                    <p className="text-sm text-stone-600 dark:text-zinc-400">{typeLabel}</p>
+                  </div>
+                </div>
+                <div className="text-sm text-stone-600 dark:text-zinc-400 space-y-1 border-t border-stone-200/80 dark:border-zinc-800/60 pt-3">
+                  <p>
+                    <span className="text-stone-500 dark:text-zinc-500">Şablon:</span> {quickStart.title}
+                  </p>
+                  {quickStart.fields.length > 0 ? (
+                    <ul className="list-disc list-inside text-xs space-y-0.5 mt-2">
+                      {quickStart.fields.map((f) => (
+                        <li key={f.apiName}>
+                          {f.label || f.apiName}
+                          {f.required ? " *" : ""}
+                          {f.type === "relation" && f.targetType
+                            ? ` → ${f.targetType} (${
+                                f.relation && f.relation in RELATION_TYPE_LABELS
+                                  ? RELATION_TYPE_LABELS[f.relation as keyof typeof RELATION_TYPE_LABELS]
+                                  : "ilişki"
+                              })`
+                            : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs">Alan eklenmedi — oluşturucuda ekleyeceksiniz.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200/85 dark:border-zinc-800/50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
-          >
-            {t("contentTypes.create.cancel")}
-          </button>
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-stone-200/85 dark:border-zinc-800/50">
           <button
             type="button"
-            disabled={!displayName.trim()}
             onClick={() => {
-              const name = displayName.trim();
-              const slug = name
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-|-$/g, "");
-              navigate(
-                `/content-types/create/builder?kind=${selectedType === "single" ? "single" : "collection"}`,
-                {
-                  state: {
-                    displayName: name,
-                    singularId: slug || "content-type",
-                    pluralId: slug ? `${slug}s` : "content-types",
-                    color: selectedColor,
-                    icon: selectedIcon,
-                  },
-                }
-              );
-              onClose();
+              if (wizardStep === 1) onClose();
+              else setWizardStep((s) => (s === 2 ? 1 : 2));
             }}
-            className="px-6 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-stone-700 dark:text-zinc-300 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
           >
-            {t("contentTypes.create.continue")}
+            {wizardStep === 1 ? t("contentTypes.create.cancel") : "Geri"}
           </button>
+          <div className="flex gap-3">
+            {wizardStep < 3 ? (
+              <button
+                type="button"
+                disabled={wizardStep === 1 && !canNextStep1}
+                onClick={() => setWizardStep((s) => (s === 1 ? 2 : 3))}
+                className="px-6 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                İleri
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  const name = displayName.trim();
+                  navigate(
+                    `/content-types/create/builder?kind=${selectedType === "single" ? "single" : "collection"}`,
+                    {
+                      state: {
+                        displayName: name,
+                        singularId: slug,
+                        pluralId: pluralSlug,
+                        color: selectedColor,
+                        icon: selectedIcon,
+                        initialFields:
+                          quickStart.fields.length > 0 ? quickStart.fields : undefined,
+                      },
+                    }
+                  );
+                  onClose();
+                }}
+                className="px-6 py-2 bg-stone-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-md hover:bg-stone-800 dark:hover:bg-zinc-200 transition-colors font-medium"
+              >
+                Oluşturucuya git
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

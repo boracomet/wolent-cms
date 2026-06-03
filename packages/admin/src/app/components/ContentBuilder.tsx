@@ -33,6 +33,9 @@ import { fieldTileColors, getCmsColorClasses, cmsColorSwatches as availableColor
 import { api } from "../api/client";
 import { useI18n } from "../i18n";
 import { CT_ICON_OPTIONS } from "./ContentTypes";
+import { RelationTypePicker, formatRelationFieldSummary, type RelationKind } from "./RelationTypePicker";
+import { getFieldTypeHelp } from "../data/fieldHelp";
+import type { DemoField } from "../data/demoContentTypes";
 
 interface Field {
   id: string;
@@ -41,6 +44,10 @@ interface Field {
   required: boolean;
   description?: string;
   enumerationValues?: string;
+  /** İlişki hedefi — singularName */
+  targetType?: string;
+  relation?: string;
+  targetDisplayName?: string;
 }
 
 /** Strapi-aligned field types (admin) — each mapped to a CMS accent color */
@@ -51,26 +58,53 @@ const STRAPI_FIELD_TYPES: {
   color: CmsColorName;
   wide?: boolean;
 }[] = [
-  { id: "text", label: "Text", icon: Type, color: "blue" },
-  { id: "text_long", label: "Text (Long text)", icon: AlignLeft, color: "green" },
-  { id: "blocks", label: "Rich text (Blocks)", icon: Layers2, color: "purple" },
+  { id: "text", label: "Metin", icon: Type, color: "blue" },
+  { id: "text_long", label: "Uzun metin", icon: AlignLeft, color: "green" },
+  { id: "blocks", label: "Zengin metin", icon: Layers2, color: "purple" },
   { id: "json", label: "JSON", icon: Braces, color: "emerald" },
-  { id: "number_int", label: "Number (integer)", icon: Hash, color: "orange" },
-  { id: "number_float", label: "Number (decimal)", icon: Hash, color: "yellow" },
-  { id: "number_big", label: "Number (big integer)", icon: Hash, color: "teal" },
-  { id: "password", label: "Password", icon: KeyRound, color: "red" },
-  { id: "email", label: "Email", icon: Mail, color: "pink" },
-  { id: "enumeration", label: "Enumeration", icon: ListOrdered, color: "violet" },
-  { id: "uid", label: "UID", icon: Fingerprint, color: "indigo" },
-  { id: "date", label: "Date", icon: Calendar, color: "cyan" },
-  { id: "time", label: "Time", icon: Clock, color: "teal" },
-  { id: "datetime", label: "Datetime", icon: CalendarClock, color: "indigo" },
-  { id: "boolean", label: "Boolean", icon: ToggleLeft, color: "yellow" },
-  { id: "media", label: "Media", icon: Image, color: "purple" },
-  { id: "relation", label: "Relation", icon: Link2, color: "violet", wide: true },
-  { id: "component", label: "Component", icon: Package, color: "emerald", wide: true },
-  { id: "dynamiczone", label: "Dynamic Zone", icon: LayoutGrid, color: "orange", wide: true },
+  { id: "number_int", label: "Tam sayı", icon: Hash, color: "orange" },
+  { id: "number_float", label: "Ondalık sayı", icon: Hash, color: "yellow" },
+  { id: "number_big", label: "Büyük tam sayı", icon: Hash, color: "teal" },
+  { id: "password", label: "Parola", icon: KeyRound, color: "red" },
+  { id: "email", label: "E-posta", icon: Mail, color: "pink" },
+  { id: "enumeration", label: "Seçenek listesi", icon: ListOrdered, color: "violet" },
+  { id: "uid", label: "Benzersiz kimlik", icon: Fingerprint, color: "indigo" },
+  { id: "date", label: "Tarih", icon: Calendar, color: "cyan" },
+  { id: "time", label: "Saat", icon: Clock, color: "teal" },
+  { id: "datetime", label: "Tarih ve saat", icon: CalendarClock, color: "indigo" },
+  { id: "boolean", label: "Evet/Hayır", icon: ToggleLeft, color: "yellow" },
+  { id: "media", label: "Medya", icon: Image, color: "purple" },
+  { id: "relation", label: "İlişki", icon: Link2, color: "violet", wide: true },
+  { id: "component", label: "Bileşen", icon: Package, color: "emerald", wide: true },
+  { id: "dynamiczone", label: "Dinamik bölge", icon: LayoutGrid, color: "orange", wide: true },
 ];
+
+function demoFieldsToBuilderFields(demo: DemoField[]): Field[] {
+  return demo.map((f, i) => ({
+    id: f.id || String(i + 1),
+    name: f.apiName,
+    type: f.type,
+    required: f.required,
+    description: f.description,
+    targetType: f.targetType,
+    relation: f.relation,
+    targetDisplayName: f.targetType,
+  }));
+}
+
+function getFieldListSubtitle(
+  field: Field,
+  collections: { id: string; name: string }[]
+): string {
+  if (field.type === "relation" && (field.targetType || field.targetDisplayName)) {
+    const target =
+      collections.find((c) => c.id === field.targetType)?.name ??
+      field.targetDisplayName ??
+      field.targetType;
+    return formatRelationFieldSummary(field.name, target, field.relation);
+  }
+  return field.description || getStrapiFieldDef(field.type).label;
+}
 
 const LEGACY_TYPE_MAP: Record<string, string> = {
   richtext: "blocks",
@@ -205,6 +239,7 @@ export function ContentBuilder() {
         pluralId?: string;
         color?: string;
         icon?: string;
+        initialFields?: DemoField[];
       }
     | undefined;
 
@@ -228,6 +263,9 @@ export function ContentBuilder() {
       if (createState?.pluralId) setPluralId(createState.pluralId);
       if (createState?.color) setSelectedColor(createState.color);
       if (createState?.icon) setSelectedIcon(createState.icon);
+      if (createState?.initialFields?.length) {
+        setFields(demoFieldsToBuilderFields(createState.initialFields));
+      }
     }
   }, [id, createState]);
 
@@ -247,13 +285,24 @@ export function ContentBuilder() {
       setDraftAndPublish(Boolean((schema['options'] as Record<string, unknown> | undefined)?.['draftAndPublish'] ?? true));
       const loadedFields: Field[] = Object.entries(attrs).map(([name, def], i) => {
         const d = def as Record<string, unknown>;
+        const fieldType = (d['type'] as string) ?? 'text';
+        const targetType = (d['targetType'] as string) ?? undefined;
+        const relation = (d['relation'] as string) ?? undefined;
+        let description = (d['description'] as string) ?? undefined;
+        if (fieldType === 'relation' && targetType) {
+          const relLabel = relation ? ` · ${relation}` : '';
+          description = description ?? `İlişki: ${targetType}${relLabel}`;
+        }
         return {
           id: String(i + 1),
           name,
-          type: (d['type'] as string) ?? 'text',
+          type: fieldType,
           required: Boolean(d['required']),
-          description: (d['description'] as string) ?? undefined,
+          description,
           enumerationValues: Array.isArray(d['enum']) ? (d['enum'] as string[]).join('\n') : undefined,
+          targetType,
+          relation,
+          targetDisplayName: targetType,
         };
       });
       if (loadedFields.length > 0) setFields(loadedFields);
@@ -272,10 +321,8 @@ export function ContentBuilder() {
   const [newFieldRequired, setNewFieldRequired] = useState(false);
   const [enumerationValues, setEnumerationValues] = useState("");
 
-  const [relationTarget, setRelationTarget] = useState("categories");
-  const [relationType, setRelationType] = useState<"oneToOne" | "oneToMany" | "manyToOne" | "manyToMany">(
-    "manyToOne"
-  );
+  const [relationTarget, setRelationTarget] = useState("");
+  const [relationType, setRelationType] = useState<RelationKind>("manyToOne");
 
   const [fieldDragOverId, setFieldDragOverId] = useState<string | null>(null);
   const [fieldDraggingId, setFieldDraggingId] = useState<string | null>(null);
@@ -283,12 +330,15 @@ export function ContentBuilder() {
   const [availableCollections, setAvailableCollections] = useState<{ id: string; name: string; plural: string }[]>([]);
   useEffect(() => {
     api.contentTypes.list().then(res => {
-      const types = (res.data as { uid: string; displayName?: string; pluralApiId?: string }[]).map(t => ({
-        id: t.uid,
+      const types = (res.data as { uid: string; displayName?: string; singularName?: string; pluralName?: string }[]).map(t => ({
+        id: t.singularName ?? t.uid,
         name: t.displayName ?? t.uid,
-        plural: t.pluralApiId ?? t.uid,
+        plural: t.pluralName ?? t.uid,
       }));
       setAvailableCollections(types);
+      if (types.length > 0) {
+        setRelationTarget((prev) => (prev && types.some((c) => c.id === prev) ? prev : types[0].id));
+      }
     }).catch(() => {});
   }, []);
 
@@ -305,6 +355,11 @@ export function ContentBuilder() {
         if (f.description) attr['description'] = f.description;
         if (f.type === 'enumeration' && f.enumerationValues) {
           attr['enum'] = f.enumerationValues.split('\n').map(v => v.trim()).filter(Boolean);
+        }
+        if (f.type === 'relation') {
+          attr['type'] = 'relation';
+          if (f.relation) attr['relation'] = f.relation;
+          if (f.targetType) attr['targetType'] = f.targetType;
         }
         attributes[f.name] = attr;
       }
@@ -345,8 +400,18 @@ export function ContentBuilder() {
     if (!selectedFieldType || !newFieldName.trim()) return;
     const target = availableCollections.find((c) => c.id === relationTarget);
     let description: string | undefined;
+    let targetType: string | undefined;
+    let relation: string | undefined;
+    let targetDisplayName: string | undefined;
     if (selectedFieldType === "relation") {
-      description = `Relation (${relationType}) with ${target?.name ?? relationTarget}`;
+      targetType = target?.id ?? relationTarget;
+      relation = relationType;
+      targetDisplayName = target?.name ?? relationTarget;
+      description = formatRelationFieldSummary(
+        newFieldName.trim() || "alan",
+        targetDisplayName,
+        relationType
+      );
     } else if (selectedFieldType === "enumeration" && enumerationValues.trim()) {
       description = `Enumeration: ${enumerationValues.trim()}`;
     } else if (selectedFieldType === "component") {
@@ -367,6 +432,9 @@ export function ContentBuilder() {
         selectedFieldType === "enumeration" && enumerationValues.trim()
           ? enumerationValues.trim()
           : undefined,
+      targetType,
+      relation,
+      targetDisplayName,
     };
     setFields((prev) => [...prev, newField]);
     closeModal();
@@ -582,7 +650,7 @@ export function ContentBuilder() {
                             {field.required && <span className="text-red-400 text-xs">*</span>}
                           </div>
                           <p className="text-sm text-stone-500 dark:text-zinc-500 truncate">
-                            {field.description || def.label}
+                            {getFieldListSubtitle(field, availableCollections)}
                           </p>
                         </div>
                         </div>
@@ -748,6 +816,11 @@ export function ContentBuilder() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-xs sm:text-sm leading-snug">{ft.label}</p>
+                          {getFieldTypeHelp(ft.id) && (
+                            <p className="text-[10px] sm:text-xs text-stone-500 dark:text-zinc-500 mt-0.5 leading-snug line-clamp-2">
+                              {getFieldTypeHelp(ft.id)}
+                            </p>
+                          )}
                         </div>
                         {isSelected && <Check className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${tc.check}`} />}
                       </button>
@@ -762,33 +835,14 @@ export function ContentBuilder() {
                     <label className="block text-sm font-medium mb-3">
                       {t("contentBuilder.addFieldModal.relationType")} <span className="text-red-400">*</span>
                     </label>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {(
-                        [
-                          ["manyToOne", "Many to One", "Articles → Category"],
-                          ["oneToMany", "One to Many", "Category → Articles"],
-                          ["oneToOne", "One to One", "Article → Author"],
-                          ["manyToMany", "Many to Many", "Articles ↔ Tags"],
-                        ] as const
-                      ).map(([key, title, sub]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setRelationType(key)}
-                          className={`p-4 rounded-lg border-2 text-left transition-all ${
-                            relationType === key
-                              ? "border-violet-400 bg-violet-500/15 ring-1 ring-violet-400/30"
-                              : "border-stone-200/85 dark:border-zinc-800/50 hover:border-violet-500/40 bg-white/75 dark:bg-zinc-950/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-medium">{title}</p>
-                            {relationType === key && <Check className="w-5 h-5 text-violet-400" />}
-                          </div>
-                          <p className="text-xs text-stone-500 dark:text-zinc-500">{sub}</p>
-                        </button>
-                      ))}
-                    </div>
+                    <RelationTypePicker
+                      value={relationType}
+                      onChange={setRelationType}
+                      sourceLabel={displayName || "Bu tür"}
+                      targetLabel={
+                        availableCollections.find((c) => c.id === relationTarget)?.name
+                      }
+                    />
                   </div>
 
                   <div>

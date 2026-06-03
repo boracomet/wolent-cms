@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
-import { Link2, Upload, Images, Layers, LayoutGrid, Package } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Link2, Upload, Images, Layers, LayoutGrid, Package, X } from "lucide-react";
 import type { DemoField } from "../data/demoContentTypes";
+import { api } from "../api/client";
 import { MinimalTiptap } from "./MinimalTiptap";
 import { MediaLibraryPickerModal } from "./MediaLibraryPickerModal";
 
@@ -238,19 +239,13 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
 
           case "relation":
             return (
-              <div key={field.id}>
-                {label}
-                <div className="flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-violet-400 shrink-0" />
-                  <input
-                    type="text"
-                    value={v}
-                    onChange={(e) => onChange(field.apiName, e.target.value)}
-                    className={`${inputClass} flex-1`}
-                    placeholder="İlişki ID gir…"
-                  />
-                </div>
-              </div>
+              <RelationEntryField
+                key={field.id}
+                field={field}
+                value={v}
+                onChange={onChange}
+                label={label}
+              />
             );
 
           case "component":
@@ -322,6 +317,189 @@ export function DynamicSchemaFields({ fields, values, onChange }: Props) {
             );
         }
       })}
+    </div>
+  );
+}
+
+/** Entry listesinde gösterilecek etiket (title, name vb.) */
+function entryDisplayLabel(entry: Record<string, unknown>): string {
+  const label = entry["title"] ?? entry["name"] ?? entry["headline"] ?? entry["slug"];
+  if (label != null && String(label).trim()) return String(label);
+  return String(entry["id"] ?? "Kayıt");
+}
+
+function parseRelationIds(value: string): string[] {
+  if (!value.trim()) return [];
+  if (value.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {
+      /* düz metin */
+    }
+  }
+  return value.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function serializeRelationIds(ids: string[]): string {
+  if (ids.length === 0) return "";
+  if (ids.length === 1) return ids[0];
+  return JSON.stringify(ids);
+}
+
+function isMultiRelation(relation?: string): boolean {
+  return relation === "manyToMany" || relation === "oneToMany";
+}
+
+function RelationEntryField({
+  field,
+  value,
+  onChange,
+  label,
+}: {
+  field: DemoField;
+  value: string;
+  onChange: (apiName: string, value: string) => void;
+  label: ReactNode;
+}) {
+  const [entries, setEntries] = useState<{ id: string; label: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const targetType = field.targetType?.trim();
+  const multi = isMultiRelation(field.relation);
+  const selectedIds = multi ? parseRelationIds(value) : value ? [value] : [];
+
+  useEffect(() => {
+    if (!targetType) {
+      setEntries([]);
+      return;
+    }
+    setLoading(true);
+    setLoadError(null);
+    api.entries
+      .list(targetType, { page: 1, pageSize: 200 })
+      .then((res) => {
+        const rows = (res.data as Record<string, unknown>[]).map((entry) => ({
+          id: String(entry["id"] ?? ""),
+          label: entryDisplayLabel(entry),
+        }));
+        setEntries(rows.filter((e) => e.id));
+      })
+      .catch((err) => {
+        setEntries([]);
+        setLoadError(err instanceof Error ? err.message : "Kayıtlar yüklenemedi.");
+      })
+      .finally(() => setLoading(false));
+  }, [targetType]);
+
+  const toggleMulti = (id: string) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+    onChange(field.apiName, serializeRelationIds(next));
+  };
+
+  if (!targetType) {
+    return (
+      <div>
+        {label}
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Bu ilişki alanı için hedef tür tanımlı değil. İçerik türü düzenleyicisinden targetType ekleyin.
+        </p>
+      </div>
+    );
+  }
+
+  if (multi) {
+    return (
+      <div>
+        {label}
+        <div className="flex items-start gap-2">
+          <Link2 className="w-4 h-4 text-violet-400 shrink-0 mt-2.5" />
+          <div className="flex-1 min-w-0 space-y-2">
+            {loading && (
+              <p className="text-xs text-stone-500 dark:text-zinc-500">Kayıtlar yükleniyor…</p>
+            )}
+            {loadError && <p className="text-xs text-red-400">{loadError}</p>}
+            {!loading && entries.length === 0 && !loadError && (
+              <p className="text-xs text-stone-500 dark:text-zinc-500">
+                Henüz kayıt yok. Önce hedef türde içerik oluşturun.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2 min-h-[2rem]">
+              {selectedIds.map((id) => {
+                const entry = entries.find((e) => e.id === id);
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-violet-500/15 border border-violet-500/30 text-xs text-stone-800 dark:text-zinc-200"
+                  >
+                    {entry?.label ?? id.slice(0, 8)}
+                    <button
+                      type="button"
+                      aria-label="Kaldır"
+                      onClick={() => toggleMulti(id)}
+                      className="p-0.5 hover:bg-violet-500/20 rounded"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <select
+              value=""
+              onChange={(e) => {
+                const id = e.target.value;
+                if (id && !selectedIds.includes(id)) toggleMulti(id);
+              }}
+              disabled={loading || entries.length === 0}
+              className={inputClass}
+            >
+              <option value="">Kayıt ekle…</option>
+              {entries
+                .filter((e) => !selectedIds.includes(e.id))
+                .map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.label}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {label}
+      <div className="flex items-center gap-2">
+        <Link2 className="w-4 h-4 text-violet-400 shrink-0" />
+        <select
+          value={value}
+          onChange={(e) => onChange(field.apiName, e.target.value)}
+          disabled={loading}
+          className={`${inputClass} flex-1`}
+        >
+          <option value="">{field.required ? "Seçin…" : "Seçim yok"}</option>
+          {entries.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {loading && (
+        <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1 ml-6">Kayıtlar yükleniyor…</p>
+      )}
+      {loadError && <p className="text-xs text-red-400 mt-1 ml-6">{loadError}</p>}
+      {!loading && entries.length === 0 && !loadError && (
+        <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1 ml-6">
+          Henüz kayıt yok. Önce hedef türde içerik oluşturun.
+        </p>
+      )}
     </div>
   );
 }

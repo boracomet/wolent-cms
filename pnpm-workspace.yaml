@@ -1,3 +1,13 @@
 packages:
   - 'packages/*'
   - 'plugins/*'
+allowBuilds:
+  esbuild: set this to true or false
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@tailwindcss/oxide'
+  - argon2
+  - esbuild
+  - prisma
+  - sharp

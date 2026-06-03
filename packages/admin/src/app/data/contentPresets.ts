@@ -1,6 +1,14 @@
 import type { DemoContentType, DemoField } from "./demoContentTypes";
 
-export type PresetIconKey = "blog" | "gallery" | "navigation" | "landing" | "faq" | "testimonial";
+export type PresetIconKey =
+  | "blog"
+  | "gallery"
+  | "navigation"
+  | "landing"
+  | "faq"
+  | "testimonial"
+  | "product"
+  | "portfolio";
 
 export interface ContentPresetDefinition {
   id: string;
@@ -37,7 +45,9 @@ const blogPostFields: DemoField[] = [
     label: "Category",
     type: "relation",
     required: false,
-    description: "manyToOne → Blog Category",
+    targetType: "blog-category",
+    relation: "manyToOne",
+    description: "Yazının kategorisi",
   },
 ];
 
@@ -57,7 +67,9 @@ const galleryPhotoFields: DemoField[] = [
     label: "Album",
     type: "relation",
     required: false,
-    description: "manyToOne → Gallery Album",
+    targetType: "gallery-album",
+    relation: "manyToOne",
+    description: "Fotoğrafın albümü",
   },
 ];
 
@@ -143,7 +155,9 @@ const faqItemFields: DemoField[] = [
     label: "FAQ category",
     type: "relation",
     required: false,
-    description: "manyToOne → FAQ Category",
+    targetType: "faq-category",
+    relation: "manyToOne",
+    description: "SSS kategorisi",
   },
   { id: "fi4", apiName: "sort_order", label: "Sort order", type: "number_int", required: false },
 ];
@@ -154,6 +168,90 @@ const testimonialFields: DemoField[] = [
   { id: "tm3", apiName: "author_role", label: "Role / company", type: "text", required: false },
   { id: "tm4", apiName: "avatar", label: "Avatar", type: "media", required: false },
   { id: "tm5", apiName: "rating", label: "Rating (1–5)", type: "number_int", required: false },
+];
+
+const productCategoryFields: DemoField[] = [
+  { id: "pc1", apiName: "name", label: "Name", type: "text", required: true },
+  { id: "pc2", apiName: "slug", label: "Slug", type: "uid", required: true },
+  { id: "pc3", apiName: "description", label: "Description", type: "text_long", required: false },
+];
+
+const productFields: DemoField[] = [
+  { id: "pr1", apiName: "name", label: "Name", type: "text", required: true },
+  { id: "pr2", apiName: "slug", label: "Slug", type: "uid", required: true },
+  { id: "pr3", apiName: "price", label: "Price", type: "number_float", required: false },
+  { id: "pr4", apiName: "description", label: "Description", type: "text_long", required: false },
+  { id: "pr5", apiName: "image", label: "Image", type: "media", required: false },
+  {
+    id: "pr6",
+    apiName: "category",
+    label: "Category",
+    type: "relation",
+    required: false,
+    targetType: "product-category",
+    relation: "manyToOne",
+    description: "Ürün kategorisi",
+  },
+  { id: "pr7", apiName: "tags", label: "Tags", type: "text", required: false, description: "Virgülle ayrılmış etiketler" },
+];
+
+const portfolioCategoryFields: DemoField[] = [
+  { id: "poc1", apiName: "name", label: "Name", type: "text", required: true },
+  { id: "poc2", apiName: "slug", label: "Slug", type: "uid", required: true },
+];
+
+const portfolioProjectFields: DemoField[] = [
+  { id: "pop1", apiName: "title", label: "Title", type: "text", required: true },
+  { id: "pop2", apiName: "slug", label: "Slug", type: "uid", required: true },
+  { id: "pop3", apiName: "description", label: "Description", type: "text_long", required: false },
+  { id: "pop4", apiName: "images", label: "Images", type: "media", required: false },
+  { id: "pop5", apiName: "client", label: "Client", type: "text", required: false },
+  { id: "pop6", apiName: "year", label: "Year", type: "number_int", required: false },
+  {
+    id: "pop7",
+    apiName: "category",
+    label: "Category",
+    type: "relation",
+    required: false,
+    targetType: "portfolio-category",
+    relation: "manyToOne",
+    description: "Proje kategorisi",
+  },
+];
+
+/** Tek tür oluşturma sihirbazı — hızlı başlangıç alan şablonları */
+export interface QuickStartTemplate {
+  id: string;
+  title: string;
+  description: string;
+  fields: DemoField[];
+}
+
+export const quickStartTemplates: QuickStartTemplate[] = [
+  {
+    id: "empty",
+    title: "Boş şablon",
+    description: "Alanları kendiniz ekleyin",
+    fields: [],
+  },
+  {
+    id: "blog-post",
+    title: "Blog yazısı",
+    description: "Başlık, özet, gövde, kapak ve kategori",
+    fields: blogPostFields,
+  },
+  {
+    id: "product",
+    title: "Ürün",
+    description: "İsim, fiyat, görsel, kategori ve etiketler",
+    fields: productFields,
+  },
+  {
+    id: "portfolio-project",
+    title: "Portfolyo projesi",
+    description: "Başlık, açıklama, görseller, müşteri ve yıl",
+    fields: portfolioProjectFields,
+  },
 ];
 
 export const contentPresets: ContentPresetDefinition[] = [
@@ -358,6 +456,82 @@ export const contentPresets: ContentPresetDefinition[] = [
         useDynamicEditor: true,
         listCircleMediaField: "avatar",
         fields: testimonialFields.map((f) => ({ ...f, id: `${f.id}-${key}` })),
+      },
+    ],
+  },
+  {
+    id: "product",
+    title: "Ürün kataloğu",
+    description: "Kategori + ürün; fiyat, görsel ve kategori ilişkisi.",
+    includes: [
+      "Ürün Kategorisi — isim, slug, açıklama",
+      "Ürün — isim, fiyat, açıklama, görsel, kategori, etiketler",
+    ],
+    color: "emerald",
+    icon: "product",
+    build: (key) => [
+      {
+        id: `preset-${key}-product-cat`,
+        name: "Ürün Kategorisi",
+        singularName: "Ürün Kategorisi",
+        pluralName: "Ürün Kategorileri",
+        apiId: "product-category",
+        description: "Ürünler için taksonomi",
+        createdAt: today(),
+        color: "emerald",
+        useDynamicEditor: true,
+        fields: productCategoryFields.map((f) => ({ ...f, id: `${f.id}-${key}` })),
+      },
+      {
+        id: `preset-${key}-product`,
+        name: "Ürün",
+        singularName: "Ürün",
+        pluralName: "Ürünler",
+        apiId: "product",
+        description: "Kategoriye bağlı ürün kaydı",
+        createdAt: today(),
+        color: "green",
+        useDynamicEditor: true,
+        listCircleMediaField: "image",
+        fields: productFields.map((f) => ({ ...f, id: `${f.id}-${key}` })),
+      },
+    ],
+  },
+  {
+    id: "portfolio",
+    title: "Portfolyo",
+    description: "Proje kategorisi + çalışmalar; müşteri, yıl ve galeri.",
+    includes: [
+      "Portfolyo Kategorisi — isim, slug",
+      "Proje — başlık, açıklama, görseller, müşteri, yıl, kategori",
+    ],
+    color: "violet",
+    icon: "portfolio",
+    build: (key) => [
+      {
+        id: `preset-${key}-portfolio-cat`,
+        name: "Portfolyo Kategorisi",
+        singularName: "Portfolyo Kategorisi",
+        pluralName: "Portfolyo Kategorileri",
+        apiId: "portfolio-category",
+        description: "Projeler için gruplar",
+        createdAt: today(),
+        color: "violet",
+        useDynamicEditor: true,
+        fields: portfolioCategoryFields.map((f) => ({ ...f, id: `${f.id}-${key}` })),
+      },
+      {
+        id: `preset-${key}-portfolio-project`,
+        name: "Proje",
+        singularName: "Proje",
+        pluralName: "Projeler",
+        apiId: "portfolio-project",
+        description: "Kategoriye bağlı portfolyo çalışması",
+        createdAt: today(),
+        color: "indigo",
+        useDynamicEditor: true,
+        listCircleMediaField: "images",
+        fields: portfolioProjectFields.map((f) => ({ ...f, id: `${f.id}-${key}` })),
       },
     ],
   },

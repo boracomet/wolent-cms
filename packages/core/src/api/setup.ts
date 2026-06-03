@@ -7,7 +7,7 @@
  */
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@wolent/database'
 import { validatePasswordStrength } from '../auth/password.js'
 import { BadRequestError } from '@wolent/utils'
 import { writeFileSync, existsSync, readFileSync } from 'node:fs'

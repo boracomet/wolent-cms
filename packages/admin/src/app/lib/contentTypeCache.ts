@@ -26,6 +26,8 @@ export function apiTypeToDemoType(t: Record<string, unknown>): DemoContentType {
       required: Boolean(d["required"]),
       description: (d["description"] as string) ?? undefined,
       enumOptions: Array.isArray(d["enum"]) ? (d["enum"] as string[]) : undefined,
+      targetType: (d["targetType"] as string) ?? undefined,
+      relation: (d["relation"] as string) ?? undefined,
     };
   });
 

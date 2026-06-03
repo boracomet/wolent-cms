@@ -12,6 +12,10 @@ export interface DemoField {
   description?: string;
   /** enumeration tipi için */
   enumOptions?: string[];
+  /** relation tipi — hedef içerik türü (singularName) */
+  targetType?: string;
+  /** relation tipi — oneToOne | manyToOne | vb. */
+  relation?: string;
 }
 
 export interface DemoContentType {

@@ -1,5 +1,5 @@
 import type { FastifyError, FastifyRequest, FastifyReply } from 'fastify'
-import { PrismaClientKnownRequestError } from '@prisma/client'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library.js'
 import { WolentError } from '@wolent/utils'
 import { ZodError } from 'zod'
 
