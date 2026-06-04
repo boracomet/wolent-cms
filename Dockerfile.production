@@ -1,0 +1,75 @@
+# ─── Build Stage ─────────────────────────────────────────────────────────────
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+RUN apk add --no-cache openssl
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy workspace config
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* tsconfig.base.json ./
+COPY packages/utils/package.json ./packages/utils/
+COPY packages/database/package.json ./packages/database/
+COPY packages/core/package.json ./packages/core/
+COPY packages/admin/package.json ./packages/admin/
+
+RUN pnpm install --frozen-lockfile --shamefully-hoist
+
+# Copy source
+COPY packages/utils ./packages/utils
+COPY packages/database ./packages/database
+COPY packages/core ./packages/core
+COPY packages/admin ./packages/admin
+
+# Build all packages
+RUN pnpm --filter @wolent/utils build
+RUN pnpm --filter @wolent/database build
+RUN pnpm --filter @wolent/core build
+RUN cd packages/database && npx prisma generate
+
+# Build admin panel
+WORKDIR /app/packages/admin
+RUN npx vite build --mode production
+WORKDIR /app
+
+# ─── Production Stage ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN apk add --no-cache openssl
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+RUN addgroup --system --gid 1001 wolent && \
+    adduser --system --uid 1001 wolent
+
+# Copy built packages
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/core/dist ./packages/core/dist
+COPY --from=builder /app/packages/core/package.json ./packages/core/
+COPY --from=builder /app/packages/core/src ./packages/core/src
+COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
+COPY --from=builder /app/packages/utils/package.json ./packages/utils/
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/database/package.json ./packages/database/
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+COPY --from=builder /app/packages/admin/dist ./packages/admin/dist
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/tsconfig.base.json ./
+
+# Copy entrypoint
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Create data and upload directories
+RUN mkdir -p /app/data /app/public/uploads && chown -R wolent:wolent /app
+
+USER wolent
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["node", "packages/core/dist/index.js"]
