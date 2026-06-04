@@ -11,6 +11,7 @@ COPY packages/utils/package.json ./packages/utils/
 COPY packages/database/package.json ./packages/database/
 COPY packages/core/package.json ./packages/core/
 
+RUN echo 'onlyBuiltDependencies=' > .npmrc
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 COPY packages/utils ./packages/utils
