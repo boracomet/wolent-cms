@@ -23,12 +23,7 @@
       "vite": "6.3.5"
     },
     "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "@tailwindcss/oxide",
-      "argon2",
-      "esbuild",
-      "prisma"
+      "*"
     ]
   }
 }
